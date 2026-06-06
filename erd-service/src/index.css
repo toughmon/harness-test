@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0f172a;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* React Flow 다크 테마 오버라이드 */
+.react-flow__background {
+  background: #0f172a !important;
+}
+
+.react-flow__controls {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.react-flow__controls button {
+  background: #1e293b !important;
+  border-bottom: 1px solid #334155 !important;
+  color: #94a3b8 !important;
+  fill: #94a3b8 !important;
+}
+
+.react-flow__controls button:hover {
+  background: #334155 !important;
+}
+
+.react-flow__minimap {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 8px !important;
+}
+
+/* 노드 선택 시 기본 outline 제거 */
+.react-flow__node {
+  outline: none !important;
+}
+
+.react-flow__node.selected > div {
+  box-shadow: 0 0 0 2px #60a5fa;
+}
+
+/* 연결선 핸들 */
+.react-flow__handle {
+  opacity: 0 !important;
+  transition: opacity 0.2s;
+}
+
+.react-flow__node:hover .react-flow__handle {
+  opacity: 1 !important;
+}
+
+/* 연결 중일 때 모든 핸들 표시 */
+.react-flow__node.connecting .react-flow__handle,
+.react-flow__handle.connectingfrom,
+.react-flow__handle.connectingto {
+  opacity: 1 !important;
+}

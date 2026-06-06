@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx skills *)",
+      "Bash(mkdir -p \"C:\\\\project\\\\harness-test\\\\.claude\\\\agents\")",
+      "Bash(mkdir -p \"C:\\\\project\\\\harness-test\\\\.claude\\\\skills\\\\erd-orchestrator\")",
+      "Bash(mkdir -p \"C:\\\\project\\\\harness-test\\\\.claude\\\\skills\\\\erd-architect\")",
+      "Bash(mkdir -p \"C:\\\\project\\\\harness-test\\\\.claude\\\\skills\\\\erd-frontend\")",
+      "Bash(mkdir -p \"C:\\\\project\\\\harness-test\\\\.claude\\\\skills\\\\erd-backend\")",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "WebFetch(domain:localhost)",
+      "Bash(curl -s -o - -w \"\\\\n\\\\n--- HTTP STATUS: %{http_code} ---\\\\n\" http://localhost:5173)",
+      "Bash(npx playwright *)"
+    ]
+  }
+}
