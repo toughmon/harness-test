@@ -3,9 +3,11 @@ import { RELATIONSHIP_LABELS, RelationshipType } from '../../types/erd';
 interface Props {
   onSelect: (type: RelationshipType) => void;
   onCancel: () => void;
+  title?: string;
+  current?: RelationshipType;   // 타입 변경 모드에서 현재 타입 강조
 }
 
-export default function RelTypeModal({ onSelect, onCancel }: Props) {
+export default function RelTypeModal({ onSelect, onCancel, title = '관계 종류 선택', current }: Props) {
   const types = Object.entries(RELATIONSHIP_LABELS) as [RelationshipType, string][];
 
   return (
@@ -19,16 +21,23 @@ export default function RelTypeModal({ onSelect, onCancel }: Props) {
       >
         <div className="px-5 py-3 border-b border-outline-variant flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-primary">mediation</span>
-          <h3 className="text-sm font-semibold text-on-surface m-0">관계 종류 선택</h3>
+          <h3 className="text-sm font-semibold text-on-surface m-0">{title}</h3>
         </div>
         <div className="p-2">
           {types.map(([type, label]) => (
             <button
               key={type}
-              className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-variant rounded-lg transition-colors cursor-pointer group"
+              className={`w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-variant rounded-lg transition-colors cursor-pointer group ${
+                current === type ? 'bg-surface-variant border border-primary/40' : ''
+              }`}
               onClick={() => onSelect(type)}
             >
-              <div className="font-mono text-xs font-bold group-hover:text-primary transition-colors">{label}</div>
+              <div className="font-mono text-xs font-bold group-hover:text-primary transition-colors flex items-center gap-2">
+                {label}
+                {current === type && (
+                  <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[9px] uppercase tracking-wider font-sans">현재</span>
+                )}
+              </div>
               <div className="text-[11px] text-on-surface-variant mt-0.5">
                 {getTypeDesc(type)}
               </div>

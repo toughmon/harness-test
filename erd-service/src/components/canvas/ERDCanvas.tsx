@@ -21,42 +21,58 @@ import { RelationshipType } from '../../types/erd';
 import EntityNode from '../nodes/EntityNode';
 import RelationshipEdge from '../edges/RelationshipEdge';
 import RelTypeModal from '../panels/RelTypeModal';
+import { computeAutoLayout } from '../../utils/autoLayout';
+import { exportDiagramPng } from '../../utils/exportImage';
 
 const nodeTypes = { entity: EntityNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
-// 디자인 시안의 플로팅 글래스 줌 툴바 — React Flow 줌/핏 기능 연결
+// 디자인 시안의 플로팅 글래스 줌 툴바 — 줌/핏 + 자동 정렬 + PNG 내보내기
 function ZoomToolbar() {
-  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const { zoomIn, zoomOut, fitView, getNodes } = useReactFlow();
   const { zoom } = useViewport();
+  const { relationships, setAllPositions } = useERDStore();
+
+  const handleAutoLayout = () => {
+    const nodes = getNodes();
+    if (nodes.length === 0) return;
+    setAllPositions(computeAutoLayout(nodes, relationships));
+    // 위치 반영 후 화면 맞춤
+    window.setTimeout(() => fitView({ padding: 0.3 }), 60);
+  };
+
+  const handleExportPng = async () => {
+    try {
+      await exportDiagramPng(getNodes());
+    } catch (err) {
+      alert((err as Error).message);
+    }
+  };
+
+  const btn = 'w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer';
 
   return (
     <Panel position="bottom-center">
       <div className="glass-toolbar rounded-full border border-outline-variant p-1.5 flex items-center gap-1 shadow-lg mb-2">
-        <button
-          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer"
-          title="Zoom Out"
-          onClick={() => zoomOut()}
-        >
+        <button className={btn} title="Zoom Out" onClick={() => zoomOut()}>
           <span className="material-symbols-outlined text-[18px]">zoom_out</span>
         </button>
         <span className="font-mono text-[11px] text-on-surface-variant px-2 min-w-12 text-center select-none">
           {Math.round(zoom * 100)}%
         </span>
-        <button
-          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer"
-          title="Zoom In"
-          onClick={() => zoomIn()}
-        >
+        <button className={btn} title="Zoom In" onClick={() => zoomIn()}>
           <span className="material-symbols-outlined text-[18px]">zoom_in</span>
         </button>
         <div className="w-px h-5 bg-outline-variant mx-1" />
-        <button
-          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer"
-          title="Fit View"
-          onClick={() => fitView({ padding: 0.3 })}
-        >
+        <button className={btn} title="Fit View" onClick={() => fitView({ padding: 0.3 })}>
           <span className="material-symbols-outlined text-[18px]">fit_screen</span>
+        </button>
+        <div className="w-px h-5 bg-outline-variant mx-1" />
+        <button className={btn} title="자동 정렬" onClick={handleAutoLayout}>
+          <span className="material-symbols-outlined text-[18px]">account_tree</span>
+        </button>
+        <button className={btn} title="PNG 내보내기" onClick={handleExportPng}>
+          <span className="material-symbols-outlined text-[18px]">photo_camera</span>
         </button>
       </div>
     </Panel>
@@ -67,6 +83,7 @@ export default function ERDCanvas() {
   const {
     entities, relationships, nodePositions,
     selectEntity, addRelationship, updateNodePosition,
+    editingRelId, setEditingRel, updateRelationshipType,
   } = useERDStore();
 
   const [pendingConn, setPendingConn] = useState<Connection | null>(null);
@@ -191,6 +208,16 @@ export default function ERDCanvas() {
         <RelTypeModal
           onSelect={handleRelTypeSelect}
           onCancel={() => setPendingConn(null)}
+        />
+      )}
+
+      {/* 기존 관계선의 타입 변경 */}
+      {editingRelId && (
+        <RelTypeModal
+          title="관계 종류 변경"
+          current={relationships.find(r => r.id === editingRelId)?.type}
+          onSelect={(type) => { updateRelationshipType(editingRelId, type); setEditingRel(null); }}
+          onCancel={() => setEditingRel(null)}
         />
       )}
     </main>

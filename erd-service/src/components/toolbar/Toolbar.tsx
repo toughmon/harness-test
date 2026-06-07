@@ -5,7 +5,10 @@ import { saveERD, loadERD } from '../../utils/fileIO';
 // 디자인 시안의 TopNavBar — File/Edit/View/Export 메뉴와 알림/설정/아바타는
 // 현재 기능이 없는 비활성 placeholder, Save/불러오기는 기존 기능 연결
 export default function Toolbar() {
-  const { entities, relationships, nodePositions, loadData } = useERDStore();
+  const {
+    entities, relationships, nodePositions, loadData,
+    undo, redo, past, future,
+  } = useERDStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
@@ -51,6 +54,27 @@ export default function Toolbar() {
           <LegendItem label="비식별" dashed />
           <LegendItem label="선택" dotted />
         </div>
+
+        {/* Undo / Redo */}
+        <button
+          className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer disabled:opacity-30 disabled:cursor-default disabled:hover:text-on-surface-variant"
+          onClick={undo}
+          disabled={past.length === 0}
+          title="실행 취소 (Ctrl+Z)"
+          aria-label="Undo"
+        >
+          <span className="material-symbols-outlined text-[20px]">undo</span>
+        </button>
+        <button
+          className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer disabled:opacity-30 disabled:cursor-default disabled:hover:text-on-surface-variant"
+          onClick={redo}
+          disabled={future.length === 0}
+          title="다시 실행 (Ctrl+Y)"
+          aria-label="Redo"
+        >
+          <span className="material-symbols-outlined text-[20px]">redo</span>
+        </button>
+        <div className="w-px h-5 bg-outline-variant mx-1" />
 
         {/* Save */}
         <button

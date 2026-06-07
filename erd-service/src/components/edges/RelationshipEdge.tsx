@@ -6,7 +6,7 @@ import {
   Position,
   useNodes,
 } from '@xyflow/react';
-import { Relationship, RelationshipType } from '../../types/erd';
+import { Relationship, RelationshipType, RELATIONSHIP_LABELS } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
 import { computeEdgeEndpoints, Rect } from '../../utils/edgeConnection';
 
@@ -111,7 +111,7 @@ function RelationshipEdge({
   selected,
 }: EdgeProps) {
   const rel = data as unknown as Relationship;
-  const { deleteRelationship, relationships } = useERDStore();
+  const { deleteRelationship, relationships, setEditingRel } = useERDStore();
 
   // 노드 위치/크기를 직접 읽어 연결점을 동적으로 계산
   // — 같은 면에 여러 관계가 붙으면 연결점을 분산시켜 선이 겹치지 않게 한다
@@ -209,20 +209,34 @@ function RelationshipEdge({
         />
       )}
 
-      {/* Delete button on select */}
+      {/* 선택 시 엣지 툴바: 타입 표시 + 변경 + 삭제 */}
       {selected && (
         <EdgeLabelRenderer>
-          <button
-            className="absolute z-50 w-5 h-5 rounded-full bg-red-600 text-white text-xs flex items-center justify-center hover:bg-red-500"
+          <div
+            className="absolute z-50 glass-toolbar flex items-center gap-1 rounded-full border border-outline-variant px-1.5 py-1 shadow-lg"
             style={{
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
               pointerEvents: 'all',
             }}
-            onClick={() => deleteRelationship(id)}
-            title="관계 삭제"
           >
-            ×
-          </button>
+            <span className="font-mono text-[10px] text-on-surface-variant px-1.5 whitespace-nowrap select-none">
+              {RELATIONSHIP_LABELS[type]}
+            </span>
+            <button
+              className="w-5 h-5 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer"
+              onClick={() => setEditingRel(id)}
+              title="관계 종류 변경"
+            >
+              <span className="material-symbols-outlined text-[13px]">edit</span>
+            </button>
+            <button
+              className="w-5 h-5 rounded-full flex items-center justify-center text-on-surface hover:bg-error-container hover:text-on-surface transition-colors cursor-pointer text-xs"
+              onClick={() => deleteRelationship(id)}
+              title="관계 삭제"
+            >
+              ×
+            </button>
+          </div>
         </EdgeLabelRenderer>
       )}
     </>
