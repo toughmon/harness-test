@@ -1,0 +1,63 @@
+import { create } from 'zustand';
+import { api, User } from '../api/client';
+import { useDiagramStore } from './diagramStore';
+
+// 인증 상태 — erdStore와 완전 분리. 비로그인 시 기존 동작에 영향 없음
+
+interface AuthState {
+  user: User | null;
+  status: 'loading' | 'authed' | 'anon';
+  modalOpen: boolean;
+
+  init: () => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  openModal: () => void;
+  closeModal: () => void;
+}
+
+let initStarted = false; // StrictMode 이중 마운트 가드
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  status: 'loading',
+  modalOpen: false,
+
+  init: async () => {
+    if (initStarted) return;
+    initStarted = true;
+    try {
+      const user = await api.me();
+      set({ user, status: 'authed' });
+      useDiagramStore.getState().fetchList();
+    } catch {
+      set({ user: null, status: 'anon' });
+    }
+  },
+
+  login: async (username, password) => {
+    const user = await api.login(username, password);
+    set({ user, status: 'authed', modalOpen: false });
+    useDiagramStore.getState().fetchList();
+  },
+
+  register: async (username, password) => {
+    const user = await api.register(username, password);
+    set({ user, status: 'authed', modalOpen: false });
+    useDiagramStore.getState().fetchList();
+  },
+
+  logout: async () => {
+    if (!useDiagramStore.getState().confirmDiscard()) return;
+    try {
+      await api.logout();
+    } finally {
+      set({ user: null, status: 'anon' });
+      useDiagramStore.getState().reset();
+    }
+  },
+
+  openModal: () => set({ modalOpen: true }),
+  closeModal: () => set({ modalOpen: false }),
+}));

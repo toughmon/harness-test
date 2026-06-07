@@ -3,10 +3,18 @@ import Toolbar from './components/toolbar/Toolbar';
 import Sidebar from './components/sidebar/Sidebar';
 import ERDCanvas from './components/canvas/ERDCanvas';
 import EntityEditPanel from './components/panels/EntityEditPanel';
+import AuthModal from './components/auth/AuthModal';
 import { useERDStore } from './store/erdStore';
+import { useAuthStore } from './store/authStore';
 
 function App() {
   const { undo, redo } = useERDStore();
+  const { modalOpen, init } = useAuthStore();
+
+  // 앱 시작 시 세션 복원 (쿠키의 JWT로 GET /me)
+  useEffect(() => {
+    init();
+  }, [init]);
 
   // 전역 Undo/Redo 단축키 — 입력 필드 포커스 중에는 브라우저 기본 동작 유지
   useEffect(() => {
@@ -38,6 +46,7 @@ function App() {
         <ERDCanvas />
         <EntityEditPanel />
       </div>
+      {modalOpen && <AuthModal />}
     </div>
   );
 }

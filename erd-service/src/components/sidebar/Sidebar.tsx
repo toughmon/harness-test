@@ -1,9 +1,13 @@
 import { useERDStore } from '../../store/erdStore';
+import { useAuthStore } from '../../store/authStore';
+import { useDiagramStore } from '../../store/diagramStore';
 
 // 디자인 시안의 SideNavBar — Add Entity / Entity List는 실제 기능 연결,
-// Help/Docs는 현재 기능이 없는 비활성 placeholder
+// 로그인 시 "내 다이어그램" 섹션 표시, Help/Docs는 비활성 placeholder
 export default function Sidebar() {
   const { entities, selectedEntityId, selectEntity, addEntity } = useERDStore();
+  const { status } = useAuthStore();
+  const { list, currentId, open, startNew, rename, remove } = useDiagramStore();
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-surface-container-low border-r border-outline-variant">
@@ -28,8 +32,64 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Entity list */}
+      {/* 내 다이어그램 (로그인 시에만) + Entity list */}
       <nav className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2 flex flex-col gap-1">
+        {status === 'authed' && (
+          <div data-testid="my-diagrams">
+            <div className="mb-2 px-3 flex items-center justify-between text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant opacity-70">
+              <span>내 다이어그램</span>
+              <button
+                className="material-symbols-outlined text-[16px] cursor-pointer hover:text-primary transition-colors"
+                onClick={startNew}
+                title="새 다이어그램 (빈 캔버스)"
+                aria-label="New diagram"
+              >
+                add
+              </button>
+            </div>
+            <div className="flex flex-col gap-1 px-1 mb-4">
+              {list.map(d => {
+                const isCurrent = d.id === currentId;
+                return (
+                  <div
+                    key={d.id}
+                    className={`group flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer transition-colors text-xs ${
+                      isCurrent
+                        ? 'bg-surface-variant border border-primary/40 text-primary'
+                        : 'border border-transparent hover:bg-surface-variant text-on-surface'
+                    }`}
+                    onClick={() => { if (!isCurrent) open(d.id); }}
+                  >
+                    <span className="material-symbols-outlined text-[15px] shrink-0">cloud</span>
+                    <span className="truncate flex-1">{d.name}</span>
+                    <button
+                      className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-primary cursor-pointer shrink-0"
+                      onClick={e => { e.stopPropagation(); rename(d.id); }}
+                      title="이름 변경"
+                      aria-label={`Rename ${d.name}`}
+                    >
+                      edit
+                    </button>
+                    <button
+                      className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-red-400 cursor-pointer shrink-0"
+                      onClick={e => { e.stopPropagation(); remove(d.id); }}
+                      title="삭제"
+                      aria-label={`Delete ${d.name}`}
+                    >
+                      delete
+                    </button>
+                  </div>
+                );
+              })}
+              {list.length === 0 && (
+                <div className="px-3 py-1 text-xs text-outline italic">
+                  DB 저장 버튼으로 저장하면 여기에 표시됩니다
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="mb-2 px-3 text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant opacity-70">
           Entity List
         </div>

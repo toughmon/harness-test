@@ -1,18 +1,12 @@
 import { Entity, Relationship, ERDData } from '../types/erd';
+import { toERDData } from './erdData';
 
 export function saveERD(
   entities: Entity[],
   relationships: Relationship[],
   positions: Record<string, { x: number; y: number }>
 ) {
-  const data: ERDData = {
-    version: '1.0',
-    entities: entities.map(entity => ({
-      entity,
-      position: positions[entity.id] ?? { x: 0, y: 0 },
-    })),
-    relationships,
-  };
+  const data = toERDData(entities, relationships, positions);
 
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# 환경변수 (DATABASE_URL, JWT_SECRET)
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
