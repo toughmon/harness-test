@@ -1,7 +1,7 @@
 import { useERDStore } from '../../store/erdStore';
 
 // 디자인 시안의 SideNavBar — Add Entity / Entity List는 실제 기능 연결,
-// Relations/Layers/History/Help/Docs는 현재 기능이 없는 비활성 placeholder
+// Help/Docs는 현재 기능이 없는 비활성 placeholder
 export default function Sidebar() {
   const { entities, selectedEntityId, selectEntity, addEntity } = useERDStore();
 
@@ -28,14 +28,9 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Nav + Entity list */}
+      {/* Entity list */}
       <nav className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2 flex flex-col gap-1">
-        <NavItem icon="table_chart" label="Entities" active filled />
-        <NavItem icon="mediation" label="Relations" />
-        <NavItem icon="layers" label="Layers" />
-        <NavItem icon="history" label="History" />
-
-        <div className="mt-6 mb-2 px-3 text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant opacity-70">
+        <div className="mb-2 px-3 text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant opacity-70">
           Entity List
         </div>
         <div className="flex flex-col gap-1 px-1">
@@ -83,24 +78,13 @@ export default function Sidebar() {
   );
 }
 
-function NavItem({ icon, label, active, filled }: {
-  icon: string; label: string; active?: boolean; filled?: boolean
-}) {
+function NavItem({ icon, label }: { icon: string; label: string }) {
   return (
     <span
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-default transition-all text-[11px] font-bold tracking-[0.05em] uppercase ${
-        active
-          ? 'bg-secondary-container text-on-secondary-container'
-          : 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
-      }`}
-      title={active ? undefined : `${label} (준비 중)`}
+      className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-default transition-all text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant hover:bg-surface-variant hover:text-on-surface"
+      title={`${label} (준비 중)`}
     >
-      <span
-        className="material-symbols-outlined text-[18px]"
-        style={filled ? { fontVariationSettings: "'FILL' 1" } : undefined}
-      >
-        {icon}
-      </span>
+      <span className="material-symbols-outlined text-[18px]">{icon}</span>
       {label}
     </span>
   );

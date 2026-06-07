@@ -2,8 +2,8 @@ import { useRef } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { saveERD, loadERD } from '../../utils/fileIO';
 
-// 디자인 시안의 TopNavBar — File/Edit/View/Export 메뉴와 알림/설정/아바타는
-// 현재 기능이 없는 비활성 placeholder, Save/불러오기는 기존 기능 연결
+// 디자인 시안의 TopNavBar — 알림/설정/아바타는 현재 기능이 없는
+// 비활성 placeholder, Save/불러오기는 기존 기능 연결
 export default function Toolbar() {
   const {
     entities, relationships, nodePositions, loadData,
@@ -39,22 +39,9 @@ export default function Toolbar() {
     <header className="flex justify-between items-center h-12 px-8 w-full z-50 shrink-0 bg-surface border-b border-outline-variant">
       <div className="flex items-center gap-4">
         <div className="text-[22px] leading-8 tracking-tight font-black text-primary">DataModeler Pro</div>
-        <nav className="hidden md:flex items-center gap-4 ml-8 h-full text-sm">
-          <span className="text-on-surface-variant hover:bg-surface-variant transition-colors cursor-default px-3 py-1 rounded">File</span>
-          <span className="text-on-surface-variant hover:bg-surface-variant transition-colors cursor-default px-3 py-1 rounded">Edit</span>
-          <span className="text-primary border-b-2 border-primary pb-1 font-semibold">View</span>
-          <span className="text-on-surface-variant hover:bg-surface-variant transition-colors cursor-default px-3 py-1 rounded">Export</span>
-        </nav>
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Barker 표기법 범례 */}
-        <div className="hidden lg:flex items-center gap-4 text-[11px] text-on-surface-variant mr-3">
-          <LegendItem label="식별" solid uid />
-          <LegendItem label="비식별" dashed />
-          <LegendItem label="선택" dotted />
-        </div>
-
         {/* Undo / Redo */}
         <button
           className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer disabled:opacity-30 disabled:cursor-default disabled:hover:text-on-surface-variant"
@@ -119,30 +106,5 @@ export default function Toolbar() {
         onChange={handleLoad}
       />
     </header>
-  );
-}
-
-function LegendItem({ label, solid, dashed, dotted, uid }: {
-  label: string; solid?: boolean; dashed?: boolean; dotted?: boolean; uid?: boolean
-}) {
-  // 바커: 식별/비식별 = 왼쪽(부모) 절반 점선 + 오른쪽(자식) 절반 실선, 선택 = 전체 점선
-  void dotted;
-  const halfDashed = solid || dashed;
-  const c = '#908fa0';
-  return (
-    <div className="flex items-center gap-1.5">
-      <svg width="28" height="10" viewBox="0 0 28 10">
-        {halfDashed ? (
-          <>
-            <line x1="2" y1="5" x2="14" y2="5" stroke={c} strokeWidth="1.5" strokeDasharray="3 2" />
-            <line x1="14" y1="5" x2="26" y2="5" stroke={c} strokeWidth="1.5" />
-          </>
-        ) : (
-          <line x1="2" y1="5" x2="26" y2="5" stroke={c} strokeWidth="1.5" strokeDasharray="3 2" />
-        )}
-        {uid && <line x1="22" y1="1" x2="22" y2="9" stroke={c} strokeWidth="1.5" />}
-      </svg>
-      <span>{label}</span>
-    </div>
   );
 }
