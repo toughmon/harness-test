@@ -1,21 +1,16 @@
 import Toolbar from './components/toolbar/Toolbar';
+import Sidebar from './components/sidebar/Sidebar';
 import ERDCanvas from './components/canvas/ERDCanvas';
 import EntityEditPanel from './components/panels/EntityEditPanel';
-import { useERDStore } from './store/erdStore';
 
 function App() {
-  const { selectedEntityId } = useERDStore();
-
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      width: '100vw', height: '100vh',
-      background: '#0f172a', overflow: 'hidden',
-    }}>
+    <div className="flex flex-col w-screen h-screen overflow-hidden bg-background text-on-surface font-sans">
       <Toolbar />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        <Sidebar />
         <ERDCanvas />
-        {selectedEntityId && <EntityEditPanel />}
+        <EntityEditPanel />
       </div>
     </div>
   );

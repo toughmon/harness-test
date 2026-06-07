@@ -10,7 +10,8 @@ import { Relationship, RelationshipType } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
 import { computeEdgeEndpoints, Rect } from '../../utils/edgeConnection';
 
-const EDGE_COLOR = '#64748b';
+const EDGE_COLOR = '#7d7c8c';
+const EDGE_SELECTED = '#c0c1ff';
 const M = 14;  // crow's foot size
 const B = 6;   // bar offset from path end
 
@@ -156,7 +157,7 @@ function RelationshipEdge({
     type === 'ONE_TO_MANY_OPTIONAL';
   const isIdentifying =
     type === 'ONE_TO_MANY_IDENTIFYING' || type === 'ONE_TO_ONE_IDENTIFYING';
-  const color = selected ? '#60a5fa' : EDGE_COLOR;
+  const color = selected ? EDGE_SELECTED : EDGE_COLOR;
 
   return (
     <>

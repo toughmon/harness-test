@@ -8,8 +8,8 @@ type EntityNodeData = Entity;
 const handleStyle: React.CSSProperties = {
   width: 10,
   height: 10,
-  background: '#60a5fa',
-  border: '2px solid #1e40af',
+  background: '#8083ff',
+  border: '2px solid #c0c1ff',
   borderRadius: '50%',
 };
 
@@ -30,7 +30,7 @@ function EntityNode({ data }: NodeProps) {
 
   return (
     /* Outer wrapper: NO overflow-hidden — handles must not be clipped */
-    <div style={{ position: 'relative', minWidth: 180 }}>
+    <div style={{ position: 'relative', minWidth: 220 }}>
 
       {/* Connection handles — outside the overflow-hidden content */}
       <Handle type="source" position={Position.Top}    id="top"      style={handleStyle} />
@@ -43,79 +43,61 @@ function EntityNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Right}  id="right-t"  style={handleStyle} />
 
       {/* Entity content — overflow-hidden for rounded corners only here */}
-      <div
-        style={{
-          background: '#1e293b',
-          border: '2px solid #334155',
-          borderRadius: 8,
-          overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-        }}
-      >
+      <div className="entity-node bg-node-bg border border-node-border rounded-lg overflow-hidden flex flex-col">
+        {/* 엔티티 색상 액센트 스트립 */}
+        <div style={{ height: 3, background: entityData.color, flexShrink: 0 }} />
+
         {/* Header */}
         <div
-          style={{
-            background: entityData.color,
-            padding: '6px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 6,
-            minHeight: 34,
-            cursor: 'pointer',
-          }}
+          className="bg-node-header px-3 py-2 border-b border-node-border flex justify-between items-center cursor-pointer gap-2"
+          style={{ minHeight: 36 }}
           onDoubleClick={() => { setEditingName(true); setNameVal(entityData.name); }}
         >
-          {editingName ? (
-            <input
-              autoFocus
-              style={{
-                background: 'transparent', color: 'white', fontWeight: 'bold',
-                fontSize: 13, outline: 'none', borderBottom: '1px solid rgba(255,255,255,0.6)',
-                width: '100%',
-              }}
-              value={nameVal}
-              onChange={e => setNameVal(e.target.value)}
-              onBlur={handleNameSubmit}
-              onKeyDown={e => { if (e.key === 'Enter') handleNameSubmit(); if (e.key === 'Escape') setEditingName(false); }}
-              onClick={e => e.stopPropagation()}
-            />
-          ) : (
-            <span style={{ color: 'white', fontWeight: 'bold', fontSize: 13, userSelect: 'none' }}>
-              {entityData.name}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span
+              className="material-symbols-outlined text-[16px] shrink-0"
+              style={{ color: entityData.color }}
+            >
+              table_rows
             </span>
-          )}
+            {editingName ? (
+              <input
+                autoFocus
+                className="font-mono text-xs font-bold text-on-surface bg-transparent outline-none border-b border-on-surface-variant w-full"
+                value={nameVal}
+                onChange={e => setNameVal(e.target.value)}
+                onBlur={handleNameSubmit}
+                onKeyDown={e => { if (e.key === 'Enter') handleNameSubmit(); if (e.key === 'Escape') setEditingName(false); }}
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <span className="font-mono text-xs font-bold text-on-surface select-none truncate">
+                {entityData.name}
+              </span>
+            )}
+          </div>
           <button
-            style={{
-              width: 14, height: 14, borderRadius: '50%',
-              border: '1.5px solid rgba(255,255,255,0.5)',
-              background: entityData.color, cursor: 'pointer', flexShrink: 0,
-            }}
+            className="text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer flex items-center"
             title="색상 변경"
             onClick={e => { e.stopPropagation(); setShowPalette(v => !v); }}
-          />
+          >
+            <span className="material-symbols-outlined text-[16px]">more_horiz</span>
+          </button>
         </div>
 
         {/* Color Palette */}
         {showPalette && (
           <div
-            style={{
-              position: 'absolute', zIndex: 100, top: 36, right: 0,
-              padding: 8, borderRadius: 8,
-              background: '#0f172a', border: '1px solid #334155',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4,
-            }}
+            className="absolute z-[100] top-10 right-0 p-2 rounded-lg bg-surface-container border border-outline-variant shadow-xl grid grid-cols-4 gap-1"
             onClick={e => e.stopPropagation()}
           >
             {ENTITY_COLORS.map(c => (
               <button
                 key={c}
+                className="w-[22px] h-[22px] rounded-full cursor-pointer hover:scale-110 transition-transform"
                 style={{
-                  width: 22, height: 22, borderRadius: '50%', cursor: 'pointer',
                   background: c,
-                  border: entityData.color === c ? '2px solid white' : '2px solid transparent',
-                  transition: 'transform 0.1s',
+                  border: entityData.color === c ? '2px solid #c0c1ff' : '2px solid transparent',
                 }}
                 onClick={() => { updateEntity(entityData.id, { color: c }); setShowPalette(false); }}
               />
@@ -125,18 +107,18 @@ function EntityNode({ data }: NodeProps) {
 
         {/* PK Columns */}
         {pkCols.length > 0 && (
-          <div style={{ borderBottom: '1px solid #334155' }}>
+          <div className="border-b border-node-border py-1">
             {pkCols.map(col => (
-              <div key={col.id} style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '3px 10px', fontSize: 12, color: '#fbbf24',
-              }}>
-                <span style={{ fontFamily: 'monospace', fontWeight: 'bold', flexShrink: 0 }}>PK</span>
-                {col.isFK && <span style={{ fontFamily: 'monospace', color: '#f472b6', flexShrink: 0 }}>FK</span>}
-                <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {col.name}
-                </span>
-                <span style={{ marginLeft: 'auto', color: '#64748b', flexShrink: 0, fontSize: 11 }}>
+              <div key={col.id} className="px-3 py-1 flex items-center justify-between gap-2 hover:bg-surface-variant group">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="material-symbols-outlined text-[14px] text-pk-color shrink-0" title="Primary Key">key</span>
+                  {col.isFK && (
+                    <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
+                  )}
+                  <span className="font-mono text-[11px] font-bold text-on-surface truncate">{col.name}</span>
+                  {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
+                </div>
+                <span className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0">
                   {col.type}{col.size ? `(${col.size})` : ''}
                 </span>
               </div>
@@ -145,31 +127,28 @@ function EntityNode({ data }: NodeProps) {
         )}
 
         {/* Non-PK Columns */}
-        {nonPKCols.map(col => (
-          <div key={col.id} style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '3px 10px', fontSize: 12, color: '#cbd5e1',
-            borderBottom: '1px solid #1e293b',
-          }}>
-            {col.isFK
-              ? <span style={{ fontFamily: 'monospace', color: '#f472b6', flexShrink: 0 }}>FK</span>
-              : <span style={{ width: 20, flexShrink: 0 }} />
-            }
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {col.name}
-            </span>
-            {col.isNN && <span style={{ color: '#fb923c', flexShrink: 0 }}>*</span>}
-            <span style={{ marginLeft: 'auto', color: '#475569', flexShrink: 0, fontSize: 11 }}>
-              {col.type}{col.size ? `(${col.size})` : ''}
-            </span>
-          </div>
-        ))}
+        <div className="py-1">
+          {nonPKCols.map(col => (
+            <div key={col.id} className="px-3 py-1 flex items-center justify-between gap-2 hover:bg-surface-variant group">
+              <div className={`flex items-center gap-2 min-w-0 ${col.isFK ? '' : 'pl-5'}`}>
+                {col.isFK && (
+                  <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
+                )}
+                <span className="font-mono text-[11px] text-on-surface truncate">{col.name}</span>
+                {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
+              </div>
+              <span className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0">
+                {col.type}{col.size ? `(${col.size})` : ''}
+              </span>
+            </div>
+          ))}
 
-        {entityData.columns.length === 0 && (
-          <div style={{ padding: '6px 10px', fontSize: 12, color: '#475569', fontStyle: 'italic' }}>
-            컬럼 없음
-          </div>
-        )}
+          {entityData.columns.length === 0 && (
+            <div className="px-3 py-1.5 text-[11px] font-mono text-outline italic">
+              컬럼 없음
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,41 @@
 @import "tailwindcss";
 
+/* DataModeler Pro 디자인 토큰 (M3 다크 팔레트) */
+@theme {
+  --color-background: #131313;
+  --color-surface: #131313;
+  --color-surface-dim: #131313;
+  --color-surface-bright: #393939;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-surface-container-low: #1c1b1b;
+  --color-surface-container: #201f1f;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-highest: #353534;
+  --color-surface-variant: #353534;
+  --color-on-surface: #e5e2e1;
+  --color-on-surface-variant: #c7c4d7;
+  --color-outline: #908fa0;
+  --color-outline-variant: #464554;
+  --color-primary: #c0c1ff;
+  --color-on-primary: #1000a9;
+  --color-primary-container: #8083ff;
+  --color-on-primary-container: #0d0096;
+  --color-inverse-primary: #494bd6;
+  --color-secondary-container: #39485a;
+  --color-on-secondary-container: #a7b6cc;
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-node-header: #1e1e1e;
+  --color-node-bg: #121212;
+  --color-node-border: #334155;
+  --color-pk-color: #f59e0b;
+  --color-fk-color: #6366f1;
+  --color-input-bg: #0a0a0a;
+
+  --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -10,8 +46,8 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #0f172a;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: #131313;
+  font-family: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -22,42 +58,63 @@ html, body {
   flex-direction: column;
 }
 
+/* Material Symbols 기본 변형 설정 (클래스 자체는 Google Fonts CSS가 정의) */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+}
+
+/* 글래스 플로팅 툴바 */
+.glass-toolbar {
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* 커스텀 스크롤바 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #464554;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #908fa0;
+}
+
+/* 엔티티 노드 그림자/호버 */
+.entity-node {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+.entity-node:hover {
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.5), inset 0 0 8px rgba(99, 102, 241, 0.1);
+}
+
 /* React Flow 다크 테마 오버라이드 */
 .react-flow__background {
-  background: #0f172a !important;
-}
-
-.react-flow__controls {
-  background: #1e293b !important;
-  border: 1px solid #334155 !important;
-  border-radius: 8px !important;
-  overflow: hidden;
-}
-
-.react-flow__controls button {
-  background: #1e293b !important;
-  border-bottom: 1px solid #334155 !important;
-  color: #94a3b8 !important;
-  fill: #94a3b8 !important;
-}
-
-.react-flow__controls button:hover {
-  background: #334155 !important;
+  background: #121212 !important;
 }
 
 .react-flow__minimap {
-  background: #0f172a !important;
-  border: 1px solid #1e293b !important;
+  background: #0e0e0e !important;
+  border: 1px solid #464554 !important;
   border-radius: 8px !important;
 }
 
-/* 노드 선택 시 기본 outline 제거 */
+/* 노드 선택 시 기본 outline 제거, 디자인 시안의 primary ring 적용 */
 .react-flow__node {
   outline: none !important;
 }
 
-.react-flow__node.selected > div {
-  box-shadow: 0 0 0 2px #60a5fa;
+.react-flow__node.selected .entity-node {
+  border-color: #c0c1ff !important;
+  box-shadow: 0 0 0 1px rgba(192, 193, 255, 0.35), 0 0 15px rgba(192, 193, 255, 0.12);
 }
 
 /* 연결선 핸들 */

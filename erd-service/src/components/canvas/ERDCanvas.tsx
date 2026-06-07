@@ -2,11 +2,13 @@ import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
-  Controls,
   MiniMap,
+  Panel,
   ConnectionMode,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  useViewport,
   Connection,
   Node,
   Edge,
@@ -22,6 +24,44 @@ import RelTypeModal from '../panels/RelTypeModal';
 
 const nodeTypes = { entity: EntityNode };
 const edgeTypes = { relationship: RelationshipEdge };
+
+// 디자인 시안의 플로팅 글래스 줌 툴바 — React Flow 줌/핏 기능 연결
+function ZoomToolbar() {
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const { zoom } = useViewport();
+
+  return (
+    <Panel position="bottom-center">
+      <div className="glass-toolbar rounded-full border border-outline-variant p-1.5 flex items-center gap-1 shadow-lg mb-2">
+        <button
+          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer"
+          title="Zoom Out"
+          onClick={() => zoomOut()}
+        >
+          <span className="material-symbols-outlined text-[18px]">zoom_out</span>
+        </button>
+        <span className="font-mono text-[11px] text-on-surface-variant px-2 min-w-12 text-center select-none">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer"
+          title="Zoom In"
+          onClick={() => zoomIn()}
+        >
+          <span className="material-symbols-outlined text-[18px]">zoom_in</span>
+        </button>
+        <div className="w-px h-5 bg-outline-variant mx-1" />
+        <button
+          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer"
+          title="Fit View"
+          onClick={() => fitView({ padding: 0.3 })}
+        >
+          <span className="material-symbols-outlined text-[18px]">fit_screen</span>
+        </button>
+      </div>
+    </Panel>
+  );
+}
 
 export default function ERDCanvas() {
   const {
@@ -86,7 +126,7 @@ export default function ERDCanvas() {
     setPendingConn({ ...connection, source, target });
   }, []);
 
-  // 엔티티 클릭 → 우측 패널 오픈
+  // 엔티티 클릭 → 우측 패널에 표시
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     selectEntity(node.id);
   }, [selectEntity]);
@@ -98,7 +138,7 @@ export default function ERDCanvas() {
   };
 
   return (
-    <div style={{ flex: 1, position: 'relative', background: '#0f172a', overflow: 'hidden' }}>
+    <main className="flex-1 relative overflow-hidden" style={{ background: '#121212' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -115,39 +155,34 @@ export default function ERDCanvas() {
         fitViewOptions={{ padding: 0.3 }}
         minZoom={0.2}
         maxZoom={3}
-        style={{ width: '100%', height: '100%', background: '#0f172a' }}
+        style={{ width: '100%', height: '100%', background: '#121212' }}
         proOptions={{ hideAttribution: true }}
       >
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1}
-          color="#1e293b"
+          color="#334155"
         />
-        <Controls />
+        <ZoomToolbar />
         <MiniMap
           nodeColor={(node) => {
             const e = entities.find(e => e.id === node.id);
-            return e?.color ?? '#3b82f6';
+            return e?.color ?? '#8083ff';
           }}
-          style={{ background: '#0f172a', border: '1px solid #1e293b' }}
-          maskColor="rgba(15,23,42,0.7)"
+          style={{ background: '#0e0e0e', border: '1px solid #464554' }}
+          maskColor="rgba(14,14,14,0.7)"
         />
       </ReactFlow>
 
       {entities.length === 0 && (
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          pointerEvents: 'none',
-        }}>
-          <div style={{ fontSize: 48, color: '#334155', marginBottom: 16 }}>⊞</div>
-          <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>
-            상단의 <strong style={{ color: '#94a3b8' }}>엔티티 추가</strong> 버튼으로 시작하세요
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="material-symbols-outlined text-[48px] text-outline-variant mb-4">schema</span>
+          <p className="text-sm text-on-surface-variant m-0">
+            좌측의 <strong className="text-primary font-semibold">Add Entity</strong> 버튼으로 시작하세요
           </p>
-          <p style={{ color: '#475569', fontSize: 12, marginTop: 6 }}>
-            엔티티에 마우스를 올리면 나타나는 파란 핸들을 드래그해 관계선을 연결할 수 있습니다
+          <p className="text-xs text-outline mt-1.5">
+            엔티티에 마우스를 올리면 나타나는 핸들을 드래그해 관계선을 연결할 수 있습니다
           </p>
         </div>
       )}
@@ -158,6 +193,6 @@ export default function ERDCanvas() {
           onCancel={() => setPendingConn(null)}
         />
       )}
-    </div>
+    </main>
   );
 }

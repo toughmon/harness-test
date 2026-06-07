@@ -2,8 +2,10 @@ import { useRef } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { saveERD, loadERD } from '../../utils/fileIO';
 
+// 디자인 시안의 TopNavBar — File/Edit/View/Export 메뉴와 알림/설정/아바타는
+// 현재 기능이 없는 비활성 placeholder, Save/불러오기는 기존 기능 연결
 export default function Toolbar() {
-  const { entities, relationships, nodePositions, addEntity, loadData } = useERDStore();
+  const { entities, relationships, nodePositions, loadData } = useERDStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
@@ -31,63 +33,60 @@ export default function Toolbar() {
   };
 
   return (
-    <div
-      className="flex items-center gap-3 px-4 py-2 shrink-0"
-      style={{ background: '#0f172a', borderBottom: '1px solid #1e293b', height: 48 }}
-    >
-      {/* Logo */}
-      <span className="text-blue-400 font-bold text-base mr-2">ERD Editor</span>
-
-      <div className="w-px h-5 bg-slate-700" />
-
-      {/* Add Entity */}
-      <button
-        className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-600 text-white transition-colors"
-        onClick={addEntity}
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-          <line x1="7" y1="4" x2="7" y2="10" stroke="currentColor" strokeWidth="1.5"/>
-          <line x1="4" y1="7" x2="10" y2="7" stroke="currentColor" strokeWidth="1.5"/>
-        </svg>
-        엔티티 추가
-      </button>
-
-      <div className="flex-1" />
-
-      {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-slate-500">
-        <LegendItem label="식별" solid uid />
-        <LegendItem label="비식별" dashed />
-        <LegendItem label="선택" dotted />
+    <header className="flex justify-between items-center h-12 px-8 w-full z-50 shrink-0 bg-surface border-b border-outline-variant">
+      <div className="flex items-center gap-4">
+        <div className="text-[22px] leading-8 tracking-tight font-black text-primary">DataModeler Pro</div>
+        <nav className="hidden md:flex items-center gap-4 ml-8 h-full text-sm">
+          <span className="text-on-surface-variant hover:bg-surface-variant transition-colors cursor-default px-3 py-1 rounded">File</span>
+          <span className="text-on-surface-variant hover:bg-surface-variant transition-colors cursor-default px-3 py-1 rounded">Edit</span>
+          <span className="text-primary border-b-2 border-primary pb-1 font-semibold">View</span>
+          <span className="text-on-surface-variant hover:bg-surface-variant transition-colors cursor-default px-3 py-1 rounded">Export</span>
+        </nav>
       </div>
 
-      <div className="w-px h-5 bg-slate-700" />
+      <div className="flex items-center gap-2">
+        {/* Barker 표기법 범례 */}
+        <div className="hidden lg:flex items-center gap-4 text-[11px] text-on-surface-variant mr-3">
+          <LegendItem label="식별" solid uid />
+          <LegendItem label="비식별" dashed />
+          <LegendItem label="선택" dotted />
+        </div>
 
-      {/* Save */}
-      <button
-        className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
-        onClick={handleSave}
-        disabled={entities.length === 0}
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M2 2h8l2 2v8H2V2z" stroke="currentColor" strokeWidth="1.5"/>
-          <rect x="4" y="8" width="6" height="4" stroke="currentColor" strokeWidth="1"/>
-          <rect x="4" y="2" width="5" height="3" stroke="currentColor" strokeWidth="1"/>
-        </svg>
-        저장
-      </button>
+        {/* Save */}
+        <button
+          className="bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary px-4 py-1.5 rounded transition-colors text-xs font-mono font-semibold cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-default"
+          onClick={handleSave}
+          disabled={entities.length === 0}
+        >
+          Save
+        </button>
 
-      {/* Load */}
-      <button
-        className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M1 3h4l1 2h7v6H1V3z" stroke="currentColor" strokeWidth="1.5"/>
-        </svg>
-        불러오기
-      </button>
+        {/* 불러오기 */}
+        <button
+          className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer"
+          onClick={() => fileInputRef.current?.click()}
+          title="불러오기 (JSON)"
+          aria-label="Open file"
+        >
+          <span className="material-symbols-outlined text-[20px]">folder_open</span>
+        </button>
+
+        <div className="flex items-center gap-2 border-l border-outline-variant pl-4 ml-2">
+          <button aria-label="Notifications" className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-default" title="알림 (준비 중)">
+            <span className="material-symbols-outlined text-[20px]">notifications</span>
+          </button>
+          <button aria-label="Settings" className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-default" title="설정 (준비 중)">
+            <span className="material-symbols-outlined text-[20px]">settings</span>
+          </button>
+          <div
+            className="w-8 h-8 rounded-full border border-outline-variant ml-2 bg-secondary-container text-on-secondary-container flex items-center justify-center"
+            title="User"
+          >
+            <span className="material-symbols-outlined text-[18px]">person</span>
+          </div>
+        </div>
+      </div>
+
       <input
         ref={fileInputRef}
         type="file"
@@ -95,7 +94,7 @@ export default function Toolbar() {
         className="hidden"
         onChange={handleLoad}
       />
-    </div>
+    </header>
   );
 }
 
@@ -103,21 +102,21 @@ function LegendItem({ label, solid, dashed, dotted, uid }: {
   label: string; solid?: boolean; dashed?: boolean; dotted?: boolean; uid?: boolean
 }) {
   // 바커: 식별/비식별 = 왼쪽(부모) 절반 점선 + 오른쪽(자식) 절반 실선, 선택 = 전체 점선
+  void dotted;
   const halfDashed = solid || dashed;
+  const c = '#908fa0';
   return (
     <div className="flex items-center gap-1.5">
       <svg width="28" height="10" viewBox="0 0 28 10">
         {halfDashed ? (
           <>
-            <line x1="2" y1="5" x2="14" y2="5" stroke="#64748b" strokeWidth="1.5"
-              strokeDasharray="3 2" />
-            <line x1="14" y1="5" x2="26" y2="5" stroke="#64748b" strokeWidth="1.5" />
+            <line x1="2" y1="5" x2="14" y2="5" stroke={c} strokeWidth="1.5" strokeDasharray="3 2" />
+            <line x1="14" y1="5" x2="26" y2="5" stroke={c} strokeWidth="1.5" />
           </>
         ) : (
-          <line x1="2" y1="5" x2="26" y2="5" stroke="#64748b" strokeWidth="1.5"
-            strokeDasharray="3 2" />
+          <line x1="2" y1="5" x2="26" y2="5" stroke={c} strokeWidth="1.5" strokeDasharray="3 2" />
         )}
-        {uid && <line x1="22" y1="1" x2="22" y2="9" stroke="#64748b" strokeWidth="1.5" />}
+        {uid && <line x1="22" y1="1" x2="22" y2="9" stroke={c} strokeWidth="1.5" />}
       </svg>
       <span>{label}</span>
     </div>
