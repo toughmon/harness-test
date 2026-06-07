@@ -9,10 +9,15 @@ export default function EntityEditPanel() {
   const {
     entities, selectedEntityId, selectEntity,
     updateEntity, deleteEntity,
-    addColumn, updateColumn, deleteColumn,
+    addColumn, updateColumn, deleteColumn, moveColumn,
   } = useERDStore();
 
   const entity = entities.find(e => e.id === selectedEntityId);
+
+  // 컬럼 드래그 순서 변경 상태
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
+  const resetDrag = () => { setDragIdx(null); setOverIdx(null); };
 
   return (
     <aside className="w-[320px] shrink-0 bg-surface-container-low border-l border-outline-variant flex flex-col overflow-hidden">
@@ -127,12 +132,21 @@ export default function EntityEditPanel() {
             </div>
 
             <div className="flex flex-col gap-2">
-              {entity.columns.map(col => (
+              {entity.columns.map((col, idx) => (
                 <ColumnRow
                   key={col.id}
                   col={col}
                   onUpdate={(updates) => updateColumn(entity.id, col.id, updates)}
                   onDelete={() => deleteColumn(entity.id, col.id)}
+                  dragging={dragIdx === idx}
+                  dragOver={overIdx === idx && dragIdx !== null && dragIdx !== idx}
+                  onDragStart={() => setDragIdx(idx)}
+                  onDragEnd={resetDrag}
+                  onDragOver={() => { if (dragIdx !== null) setOverIdx(idx); }}
+                  onDrop={() => {
+                    if (dragIdx !== null && dragIdx !== idx) moveColumn(entity.id, dragIdx, idx);
+                    resetDrag();
+                  }}
                 />
               ))}
             </div>
@@ -147,9 +161,15 @@ interface ColRowProps {
   col: Column;
   onUpdate: (updates: Partial<Column>) => void;
   onDelete: () => void;
+  dragging: boolean;
+  dragOver: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDragOver: () => void;
+  onDrop: () => void;
 }
 
-function ColumnRow({ col, onUpdate, onDelete }: ColRowProps) {
+function ColumnRow({ col, onUpdate, onDelete, dragging, dragOver, onDragStart, onDragEnd, onDragOver, onDrop }: ColRowProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -158,10 +178,28 @@ function ColumnRow({ col, onUpdate, onDelete }: ColRowProps) {
         open
           ? 'bg-surface-variant border border-outline-variant'
           : 'bg-surface-container border border-transparent hover:border-outline-variant'
-      }`}
+      } ${dragging ? 'opacity-40' : ''} ${dragOver ? 'ring-1 ring-primary border-primary' : ''}`}
+      onDragOver={e => { e.preventDefault(); onDragOver(); }}
+      onDrop={e => { e.preventDefault(); onDrop(); }}
     >
       {/* Row summary */}
       <div className="flex items-center justify-between cursor-pointer" onClick={() => setOpen(v => !v)}>
+        {/* 드래그 핸들 — 순서 변경 */}
+        <span
+          className="material-symbols-outlined text-[16px] text-outline-variant hover:text-on-surface cursor-grab active:cursor-grabbing shrink-0 mr-1 opacity-40 group-hover:opacity-100 transition-opacity"
+          title="드래그하여 순서 변경"
+          draggable
+          data-testid={`col-drag-${col.name}`}
+          onClick={e => e.stopPropagation()}
+          onDragStart={e => {
+            e.dataTransfer.setData('text/plain', col.id); // Firefox 호환
+            e.dataTransfer.effectAllowed = 'move';
+            onDragStart();
+          }}
+          onDragEnd={onDragEnd}
+        >
+          drag_indicator
+        </span>
         <div className={`flex items-center gap-2 w-full min-w-0 ${col.isPK || col.isFK ? '' : 'pl-6'}`}>
           {col.isPK && (
             <span className="material-symbols-outlined text-[16px] text-pk-color shrink-0" title="Primary Key">key</span>
