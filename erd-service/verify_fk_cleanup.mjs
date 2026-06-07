@@ -103,6 +103,16 @@ try {
   check('관계 삭제 → 노드 2개 유지', (await nodeCount()) === 2);
   check('관계 삭제 → 하위 FK 컬럼 제거', !(await childText()).includes('entity1_id'));
 
+  // ── 시나리오 4: 비식별 관계 — FK 생성(식별자 미포함) 후 관계 삭제 시 FK 제거 ──
+  const ok2 = await drawRelationship(0, 1, '1:M 비상속+비식별');
+  const pkIcons = await page.locator('.react-flow__node').last().locator('[title="Primary Key"]').count();
+  check('비식별 관계 → FK 생성 (식별자 미포함)', ok2 && (await childText()).includes('entity1_id') && pkIcons === 1);
+  await page.locator('.react-flow__edge').first().click({ force: true });
+  await page.waitForTimeout(400);
+  await page.click('button[title="관계 삭제"]');
+  await page.waitForTimeout(500);
+  check('비식별 관계 삭제 → 하위 FK 컬럼 제거', !(await childText()).includes('entity1_id'));
+
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_fk_cleanup.png' });
 
   console.log(fail === 0 ? '\nALL PASS' : `\n${fail} FAILED`);

@@ -60,15 +60,15 @@ export default function RelTypeModal({ onSelect, onCancel, title = '관계 종�
 function getTypeDesc(type: RelationshipType): string {
   switch (type) {
     case 'ONE_TO_MANY_IDENTIFYING':
-      return '하위 엔티티 PK에 FK 자동 추가 · 실선';
+      return 'FK 자동 추가 — 하위 PK(식별자)에 포함 · 실선';
     case 'ONE_TO_MANY_NON_IDENTIFYING':
-      return '하위 엔티티에 FK 참조만 표시 · 점선';
+      return 'FK 자동 추가 — 식별자 미포함 · 점선';
     case 'ONE_TO_MANY_OPTIONAL':
-      return '선택적 관계 · 점선 (선택)';
+      return 'FK 자동 추가 — 식별자 미포함, NULL 허용 · 점선';
     case 'ONE_TO_ONE_IDENTIFYING':
-      return '1:1 식별 관계 · 실선';
+      return '1:1 식별 — FK가 식별자에 포함 · 실선';
     case 'ONE_TO_ONE_NON_IDENTIFYING':
-      return '1:1 비식별 관계 · 점선';
+      return '1:1 비식별 — FK 식별자 미포함 · 점선';
     default:
       return '';
   }

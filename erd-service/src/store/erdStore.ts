@@ -20,8 +20,20 @@ function isIdentifyingType(type: RelationshipType): boolean {
   return type === 'ONE_TO_MANY_IDENTIFYING' || type === 'ONE_TO_ONE_IDENTIFYING';
 }
 
-// 식별 관계용 FK 컬럼 생성 (상위 엔티티 PK → 하위 엔티티 PK+FK)
-function buildFKColumns(sourceEntity: Entity, sourceId: string): Column[] {
+// 관계 타입별 FK 컬럼 플래그 — 식별: PK 포함, 비식별: 일반 FK, 선택: NULL 허용
+function fkFlagsFor(type: RelationshipType): { isPK: boolean; isNN: boolean } {
+  return {
+    isPK: isIdentifyingType(type),
+    isNN: type !== 'ONE_TO_MANY_OPTIONAL',
+  };
+}
+
+// FK 컬럼 생성 (상위 엔티티 PK → 하위 엔티티 FK, 플래그는 관계 타입에 따름)
+function buildFKColumns(
+  sourceEntity: Entity,
+  sourceId: string,
+  flags: { isPK: boolean; isNN: boolean }
+): Column[] {
   return sourceEntity.columns.filter(c => c.isPK).map(pk => ({
     id: genId(),
     name: `${sourceEntity.name.toLowerCase()}_${pk.name}`,
@@ -31,9 +43,9 @@ function buildFKColumns(sourceEntity: Entity, sourceId: string): Column[] {
       : '',
     type: pk.type as ColumnType,
     size: pk.size,
-    isPK: true,
+    isPK: flags.isPK,
     isFK: true,
-    isNN: true,
+    isNN: flags.isNN,
     isUnique: false,
     refEntityId: sourceId,
     refColumnId: pk.id,
@@ -260,22 +272,17 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
       pushHistory('addRelationship');
 
-      if (isIdentifyingType(type)) {
-        const newFKColumns = buildFKColumns(sourceEntity, sourceId);
-        set(s => ({
-          entities: s.entities.map(e =>
-            e.id === targetId ? { ...e, columns: [...e.columns, ...newFKColumns] } : e
-          ),
-          relationships: [...s.relationships, { id: genId(), sourceId, targetId, type }],
-        }));
-      } else {
-        set(s => ({
-          relationships: [...s.relationships, { id: genId(), sourceId, targetId, type }],
-        }));
-      }
+      // 모든 관계 타입에서 FK 생성 — 식별이면 PK 포함, 비식별/선택이면 일반 FK
+      const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsFor(type));
+      set(s => ({
+        entities: s.entities.map(e =>
+          e.id === targetId ? { ...e, columns: [...e.columns, ...newFKColumns] } : e
+        ),
+        relationships: [...s.relationships, { id: genId(), sourceId, targetId, type }],
+      }));
     },
 
-    // 관계 타입 변경 — 식별↔비식별 전환 시 자동 FK 컬럼도 추가/제거
+    // 관계 타입 변경 — FK 컬럼은 유지하고 플래그만 전환 (식별: PK 승격, 비식별: PK 해제, 선택: NULL 허용)
     updateRelationshipType: (id, newType) => {
       const s = get();
       const rel = s.relationships.find(r => r.id === id);
@@ -285,24 +292,24 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
       pushHistory(`relType:${id}`);
 
-      const wasIdent = isIdentifyingType(rel.type);
-      const isIdent = isIdentifyingType(newType);
-
-      let entities = s.entities;
-      if (isIdent && !wasIdent) {
-        // 비식별 → 식별: FK 컬럼 자동 추가
-        const newFKColumns = buildFKColumns(sourceEntity, rel.sourceId);
-        entities = entities.map(e =>
-          e.id === rel.targetId ? { ...e, columns: [...e.columns, ...newFKColumns] } : e
-        );
-      } else if (!isIdent && wasIdent) {
-        // 식별 → 비식별: 이 관계로 자동 추가된 FK 컬럼 제거 (refEntityId 기준)
-        entities = entities.map(e =>
-          e.id === rel.targetId
-            ? { ...e, columns: e.columns.filter(c => !(c.isFK && c.refEntityId === rel.sourceId)) }
-            : e
-        );
-      }
+      const flags = fkFlagsFor(newType);
+      const entities = s.entities.map(e => {
+        if (e.id !== rel.targetId) return e;
+        const hasAutoFK = e.columns.some(c => c.isFK && c.refEntityId === rel.sourceId);
+        if (hasAutoFK) {
+          // 기존 FK 플래그만 갱신 — 사용자가 수정한 컬럼명/논리명은 보존
+          return {
+            ...e,
+            columns: e.columns.map(c =>
+              c.isFK && c.refEntityId === rel.sourceId
+                ? { ...c, isPK: flags.isPK, isNN: flags.isNN }
+                : c
+            ),
+          };
+        }
+        // FK가 없는 기존 데이터(과거 비식별로 생성) — 새로 생성
+        return { ...e, columns: [...e.columns, ...buildFKColumns(sourceEntity, rel.sourceId, flags)] };
+      });
 
       set({
         entities,
@@ -315,15 +322,12 @@ export const useERDStore = create<ERDStore>((set, get) => {
       const rel = s.relationships.find(r => r.id === id);
       if (!rel) return;
       pushHistory('deleteRelationship');
-      // 식별 관계 삭제 시 이 관계로 자동 추가됐던 FK 컬럼도 제거 (타입 변경과 동일 규칙)
-      let entities = s.entities;
-      if (isIdentifyingType(rel.type)) {
-        entities = entities.map(e =>
-          e.id === rel.targetId
-            ? { ...e, columns: e.columns.filter(c => !(c.isFK && c.refEntityId === rel.sourceId)) }
-            : e
-        );
-      }
+      // 관계 삭제 시 이 관계로 자동 추가됐던 FK 컬럼도 제거 (모든 타입이 FK를 생성하므로)
+      const entities = s.entities.map(e =>
+        e.id === rel.targetId
+          ? { ...e, columns: e.columns.filter(c => !(c.isFK && c.refEntityId === rel.sourceId)) }
+          : e
+      );
       set({ entities, relationships: s.relationships.filter(r => r.id !== id) });
     },
 

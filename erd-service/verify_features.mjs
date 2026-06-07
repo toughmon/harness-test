@@ -97,7 +97,9 @@ try {
   const relOk = await drawRelationship(0, 1, '1:M 비상속+비식별');
   check('관계 생성 (비식별)', relOk && await edgeCount() === 1);
   let n2 = await page.locator('.react-flow__node').nth(1).innerText();
-  check('비식별 → FK 없음', !n2.includes('_id'));
+  // 비식별도 FK는 생성되되 PK(식별자)에는 미포함 — PK key 아이콘은 id 1개뿐
+  let pkIcons = await page.locator('.react-flow__node').nth(1).locator('[title="Primary Key"]').count();
+  check('비식별 → FK 생성 (식별자 미포함)', n2.includes('entity1_id') && pkIcons === 1);
 
   // 기본 배치는 노드 간격이 좁아 엣지 중간점이 핸들에 가려짐 → 자동 정렬로 간격 확보
   await page.click('button[title="자동 정렬"]');
@@ -118,16 +120,20 @@ try {
   await page.locator('button').filter({ hasText: '1:M 상속+식별자' }).first().click();
   await page.waitForTimeout(500);
   n2 = await page.locator('.react-flow__node').nth(1).innerText();
-  check('비식별→식별 전환 시 FK 자동 추가', n2.includes('entity1_id'));
+  pkIcons = await page.locator('.react-flow__node').nth(1).locator('[title="Primary Key"]').count();
+  // FK가 PK로 승격 (중복 생성 없이 key 아이콘 id+fk 2개)
+  const fkCount = (n2.match(/entity1_id/g) ?? []).length;
+  check('비식별→식별 전환 시 FK가 PK로 승격', fkCount === 1 && pkIcons === 2);
 
-  // 다시 비식별로 → FK 제거
+  // 다시 비식별로 → FK 유지 + PK 해제
   await clickEdge(0);
   await page.locator('button[title="관계 종류 변경"]').click();
   await page.waitForTimeout(400);
   await page.locator('button').filter({ hasText: '1:M 비상속+비식별자' }).first().click();
   await page.waitForTimeout(500);
   n2 = await page.locator('.react-flow__node').nth(1).innerText();
-  check('식별→비식별 전환 시 FK 자동 제거', !n2.includes('entity1_id'));
+  pkIcons = await page.locator('.react-flow__node').nth(1).locator('[title="Primary Key"]').count();
+  check('식별→비식별 전환 시 FK 유지 + PK 해제', n2.includes('entity1_id') && pkIcons === 1);
 
   // ───── 3. 자동 정렬 ─────
   await page.click('button:has-text("Add Entity")');
