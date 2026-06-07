@@ -23,16 +23,17 @@ import RelationshipEdge from '../edges/RelationshipEdge';
 import RelTypeModal from '../panels/RelTypeModal';
 import { computeAutoLayout } from '../../utils/autoLayout';
 import { exportDiagramPng } from '../../utils/exportImage';
+import { exportDiagramSql } from '../../utils/exportSql';
 import { alertDialog } from '../../store/dialogStore';
 
 const nodeTypes = { entity: EntityNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
-// 디자인 시안의 플로팅 글래스 줌 툴바 — 줌/핏 + 자동 정렬 + PNG 내보내기
+// 디자인 시안의 플로팅 글래스 줌 툴바 — 줌/핏 + 자동 정렬 + PNG/SQL 내보내기
 function ZoomToolbar() {
   const { zoomIn, zoomOut, fitView, getNodes } = useReactFlow();
   const { zoom } = useViewport();
-  const { relationships, setAllPositions } = useERDStore();
+  const { entities, relationships, setAllPositions } = useERDStore();
 
   const handleAutoLayout = () => {
     const nodes = getNodes();
@@ -47,6 +48,14 @@ function ZoomToolbar() {
       await exportDiagramPng(getNodes());
     } catch (err) {
       alertDialog((err as Error).message, 'PNG 내보내기 실패');
+    }
+  };
+
+  const handleExportSql = () => {
+    try {
+      exportDiagramSql(entities);
+    } catch (err) {
+      alertDialog((err as Error).message, 'SQL 내보내기 실패');
     }
   };
 
@@ -74,6 +83,9 @@ function ZoomToolbar() {
         </button>
         <button className={btn} title="PNG 내보내기" onClick={handleExportPng}>
           <span className="material-symbols-outlined text-[18px]">photo_camera</span>
+        </button>
+        <button className={btn} title="SQL 내보내기 (MySQL)" onClick={handleExportSql}>
+          <span className="material-symbols-outlined text-[18px]">database</span>
         </button>
       </div>
     </Panel>
