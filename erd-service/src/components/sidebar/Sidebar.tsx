@@ -58,6 +58,11 @@ export default function Sidebar() {
                   table_rows
                 </span>
                 <span className="truncate">{e.name}</span>
+                {e.logicalName && (
+                  <span className="font-sans text-[10px] text-on-surface-variant truncate shrink-0 max-w-20">
+                    {e.logicalName}
+                  </span>
+                )}
               </button>
             );
           })}

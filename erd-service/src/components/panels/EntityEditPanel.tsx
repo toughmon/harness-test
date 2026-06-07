@@ -54,12 +54,33 @@ export default function EntityEditPanel() {
           {/* Table general info */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Table Name</label>
+              <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Table Name (물리명)</label>
               <input
                 className="bg-input-bg border border-outline-variant rounded px-3 py-2 text-on-surface font-mono text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                 type="text"
                 value={entity.name}
                 onChange={e => updateEntity(entity.id, { name: e.target.value })}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Logical Name (논리명)</label>
+              <input
+                className="bg-input-bg border border-outline-variant rounded px-3 py-2 text-on-surface font-sans text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                type="text"
+                placeholder="한글 명칭 (예: 사용자)"
+                value={entity.logicalName ?? ''}
+                onChange={e => updateEntity(entity.id, { logicalName: e.target.value })}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Description / Notes</label>
+              <textarea
+                className="bg-input-bg border border-outline-variant rounded px-3 py-2 text-on-surface font-sans text-xs h-20 resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all custom-scrollbar"
+                placeholder="테이블 설명을 입력하세요..."
+                value={entity.description ?? ''}
+                onChange={e => updateEntity(entity.id, { description: e.target.value })}
               />
             </div>
 
@@ -139,7 +160,12 @@ function ColumnRow({ col, onUpdate, onDelete }: ColRowProps) {
           {!col.isPK && col.isFK && (
             <span className="material-symbols-outlined text-[16px] text-fk-color shrink-0" title="Foreign Key">link</span>
           )}
-          <span className="flex-1 text-on-surface font-mono text-xs truncate">{col.name || '(unnamed)'}</span>
+          <span className="flex-1 flex items-baseline gap-1.5 min-w-0">
+            <span className="text-on-surface font-mono text-xs truncate">{col.name || '(unnamed)'}</span>
+            {col.logicalName && (
+              <span className="text-on-surface-variant font-sans text-[10px] truncate shrink-0 max-w-20">{col.logicalName}</span>
+            )}
+          </span>
           <span className="text-on-surface-variant font-mono text-[11px] shrink-0">
             {col.type}{col.size ? `(${col.size})` : ''}
           </span>
@@ -175,10 +201,20 @@ function ColumnRow({ col, onUpdate, onDelete }: ColRowProps) {
             <input
               className="flex-1 min-w-0 bg-input-bg border border-outline-variant rounded px-2 py-1.5 text-on-surface font-mono text-xs focus:outline-none focus:border-primary"
               type="text"
+              placeholder="물리명"
               value={col.name}
               onChange={e => onUpdate({ name: e.target.value })}
             />
           </div>
+
+          {/* 논리명 (한글 명칭) */}
+          <input
+            className="w-full bg-input-bg border border-outline-variant rounded px-2 py-1.5 text-on-surface font-sans text-xs focus:outline-none focus:border-primary"
+            type="text"
+            placeholder="논리명 (한글 명칭)"
+            value={col.logicalName ?? ''}
+            onChange={e => onUpdate({ logicalName: e.target.value })}
+          />
 
           {/* Type + Size */}
           <div className="flex items-center gap-2 w-full">

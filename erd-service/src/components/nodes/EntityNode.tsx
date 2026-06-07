@@ -30,7 +30,7 @@ function EntityNode({ data }: NodeProps) {
 
   return (
     /* Outer wrapper: NO overflow-hidden — handles must not be clipped */
-    <div style={{ position: 'relative', minWidth: 220 }}>
+    <div style={{ position: 'relative', minWidth: 250 }}>
 
       {/* Connection handles — outside the overflow-hidden content */}
       <Handle type="source" position={Position.Top}    id="top"      style={handleStyle} />
@@ -71,8 +71,15 @@ function EntityNode({ data }: NodeProps) {
                 onClick={e => e.stopPropagation()}
               />
             ) : (
-              <span className="font-mono text-xs font-bold text-on-surface select-none truncate">
-                {entityData.name}
+              <span className="flex items-baseline gap-1.5 min-w-0 select-none">
+                <span className="font-mono text-xs font-bold text-on-surface truncate">
+                  {entityData.name}
+                </span>
+                {entityData.logicalName && (
+                  <span className="font-sans text-[11px] text-on-surface-variant truncate shrink-0 max-w-28">
+                    {entityData.logicalName}
+                  </span>
+                )}
               </span>
             )}
           </div>
@@ -116,6 +123,9 @@ function EntityNode({ data }: NodeProps) {
                     <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
                   )}
                   <span className="font-mono text-[11px] font-bold text-on-surface truncate">{col.name}</span>
+                  {col.logicalName && (
+                    <span className="font-sans text-[10px] text-on-surface-variant truncate shrink-0 max-w-24">{col.logicalName}</span>
+                  )}
                   {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
                 </div>
                 <span className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0">
@@ -135,6 +145,9 @@ function EntityNode({ data }: NodeProps) {
                   <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
                 )}
                 <span className="font-mono text-[11px] text-on-surface truncate">{col.name}</span>
+                {col.logicalName && (
+                  <span className="font-sans text-[10px] text-on-surface-variant truncate shrink-0 max-w-24">{col.logicalName}</span>
+                )}
                 {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
               </div>
               <span className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0">

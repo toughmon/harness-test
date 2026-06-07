@@ -8,7 +8,8 @@ export type ColumnType = typeof COLUMN_TYPES[number];
 
 export interface Column {
   id: string;
-  name: string;
+  name: string;           // 물리명 (영문)
+  logicalName?: string;   // 논리명 (한글 명칭)
   type: ColumnType;
   size: string;
   isPK: boolean;
@@ -21,7 +22,9 @@ export interface Column {
 
 export interface Entity {
   id: string;
-  name: string;
+  name: string;           // 물리명 (영문 테이블명)
+  logicalName?: string;   // 논리명 (한글 명칭)
+  description?: string;   // 설명/메모
   color: string;
   columns: Column[];
 }
