@@ -191,7 +191,13 @@ export const useERDStore = create<ERDStore>((set, get) => {
     deleteEntity: (id) => {
       pushHistory('deleteEntity');
       set(s => ({
-        entities: s.entities.filter(e => e.id !== id),
+        // 엔티티 삭제 + 다른 엔티티에 남은, 삭제 대상을 참조하는 FK 컬럼도 함께 제거
+        entities: s.entities
+          .filter(e => e.id !== id)
+          .map(e => {
+            const columns = e.columns.filter(c => !(c.isFK && c.refEntityId === id));
+            return columns.length === e.columns.length ? e : { ...e, columns };
+          }),
         relationships: s.relationships.filter(r => r.sourceId !== id && r.targetId !== id),
         selectedEntityId: s.selectedEntityId === id ? null : s.selectedEntityId,
       }));
@@ -305,8 +311,20 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     deleteRelationship: (id) => {
+      const s = get();
+      const rel = s.relationships.find(r => r.id === id);
+      if (!rel) return;
       pushHistory('deleteRelationship');
-      set(s => ({ relationships: s.relationships.filter(r => r.id !== id) }));
+      // 식별 관계 삭제 시 이 관계로 자동 추가됐던 FK 컬럼도 제거 (타입 변경과 동일 규칙)
+      let entities = s.entities;
+      if (isIdentifyingType(rel.type)) {
+        entities = entities.map(e =>
+          e.id === rel.targetId
+            ? { ...e, columns: e.columns.filter(c => !(c.isFK && c.refEntityId === rel.sourceId)) }
+            : e
+        );
+      }
+      set({ entities, relationships: s.relationships.filter(r => r.id !== id) });
     },
 
     setEditingRel: (id) => set({ editingRelId: id }),
