@@ -1,12 +1,14 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import {
   EdgeProps,
   getSmoothStepPath,
   EdgeLabelRenderer,
   Position,
+  useNodes,
 } from '@xyflow/react';
 import { Relationship, RelationshipType } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
+import { computeEdgeEndpoints, Rect } from '../../utils/edgeConnection';
 
 const EDGE_COLOR = '#64748b';
 const M = 14;  // crow's foot size
@@ -108,11 +110,40 @@ function RelationshipEdge({
   selected,
 }: EdgeProps) {
   const rel = data as unknown as Relationship;
-  const { deleteRelationship } = useERDStore();
+  const { deleteRelationship, relationships } = useERDStore();
+
+  // 노드 위치/크기를 직접 읽어 연결점을 동적으로 계산
+  // — 같은 면에 여러 관계가 붙으면 연결점을 분산시켜 선이 겹치지 않게 한다
+  const nodes = useNodes();
+  const rects = useMemo(() => {
+    const m: Record<string, Rect> = {};
+    for (const n of nodes) {
+      m[n.id] = {
+        x: n.position.x,
+        y: n.position.y,
+        w: n.measured?.width ?? 180,
+        h: n.measured?.height ?? 80,
+      };
+    }
+    return m;
+  }, [nodes]);
+
+  const geo = useMemo(
+    () => computeEdgeEndpoints(id, relationships, rects),
+    [id, relationships, rects],
+  );
+
+  // 계산 불가 시(노드 측정 전 등) React Flow가 넘겨준 기본 좌표로 폴백
+  const sX = geo?.sourceX ?? sourceX;
+  const sY = geo?.sourceY ?? sourceY;
+  const tX = geo?.targetX ?? targetX;
+  const tY = geo?.targetY ?? targetY;
+  const sPos = geo?.sourcePosition ?? sourcePosition;
+  const tPos = geo?.targetPosition ?? targetPosition;
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX, sourceY, sourcePosition,
-    targetX, targetY, targetPosition,
+    sourceX: sX, sourceY: sY, sourcePosition: sPos,
+    targetX: tX, targetY: tY, targetPosition: tPos,
     borderRadius: 8,
     offset: 36, // 핸들 앞 직선 구간 확보 — 까마귀발/uid bar가 꺾임과 겹치지 않도록
   });
@@ -165,14 +196,14 @@ function RelationshipEdge({
       {/* Target marker (many or one) */}
       {isOneToMany ? (
         <CrowsFoot
-          x={targetX} y={targetY}
-          pos={targetPosition}
+          x={tX} y={tY}
+          pos={tPos}
           isIdentifying={isIdentifying}
         />
       ) : (
         <OneTargetMarker
-          x={targetX} y={targetY}
-          pos={targetPosition}
+          x={tX} y={tY}
+          pos={tPos}
           isIdentifying={isIdentifying}
         />
       )}
