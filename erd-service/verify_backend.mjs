@@ -9,12 +9,8 @@ const page = await ctx.newPage();
 await page.setViewportSize({ width: 1600, height: 900 });
 page.on('pageerror', e => console.log('PAGE ERROR:', e.message));
 page.on('console', m => { if (m.type() === 'error') console.log('CONSOLE ERROR:', m.text()); });
-// confirm/prompt 자동 응답 (다이어그램 이름 입력, 전환 경고)
-let promptValue = 'My First ERD';
-page.on('dialog', d => {
-  if (d.type() === 'prompt') d.accept(promptValue);
-  else d.accept();
-});
+// 네이티브 다이얼로그는 더 이상 사용하지 않음 — 커스텀 모달([data-testid="app-dialog"])로 대체됨.
+// 만약 네이티브 다이얼로그가 뜨면 Playwright 기본 동작(dismiss)으로 테스트가 실패하게 둔다.
 
 let fail = 0;
 function check(name, ok) {
@@ -36,6 +32,14 @@ try {
   await page.waitForTimeout(400);
   check('익명: 엔티티 추가 동작(기존 기능)', await page.locator('.react-flow__node').count() === 1);
 
+  // ── 1-1. 엔티티 삭제 → 확인 모달 (취소 시 유지) ──
+  await page.click('button[title="엔티티 삭제"]');
+  await page.waitForTimeout(400);
+  check('엔티티 삭제 확인 모달 노출', await page.locator('[data-testid="app-dialog"]').count() === 1);
+  await page.click('[data-testid="dialog-cancel"]');
+  await page.waitForTimeout(300);
+  check('엔티티 삭제 취소 → 노드 유지', await page.locator('.react-flow__node').count() === 1);
+
   // ── 2. 가입 ──
   await page.click('button[aria-label="User"]');
   await page.waitForTimeout(300);
@@ -47,8 +51,12 @@ try {
   check('가입 후 authed: DB 저장 버튼 노출', await page.locator('button[aria-label="DB Save"]').count() === 1);
   check('가입 후 authed: 내 다이어그램 섹션 노출', await page.locator('[data-testid="my-diagrams"]').count() === 1);
 
-  // ── 3. DB 저장 (새 다이어그램 — prompt로 이름 입력) ──
+  // ── 3. DB 저장 (새 다이어그램 — 이름 입력 모달) ──
   await page.click('button[aria-label="DB Save"]');
+  await page.waitForTimeout(400);
+  check('이름 입력 모달 노출', await page.locator('[data-testid="app-dialog"]').count() === 1);
+  await page.fill('[data-testid="dialog-input"]', 'My First ERD');
+  await page.click('[data-testid="dialog-ok"]');
   await page.waitForTimeout(800);
   const listItem = page.locator('[data-testid="my-diagrams"] >> text=My First ERD');
   check('저장 후 목록에 표시', await listItem.count() === 1);
@@ -66,12 +74,24 @@ try {
 
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_backend.png' });
 
-  // ── 5. 이름 변경 ──
-  promptValue = 'Renamed ERD';
+  // ── 5. 이름 변경 (입력 모달) ──
   await page.hover('[data-testid="my-diagrams"] >> text=My First ERD');
   await page.click('button[aria-label="Rename My First ERD"]');
+  await page.waitForTimeout(400);
+  await page.fill('[data-testid="dialog-input"]', 'Renamed ERD');
+  await page.click('[data-testid="dialog-ok"]');
   await page.waitForTimeout(600);
   check('이름 변경 반영', await page.locator('[data-testid="my-diagrams"] >> text=Renamed ERD').count() === 1);
+
+  // ── 5-1. 삭제 확인 모달 — 취소하면 유지 ──
+  await page.hover('[data-testid="my-diagrams"] >> text=Renamed ERD');
+  await page.click('button[aria-label="Delete Renamed ERD"]');
+  await page.waitForTimeout(400);
+  check('삭제 확인 모달 노출', await page.locator('[data-testid="app-dialog"]').count() === 1);
+  await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_dialog.png' });
+  await page.click('[data-testid="dialog-cancel"]');
+  await page.waitForTimeout(400);
+  check('삭제 취소 → 목록 유지', await page.locator('[data-testid="my-diagrams"] >> text=Renamed ERD').count() === 1);
 
   // ── 6. 중복 가입 → 409 에러 메시지 ──
   const dupPage = await (await browser.newContext()).newPage();

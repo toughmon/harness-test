@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useDiagramStore } from '../../store/diagramStore';
 import { saveERD, loadERD } from '../../utils/fileIO';
 import { fromERDData } from '../../utils/erdData';
+import { alertDialog } from '../../store/dialogStore';
 
 // 디자인 시안의 TopNavBar — 알림/설정은 현재 기능이 없는 비활성 placeholder,
 // Save(JSON)/불러오기는 파일 저장, 로그인 시 DB 저장(cloud) 버튼 추가
@@ -30,7 +31,7 @@ export default function Toolbar() {
       const { entities: loaded, relationships: rels, positions } = fromERDData(data);
       loadData(loaded, rels, positions);
     } catch (err) {
-      alert((err as Error).message);
+      alertDialog((err as Error).message, '불러오기 실패');
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };

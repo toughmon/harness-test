@@ -4,6 +4,7 @@ import Sidebar from './components/sidebar/Sidebar';
 import ERDCanvas from './components/canvas/ERDCanvas';
 import EntityEditPanel from './components/panels/EntityEditPanel';
 import AuthModal from './components/auth/AuthModal';
+import DialogModal from './components/common/DialogModal';
 import { useERDStore } from './store/erdStore';
 import { useAuthStore } from './store/authStore';
 
@@ -47,6 +48,7 @@ function App() {
         <EntityEditPanel />
       </div>
       {modalOpen && <AuthModal />}
+      <DialogModal />
     </div>
   );
 }

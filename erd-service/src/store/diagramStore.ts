@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { api, DiagramMeta } from '../api/client';
 import { useERDStore } from './erdStore';
 import { toERDData, fromERDData } from '../utils/erdData';
+import { alertDialog, confirmDialog, promptDialog } from './dialogStore';
 
 // DB 다이어그램 메타 상태 — 목록/현재 열린 다이어그램/미저장 변경(dirty) 추적
 // erdStore는 수정하지 않고 subscribe로만 변경을 감지한다
@@ -15,10 +16,10 @@ interface DiagramState {
   fetchList: () => Promise<void>;
   open: (id: number) => Promise<void>;
   saveCurrent: () => Promise<void>;
-  startNew: () => void;
+  startNew: () => Promise<void>;
   rename: (id: number) => Promise<void>;
   remove: (id: number) => Promise<void>;
-  confirmDiscard: () => boolean;
+  confirmDiscard: () => Promise<boolean>;
   reset: () => void;
 }
 
@@ -37,13 +38,18 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   // 미저장 변경이 있으면 사용자 확인 — true면 진행
-  confirmDiscard: () => {
+  confirmDiscard: async () => {
     if (!get().dirty) return true;
-    return window.confirm('저장하지 않은 변경사항이 있습니다. 계속할까요?');
+    return confirmDialog({
+      title: '저장되지 않은 변경',
+      message: '저장하지 않은 변경사항이 있습니다.\n계속하면 현재 작업 내용이 사라집니다.',
+      confirmText: '계속',
+      danger: true,
+    });
   },
 
   open: async (id) => {
-    if (!get().confirmDiscard()) return;
+    if (!(await get().confirmDiscard())) return;
     const diagram = await api.getDiagram(id);
     const { entities, relationships, positions } = fromERDData(diagram.data);
     suppressDirty = true;
@@ -62,23 +68,28 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       if (currentId !== null) {
         await api.updateDiagram(currentId, data);
       } else {
-        const name = window.prompt('다이어그램 이름을 입력하세요', '새 다이어그램');
-        if (!name?.trim()) return;
-        const created = await api.createDiagram(name.trim(), data);
+        const name = await promptDialog({
+          title: 'DB에 저장',
+          message: '다이어그램 이름을 입력하세요',
+          defaultValue: '새 다이어그램',
+          placeholder: '예: 주문 시스템 ERD',
+        });
+        if (!name) return;
+        const created = await api.createDiagram(name, data);
         set({ currentId: created.id });
       }
       set({ dirty: false });
       await get().fetchList();
     } catch (err) {
-      alert(`저장 실패: ${(err as Error).message}`);
+      alertDialog(`저장에 실패했습니다.\n${(err as Error).message}`, '저장 실패');
     } finally {
       set({ saving: false });
     }
   },
 
   // 빈 캔버스에서 새로 시작 — 저장은 DB 저장 버튼에서 이름 입력으로
-  startNew: () => {
-    if (!get().confirmDiscard()) return;
+  startNew: async () => {
+    if (!(await get().confirmDiscard())) return;
     suppressDirty = true;
     useERDStore.getState().loadData([], [], {});
     suppressDirty = false;
@@ -87,14 +98,25 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   rename: async (id) => {
     const current = get().list.find(d => d.id === id);
-    const name = window.prompt('새 이름을 입력하세요', current?.name ?? '');
-    if (!name?.trim()) return;
-    await api.renameDiagram(id, name.trim());
+    const name = await promptDialog({
+      title: '이름 변경',
+      message: '새 이름을 입력하세요',
+      defaultValue: current?.name ?? '',
+    });
+    if (!name) return;
+    await api.renameDiagram(id, name);
     await get().fetchList();
   },
 
   remove: async (id) => {
-    if (!window.confirm('이 다이어그램을 삭제할까요? 되돌릴 수 없습니다.')) return;
+    const current = get().list.find(d => d.id === id);
+    const ok = await confirmDialog({
+      title: '다이어그램 삭제',
+      message: `"${current?.name ?? ''}" 다이어그램을 삭제할까요?\n되돌릴 수 없습니다.`,
+      confirmText: '삭제',
+      danger: true,
+    });
+    if (!ok) return;
     await api.deleteDiagram(id);
     if (get().currentId === id) set({ currentId: null });
     await get().fetchList();

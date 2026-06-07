@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { COLUMN_TYPES, Column, ColumnType, ENTITY_COLORS } from '../../types/erd';
+import { confirmDialog } from '../../store/dialogStore';
 
 // 디자인 시안의 Right Property Editor — 상시 표시되며 선택된 엔티티의 속성을 편집.
 // 변경은 기존과 동일하게 실시간 반영 (시안의 Cancel/Apply는 해당 없음)
@@ -26,7 +27,15 @@ export default function EntityEditPanel() {
             <>
               <button
                 className="text-on-surface-variant hover:text-error transition-colors flex items-center cursor-pointer"
-                onClick={() => deleteEntity(entity.id)}
+                onClick={async () => {
+                  const ok = await confirmDialog({
+                    title: '엔티티 삭제',
+                    message: `"${entity.name}" 엔티티를 삭제할까요?\n연결된 관계선도 함께 삭제됩니다.`,
+                    confirmText: '삭제',
+                    danger: true,
+                  });
+                  if (ok) deleteEntity(entity.id);
+                }}
                 title="엔티티 삭제"
               >
                 <span className="material-symbols-outlined text-[18px]">delete</span>

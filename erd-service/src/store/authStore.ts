@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    if (!useDiagramStore.getState().confirmDiscard()) return;
+    if (!(await useDiagramStore.getState().confirmDiscard())) return;
     try {
       await api.logout();
     } finally {

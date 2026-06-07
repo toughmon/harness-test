@@ -23,6 +23,7 @@ import RelationshipEdge from '../edges/RelationshipEdge';
 import RelTypeModal from '../panels/RelTypeModal';
 import { computeAutoLayout } from '../../utils/autoLayout';
 import { exportDiagramPng } from '../../utils/exportImage';
+import { alertDialog } from '../../store/dialogStore';
 
 const nodeTypes = { entity: EntityNode };
 const edgeTypes = { relationship: RelationshipEdge };
@@ -45,7 +46,7 @@ function ZoomToolbar() {
     try {
       await exportDiagramPng(getNodes());
     } catch (err) {
-      alert((err as Error).message);
+      alertDialog((err as Error).message, 'PNG 내보내기 실패');
     }
   };
 
