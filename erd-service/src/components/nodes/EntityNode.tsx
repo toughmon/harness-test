@@ -6,8 +6,8 @@ import { useERDStore } from '../../store/erdStore';
 type EntityNodeData = Entity;
 
 const handleStyle: React.CSSProperties = {
-  width: 10,
-  height: 10,
+  width: 16,
+  height: 16,
   background: '#8083ff',
   border: '2px solid #c0c1ff',
   borderRadius: '50%',

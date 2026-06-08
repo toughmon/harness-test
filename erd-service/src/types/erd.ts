@@ -31,17 +31,23 @@ export interface Entity {
 
 export type RelationshipType =
   | 'ONE_TO_MANY_IDENTIFYING'
+  | 'ONE_TO_MANY_IDENTIFYING_SOLID'
   | 'ONE_TO_MANY_NON_IDENTIFYING'
   | 'ONE_TO_MANY_OPTIONAL'
   | 'ONE_TO_ONE_IDENTIFYING'
-  | 'ONE_TO_ONE_NON_IDENTIFYING';
+  | 'ONE_TO_ONE_IDENTIFYING_SOLID'
+  | 'ONE_TO_ONE_NON_IDENTIFYING'
+  | 'ONE_TO_ONE_OPTIONAL';
 
 export const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
-  ONE_TO_MANY_IDENTIFYING: '1:M  상속+식별자',
-  ONE_TO_MANY_NON_IDENTIFYING: '1:M  비상속+비식별자',
-  ONE_TO_MANY_OPTIONAL: '1:M  비상속+비식별',
-  ONE_TO_ONE_IDENTIFYING: '1:1  상속+식별자',
-  ONE_TO_ONE_NON_IDENTIFYING: '1:1  비상속+비식별',
+  ONE_TO_MANY_IDENTIFYING: '1:M 식별자 상속 (점선 + 실선)',
+  ONE_TO_MANY_IDENTIFYING_SOLID: '1:M 식별자 상속 (실선 + 실선)',
+  ONE_TO_MANY_NON_IDENTIFYING: '1:M 비식별 (점선 + 실선)',
+  ONE_TO_MANY_OPTIONAL: '1:M 비식별 (점선 + 점선)',
+  ONE_TO_ONE_IDENTIFYING: '1:1 식별자 상속 (점선 + 실선)',
+  ONE_TO_ONE_IDENTIFYING_SOLID: '1:1 식별자 상속 (실선 + 실선)',
+  ONE_TO_ONE_NON_IDENTIFYING: '1:1 비식별 (점선 + 실선)',
+  ONE_TO_ONE_OPTIONAL: '1:1 비식별 (점선 + 점선)',
 };
 
 export interface Relationship {

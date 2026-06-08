@@ -17,14 +17,23 @@ const HISTORY_LIMIT = 50;
 const COALESCE_MS = 800;
 
 function isIdentifyingType(type: RelationshipType): boolean {
-  return type === 'ONE_TO_MANY_IDENTIFYING' || type === 'ONE_TO_ONE_IDENTIFYING';
+  return (
+    type === 'ONE_TO_MANY_IDENTIFYING' ||
+    type === 'ONE_TO_MANY_IDENTIFYING_SOLID' ||
+    type === 'ONE_TO_ONE_IDENTIFYING' ||
+    type === 'ONE_TO_ONE_IDENTIFYING_SOLID'
+  );
+}
+
+function isOptionalType(type: RelationshipType): boolean {
+  return type === 'ONE_TO_MANY_OPTIONAL' || type === 'ONE_TO_ONE_OPTIONAL';
 }
 
 // 관계 타입별 FK 컬럼 플래그 — 식별: PK 포함, 비식별: 일반 FK, 선택: NULL 허용
 function fkFlagsFor(type: RelationshipType): { isPK: boolean; isNN: boolean } {
   return {
     isPK: isIdentifyingType(type),
-    isNN: type !== 'ONE_TO_MANY_OPTIONAL',
+    isNN: !isOptionalType(type),
   };
 }
 

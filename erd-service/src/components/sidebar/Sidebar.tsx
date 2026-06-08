@@ -1,25 +1,69 @@
+import { useState } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDiagramStore } from '../../store/diagramStore';
 
 // 디자인 시안의 SideNavBar — Add Entity / Entity List는 실제 기능 연결,
 // 로그인 시 "내 다이어그램" 섹션 표시, Help/Docs는 비활성 placeholder
+// 접기 기능: 캔버스를 넓게 보기 위해 좌측 패널을 얇은 레일로 접을 수 있음
 export default function Sidebar() {
   const { entities, selectedEntityId, selectEntity, addEntity } = useERDStore();
   const { status } = useAuthStore();
   const { list, currentId, open, startNew, rename, remove } = useDiagramStore();
+  const [collapsed, setCollapsed] = useState(false);
+
+  // 접힌 상태: 얇은 레일만 표시 — 펼치기 버튼 + 엔티티 추가 단축 아이콘
+  if (collapsed) {
+    return (
+      <aside
+        data-testid="sidebar"
+        data-collapsed="true"
+        className="w-12 shrink-0 flex flex-col items-center bg-surface-container-low border-r border-outline-variant py-3 gap-2"
+      >
+        <button
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+          onClick={() => setCollapsed(false)}
+          title="사이드바 펼치기"
+          aria-label="Expand sidebar"
+          aria-expanded={false}
+          data-testid="sidebar-toggle"
+        >
+          <span className="material-symbols-outlined text-[20px]">left_panel_open</span>
+        </button>
+        <div className="w-6 border-t border-outline-variant my-1" />
+        <button
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-on-primary bg-primary hover:bg-inverse-primary hover:text-white transition-colors cursor-pointer active:scale-[0.95]"
+          onClick={addEntity}
+          title="Add Entity"
+          aria-label="Add Entity"
+        >
+          <span className="material-symbols-outlined text-[20px]">add</span>
+        </button>
+      </aside>
+    );
+  }
 
   return (
-    <aside className="w-[280px] shrink-0 flex flex-col bg-surface-container-low border-r border-outline-variant">
+    <aside data-testid="sidebar" data-collapsed="false" className="w-[280px] shrink-0 flex flex-col bg-surface-container-low border-r border-outline-variant">
       {/* Project header */}
       <div className="p-4 border-b border-outline-variant flex items-center gap-3">
         <div className="w-10 h-10 rounded bg-primary-container flex items-center justify-center text-on-primary-container">
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>schema</span>
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h2 className="text-[17px] font-semibold text-on-surface m-0 leading-tight">Project Schema</h2>
           <span className="font-mono text-[11px] text-on-surface-variant">v1.0.4-beta</span>
         </div>
+        <button
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors cursor-pointer shrink-0"
+          onClick={() => setCollapsed(true)}
+          title="사이드바 접기"
+          aria-label="Collapse sidebar"
+          aria-expanded={true}
+          data-testid="sidebar-toggle"
+        >
+          <span className="material-symbols-outlined text-[20px]">left_panel_close</span>
+        </button>
       </div>
 
       {/* Add Entity */}

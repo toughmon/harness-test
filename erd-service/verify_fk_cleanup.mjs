@@ -69,7 +69,7 @@ try {
   await page.click('button[title="Fit View"]');
   await page.waitForTimeout(600);
 
-  const ok = await drawRelationship(0, 1, '1:M 상속+식별자');
+  const ok = await drawRelationship(0, 1, '1:M 식별자 상속 (점선 + 실선)');
   check('식별 관계 생성', ok && (await edgeCount()) === 1);
   check('하위 엔티티에 FK 생성', (await childText()).includes('entity1_id'));
 
@@ -104,7 +104,7 @@ try {
   check('관계 삭제 → 하위 FK 컬럼 제거', !(await childText()).includes('entity1_id'));
 
   // ── 시나리오 4: 비식별 관계 — FK 생성(식별자 미포함) 후 관계 삭제 시 FK 제거 ──
-  const ok2 = await drawRelationship(0, 1, '1:M 비상속+비식별');
+  const ok2 = await drawRelationship(0, 1, '1:M 비식별 (점선 + 실선)');
   const pkIcons = await page.locator('.react-flow__node').last().locator('[title="Primary Key"]').count();
   check('비식별 관계 → FK 생성 (식별자 미포함)', ok2 && (await childText()).includes('entity1_id') && pkIcons === 1);
   await page.locator('.react-flow__edge').first().click({ force: true });

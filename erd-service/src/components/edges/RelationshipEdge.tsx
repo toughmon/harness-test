@@ -16,10 +16,14 @@ const M = 14;  // crow's foot size
 const B = 6;   // bar offset from path end
 
 // 바커 표기법 선 스타일:
-// - 반점선+반실선: 부모(source) 쪽 절반 = 점선(선택), 자식(target/까마귀발) 쪽 절반 = 실선(필수)
-// - 전체 점선: 선택적 관계 (ONE_TO_MANY_OPTIONAL)
-function isHalfDashed(type: RelationshipType): boolean {
-  return type !== 'ONE_TO_MANY_OPTIONAL';
+// - 'half'  반점선+반실선: 부모(source) 쪽 절반 = 점선(선택), 자식(target/까마귀발) 쪽 절반 = 실선(필수)
+// - 'dashed' 전체 점선: 선택적 관계 (OPTIONAL)
+// - 'solid'  전체 실선: 식별자 상속(실선+실선) — 부모 쪽도 필수
+type LineStyle = 'half' | 'dashed' | 'solid';
+function lineStyleFor(type: RelationshipType): LineStyle {
+  if (type === 'ONE_TO_MANY_IDENTIFYING_SOLID' || type === 'ONE_TO_ONE_IDENTIFYING_SOLID') return 'solid';
+  if (type === 'ONE_TO_MANY_OPTIONAL' || type === 'ONE_TO_ONE_OPTIONAL') return 'dashed';
+  return 'half';
 }
 
 // CrowsFoot markers at target end, extending away from entity
@@ -150,13 +154,18 @@ function RelationshipEdge({
   });
 
   const type = rel?.type ?? 'ONE_TO_MANY_NON_IDENTIFYING';
-  const halfDashed = isHalfDashed(type);
+  const lineStyle = lineStyleFor(type);
+  const halfDashed = lineStyle === 'half';
   const isOneToMany =
     type === 'ONE_TO_MANY_IDENTIFYING' ||
+    type === 'ONE_TO_MANY_IDENTIFYING_SOLID' ||
     type === 'ONE_TO_MANY_NON_IDENTIFYING' ||
     type === 'ONE_TO_MANY_OPTIONAL';
   const isIdentifying =
-    type === 'ONE_TO_MANY_IDENTIFYING' || type === 'ONE_TO_ONE_IDENTIFYING';
+    type === 'ONE_TO_MANY_IDENTIFYING' ||
+    type === 'ONE_TO_MANY_IDENTIFYING_SOLID' ||
+    type === 'ONE_TO_ONE_IDENTIFYING' ||
+    type === 'ONE_TO_ONE_IDENTIFYING_SOLID';
   const color = selected ? EDGE_SELECTED : EDGE_COLOR;
 
   return (
@@ -169,14 +178,14 @@ function RelationshipEdge({
         strokeWidth={12}
         style={{ cursor: 'pointer' }}
       />
-      {/* Visible edge — layer 1: 전체 점선 (부모 쪽 절반에서 보임) */}
+      {/* Visible edge — layer 1: 선 스타일(solid=실선 전체 / half=점선 베이스 / dashed=전체 점선) */}
       <path
         id={id}
         d={edgePath}
         fill="none"
         stroke={color}
         strokeWidth={1.5}
-        strokeDasharray={halfDashed ? '6 4' : '4 4'}
+        strokeDasharray={lineStyle === 'solid' ? undefined : lineStyle === 'half' ? '6 4' : '4 4'}
         strokeLinecap="butt"
       />
       {/* layer 2: 자식(target) 쪽 후반 50%만 실선으로 덮음 (바커: 자식 쪽 필수) */}

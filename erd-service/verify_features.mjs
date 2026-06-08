@@ -94,7 +94,7 @@ try {
   await page.click('button[title="Fit View"]');
   await page.waitForTimeout(500);
 
-  const relOk = await drawRelationship(0, 1, '1:M 비상속+비식별');
+  const relOk = await drawRelationship(0, 1, '1:M 비식별 (점선 + 실선)');
   check('관계 생성 (비식별)', relOk && await edgeCount() === 1);
   let n2 = await page.locator('.react-flow__node').nth(1).innerText();
   // 비식별도 FK는 생성되되 PK(식별자)에는 미포함 — PK key 아이콘은 id 1개뿐
@@ -117,7 +117,7 @@ try {
   const currentChip = await page.locator('text=현재').count();
   check('타입 변경 모달 (현재 타입 표시)', modalTitle === 1 && currentChip >= 1);
 
-  await page.locator('button').filter({ hasText: '1:M 상속+식별자' }).first().click();
+  await page.locator('button').filter({ hasText: '1:M 식별자 상속 (점선 + 실선)' }).first().click();
   await page.waitForTimeout(500);
   n2 = await page.locator('.react-flow__node').nth(1).innerText();
   pkIcons = await page.locator('.react-flow__node').nth(1).locator('[title="Primary Key"]').count();
@@ -129,7 +129,7 @@ try {
   await clickEdge(0);
   await page.locator('button[title="관계 종류 변경"]').click();
   await page.waitForTimeout(400);
-  await page.locator('button').filter({ hasText: '1:M 비상속+비식별자' }).first().click();
+  await page.locator('button').filter({ hasText: '1:M 비식별 (점선 + 실선)' }).first().click();
   await page.waitForTimeout(500);
   n2 = await page.locator('.react-flow__node').nth(1).innerText();
   pkIcons = await page.locator('.react-flow__node').nth(1).locator('[title="Primary Key"]').count();
