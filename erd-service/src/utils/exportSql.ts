@@ -1,4 +1,4 @@
-import { Entity, Column } from '../types/erd';
+import { Entity, Column, Subtype } from '../types/erd';
 
 // MySQL DDL 생성 — 엔티티/컬럼(FK 메타 포함)을 CREATE TABLE 스크립트로 변환
 // - 타입 매핑: UUID→CHAR(36), VARCHAR/CHAR/DECIMAL/FLOAT는 size 반영, 나머지는 그대로
@@ -28,6 +28,65 @@ function columnLine(col: Column): string {
   if (col.isUnique && !col.isPK) parts.push('UNIQUE');
   if (col.logicalName?.trim()) parts.push(`COMMENT ${comment(col.logicalName.trim())}`);
   return parts.join(' ');
+}
+
+// 배타적 서브타입 → 단일 테이블 롤업: 구분자 컬럼 + 서브타입 고유 컬럼(전부 nullable) + 배타 CHECK
+// - 구분자(판별자) 컬럼명 = SubSet 이름. 완전(complete)이면 NOT NULL.
+// - 컬럼명이 슈퍼타입/다른 서브타입과 충돌하면 _서브타입명 접미사로 회피.
+// - exclusive면 "구분자 값에 해당하지 않는 서브타입 컬럼은 NULL" CHECK 생성, 불완전이면 구분자 NULL(슈퍼타입만) 케이스 허용.
+function buildSubtypeDDL(entity: Entity): { columnLines: string[]; checkLines: string[] } {
+  const subtypes = entity.subtypes ?? [];
+  if (subtypes.length === 0) return { columnLines: [], checkLines: [] };
+
+  const discName = entity.subsetName?.trim() || 'SubSet';
+  const complete = entity.subtypeComplete ?? false;
+  const exclusive = entity.subtypeExclusive ?? true;
+
+  const used = new Set(entity.columns.map(c => c.name.toLowerCase()));
+  used.add(discName.toLowerCase());
+
+  const columnLines: string[] = [];
+  // 구분자(판별자) 컬럼
+  columnLines.push(
+    `  ${[q(discName), 'VARCHAR(30)', complete ? 'NOT NULL' : 'NULL', `COMMENT ${comment(`${discName} 구분자`)}`].join(' ')}`
+  );
+
+  // 서브타입 고유 컬럼 (충돌 회피 후 nullable로 평탄화)
+  const renamed: { subtype: Subtype; cols: string[] }[] = [];
+  for (const st of subtypes) {
+    const cols: string[] = [];
+    for (const c of st.columns) {
+      let name = c.name;
+      if (used.has(name.toLowerCase())) name = `${c.name}_${st.name}`;
+      used.add(name.toLowerCase());
+      const cmt = [st.name, c.logicalName?.trim()].filter(Boolean).join(': ');
+      columnLines.push(`  ${[q(name), mysqlType(c), 'NULL', `COMMENT ${comment(cmt)}`].join(' ')}`);
+      cols.push(name);
+    }
+    renamed.push({ subtype: st, cols });
+  }
+
+  const checkLines: string[] = [];
+  // 구분자 도메인 제약
+  checkLines.push(`  CHECK (${q(discName)} IN (${subtypes.map(st => comment(st.name)).join(', ')}))`);
+
+  // 배타성 제약
+  if (exclusive) {
+    const allCols = renamed.flatMap(r => r.cols);
+    if (allCols.length > 0) {
+      const conds = renamed.map(r => {
+        const others = renamed.filter(x => x.subtype.id !== r.subtype.id).flatMap(x => x.cols);
+        const nulls = others.map(c => `${q(c)} IS NULL`);
+        return `(${q(discName)} = ${comment(r.subtype.name)}${nulls.length ? ' AND ' + nulls.join(' AND ') : ''})`;
+      });
+      if (!complete) {
+        conds.push(`(${q(discName)} IS NULL AND ${allCols.map(c => `${q(c)} IS NULL`).join(' AND ')})`);
+      }
+      checkLines.push(`  CHECK (\n    ${conds.join(' OR\n    ')}\n  )`);
+    }
+  }
+
+  return { columnLines, checkLines };
 }
 
 // 부모 우선 정렬 (Kahn) — FK 참조 기준, 순환은 원래 순서대로 뒤에 붙임
@@ -69,10 +128,17 @@ export function generateMySQLDDL(entities: Entity[]): string {
   const tables = sortParentsFirst(entities).map(entity => {
     const lines = entity.columns.map(c => `  ${columnLine(c)}`);
 
+    // 배타적 서브타입 → 구분자 + 서브타입 컬럼 (컬럼 정의이므로 제약보다 먼저)
+    const sub = buildSubtypeDDL(entity);
+    lines.push(...sub.columnLines);
+
     const pkCols = entity.columns.filter(c => c.isPK);
     if (pkCols.length > 0) {
       lines.push(`  PRIMARY KEY (${pkCols.map(c => q(c.name)).join(', ')})`);
     }
+
+    // 서브타입 배타성/도메인 CHECK 제약
+    lines.push(...sub.checkLines);
 
     // FK 제약 — 같은 부모를 참조하는 컬럼끼리 복합 제약으로 묶음
     const fkGroups = new Map<string, Column[]>();

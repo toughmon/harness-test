@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Entity, Column, Relationship, RelationshipType, ColumnType } from '../types/erd';
+import { Entity, Column, Relationship, RelationshipType, ColumnType, Subtype } from '../types/erd';
 
 const genId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -83,6 +83,15 @@ interface ERDStore {
   updateColumn: (entityId: string, columnId: string, updates: Partial<Column>) => void;
   deleteColumn: (entityId: string, columnId: string) => void;
   moveColumn: (entityId: string, fromIdx: number, toIdx: number) => void;
+
+  // 배타적 서브타입(SubSet)
+  addSubtype: (entityId: string) => void;
+  removeSubtype: (entityId: string, subtypeId: string) => void;
+  updateSubtype: (entityId: string, subtypeId: string, updates: Partial<Pick<Subtype, 'name' | 'logicalName'>>) => void;
+  updateSubsetMeta: (entityId: string, updates: Partial<Pick<Entity, 'subsetName' | 'subtypeExclusive' | 'subtypeComplete'>>) => void;
+  addSubtypeColumn: (entityId: string, subtypeId: string) => void;
+  updateSubtypeColumn: (entityId: string, subtypeId: string, columnId: string, updates: Partial<Column>) => void;
+  deleteSubtypeColumn: (entityId: string, subtypeId: string, columnId: string) => void;
 
   addRelationship: (sourceId: string, targetId: string, type: RelationshipType) => void;
   updateRelationshipType: (id: string, type: RelationshipType) => void;
@@ -270,6 +279,106 @@ export const useERDStore = create<ERDStore>((set, get) => {
           cols.splice(toIdx, 0, moved);
           return { ...e, columns: cols };
         }),
+      }));
+    },
+
+    // ── 배타적 서브타입(SubSet) ──
+    addSubtype: (entityId) => {
+      pushHistory('addSubtype');
+      set(s => ({
+        entities: s.entities.map(e => {
+          if (e.id !== entityId) return e;
+          const subtypes = e.subtypes ?? [];
+          const newSub: Subtype = {
+            id: genId(),
+            name: `SubType${subtypes.length + 1}`,
+            logicalName: '',
+            columns: [],
+          };
+          return {
+            ...e,
+            // 첫 서브타입 추가 시 그룹 기본값 세팅 (배타·불완전)
+            subsetName: e.subsetName ?? 'SubSet',
+            subtypeExclusive: e.subtypeExclusive ?? true,
+            subtypeComplete: e.subtypeComplete ?? false,
+            subtypes: [...subtypes, newSub],
+          };
+        }),
+      }));
+    },
+
+    removeSubtype: (entityId, subtypeId) => {
+      pushHistory('removeSubtype');
+      set(s => ({
+        entities: s.entities.map(e =>
+          e.id === entityId
+            ? { ...e, subtypes: (e.subtypes ?? []).filter(st => st.id !== subtypeId) }
+            : e
+        ),
+      }));
+    },
+
+    updateSubtype: (entityId, subtypeId, updates) => {
+      pushHistory(`updateSubtype:${subtypeId}:${Object.keys(updates).join(',')}`);
+      set(s => ({
+        entities: s.entities.map(e =>
+          e.id === entityId
+            ? { ...e, subtypes: (e.subtypes ?? []).map(st => st.id === subtypeId ? { ...st, ...updates } : st) }
+            : e
+        ),
+      }));
+    },
+
+    updateSubsetMeta: (entityId, updates) => {
+      pushHistory(`subsetMeta:${entityId}:${Object.keys(updates).join(',')}`);
+      set(s => ({
+        entities: s.entities.map(e => e.id === entityId ? { ...e, ...updates } : e),
+      }));
+    },
+
+    addSubtypeColumn: (entityId, subtypeId) => {
+      pushHistory('addSubtypeColumn');
+      const newCol: Column = { ...DEFAULT_COLUMN, id: genId(), name: 'column' };
+      set(s => ({
+        entities: s.entities.map(e =>
+          e.id === entityId
+            ? { ...e, subtypes: (e.subtypes ?? []).map(st => st.id === subtypeId ? { ...st, columns: [...st.columns, newCol] } : st) }
+            : e
+        ),
+      }));
+    },
+
+    updateSubtypeColumn: (entityId, subtypeId, columnId, updates) => {
+      pushHistory(`updateSubtypeColumn:${columnId}:${Object.keys(updates).join(',')}`);
+      set(s => ({
+        entities: s.entities.map(e =>
+          e.id === entityId
+            ? {
+                ...e,
+                subtypes: (e.subtypes ?? []).map(st =>
+                  st.id === subtypeId
+                    ? { ...st, columns: st.columns.map(c => c.id === columnId ? { ...c, ...updates } : c) }
+                    : st
+                ),
+              }
+            : e
+        ),
+      }));
+    },
+
+    deleteSubtypeColumn: (entityId, subtypeId, columnId) => {
+      pushHistory('deleteSubtypeColumn');
+      set(s => ({
+        entities: s.entities.map(e =>
+          e.id === entityId
+            ? {
+                ...e,
+                subtypes: (e.subtypes ?? []).map(st =>
+                  st.id === subtypeId ? { ...st, columns: st.columns.filter(c => c.id !== columnId) } : st
+                ),
+              }
+            : e
+        ),
       }));
     },
 

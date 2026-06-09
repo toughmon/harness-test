@@ -162,6 +162,62 @@ function EntityNode({ data }: NodeProps) {
             </div>
           )}
         </div>
+
+        {/* SubSet — 배타적 서브타입 영역 (슈퍼타입 박스 안에 중첩) */}
+        {(entityData.subtypes?.length ?? 0) > 0 && (
+          <div className="border-t border-node-border bg-surface-variant/40 px-2 py-2" data-testid="subset-region">
+            {/* SubSet 그룹 헤더 */}
+            <div className="flex items-center gap-1.5 mb-1.5 px-1">
+              <span className="material-symbols-outlined text-[13px] text-on-surface-variant shrink-0">account_tree</span>
+              <span className="font-mono text-[10px] font-bold text-on-surface-variant truncate">
+                {entityData.subsetName || 'SubSet'}
+              </span>
+              <span className="font-sans text-[9px] px-1 py-px rounded bg-surface-container text-on-surface-variant shrink-0">
+                {(entityData.subtypeExclusive ?? true) ? '배타' : '포함'}·{(entityData.subtypeComplete ?? false) ? '완전' : '불완전'}
+              </span>
+            </div>
+            {/* 중첩 서브타입 박스들 */}
+            <div className="flex gap-2 flex-wrap">
+              {entityData.subtypes!.map(st => (
+                <div
+                  key={st.id}
+                  className="rounded-md border border-dashed border-node-border bg-node-bg min-w-[120px] flex-none"
+                  data-testid="subtype-box"
+                >
+                  <div className="bg-node-header px-2 py-1 border-b border-node-border rounded-t-md flex items-baseline gap-1.5">
+                    <span className="material-symbols-outlined text-[12px] shrink-0 self-center" style={{ color: entityData.color }}>category</span>
+                    <span className="font-mono text-[10px] font-bold text-on-surface whitespace-nowrap">{st.name}</span>
+                    {st.logicalName && (
+                      <span className="font-sans text-[9px] text-on-surface-variant whitespace-nowrap shrink-0">{st.logicalName}</span>
+                    )}
+                  </div>
+                  <div className="py-0.5">
+                    {st.columns.map(col => (
+                      <div key={col.id} className="px-2 py-0.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1">
+                          {col.isFK && (
+                            <span className="material-symbols-outlined text-[11px] text-fk-color shrink-0" title="Foreign Key">link</span>
+                          )}
+                          <span className="font-mono text-[10px] text-on-surface whitespace-nowrap" data-testid="subtype-col-name">{col.name}</span>
+                          {col.logicalName && (
+                            <span className="font-sans text-[9px] text-on-surface-variant whitespace-nowrap shrink-0">{col.logicalName}</span>
+                          )}
+                          {col.isNN && <span className="text-pk-color text-[10px] shrink-0">*</span>}
+                        </div>
+                        <span className="font-mono text-[9px] text-on-surface-variant opacity-70 shrink-0 whitespace-nowrap" data-testid="subtype-col-type">
+                          {col.type}{col.size ? `(${col.size})` : ''}
+                        </span>
+                      </div>
+                    ))}
+                    {st.columns.length === 0 && (
+                      <div className="px-2 py-0.5 text-[9px] font-mono text-outline italic">속성 없음</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
