@@ -45,11 +45,10 @@ function buildFKColumns(
 ): Column[] {
   return sourceEntity.columns.filter(c => c.isPK).map(pk => ({
     id: genId(),
-    name: `${sourceEntity.name.toLowerCase()}_${pk.name}`,
-    // 논리명: "상위엔티티논리명 + PK논리명" (예: "사용자 아이디"), 없으면 빈 값
-    logicalName: pk.logicalName
-      ? `${sourceEntity.logicalName || sourceEntity.name} ${pk.logicalName}`.trim()
-      : '',
+    // FK 컬럼명: 상위 엔티티 PK명 그대로 사용 (엔티티명 접두사 없음)
+    name: pk.name,
+    // 논리명: 상위 PK 논리명 그대로 (엔티티명 접두사 없음), 없으면 빈 값
+    logicalName: pk.logicalName ?? '',
     type: pk.type as ColumnType,
     size: pk.size,
     isPK: flags.isPK,

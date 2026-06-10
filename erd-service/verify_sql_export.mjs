@@ -62,7 +62,19 @@ try {
   await page.click('button[title="Fit View"]');
   await page.waitForTimeout(500);
 
-  const relOk = await drawRelationship(0, 1, '1:M 상속+식별자');
+  // 부모 Entity1의 PK명을 구분되는 이름(e1_id)으로 변경 — 실사용 컨벤션(order_id, user_id 처럼).
+  // FK는 상위 PK명을 그대로 쓰므로, 부모 PK명을 자식의 기본 id 컬럼과 겹치지 않게 한다.
+  await page.locator('.react-flow__node').nth(0).click();
+  await page.waitForTimeout(300);
+  const panel = page.locator('aside').last();
+  await panel.locator('.font-mono', { hasText: /^id$/ }).first().click();
+  await page.waitForTimeout(300);
+  await panel.locator('input[placeholder="물리명"]').first().fill('e1_id');
+  await page.waitForTimeout(300);
+  await page.mouse.click(700, 750);
+  await page.waitForTimeout(300);
+
+  const relOk = await drawRelationship(0, 1, '1:M 식별자 상속 (점선 + 실선)');
   check('식별 관계 생성', relOk && await page.locator('.react-flow__edge').count() === 1);
 
   // ───── SQL 내보내기 ─────
@@ -91,16 +103,16 @@ try {
   check('부모 테이블 우선 정렬', sql.indexOf('CREATE TABLE `Entity1`') < sql.indexOf('CREATE TABLE `Entity2`'));
 
   check('PK 컬럼 정의 (INT NOT NULL)', /`id` INT NOT NULL/.test(sql));
-  check('Entity1 PRIMARY KEY', /CREATE TABLE `Entity1`[\s\S]*?PRIMARY KEY \(`id`\)/.test(sql));
+  check('Entity1 PRIMARY KEY', /CREATE TABLE `Entity1`[\s\S]*?PRIMARY KEY \(`e1_id`\)/.test(sql));
 
   // 추가한 일반 컬럼 — 기본 VARCHAR(255), NULL 허용
   check('일반 컬럼 VARCHAR(255) NULL', sql.includes('`column` VARCHAR(255) NULL'));
 
-  // 식별 관계 FK — 자식 PK에 포함 + FK 제약
-  check('FK 컬럼 생성 (entity1_id)', /`entity1_id` INT NOT NULL/.test(sql));
-  check('복합 PRIMARY KEY (식별 관계)', /CREATE TABLE `Entity2`[\s\S]*?PRIMARY KEY \(`id`, `entity1_id`\)/.test(sql));
+  // 식별 관계 FK — 컬럼명은 상위 PK명(e1_id) 그대로, 자식 PK에 포함 + FK 제약
+  check('FK 컬럼 생성 (e1_id)', /`e1_id` INT NOT NULL/.test(sql));
+  check('복합 PRIMARY KEY (식별 관계)', /CREATE TABLE `Entity2`[\s\S]*?PRIMARY KEY \(`id`, `e1_id`\)/.test(sql));
   check('FOREIGN KEY 제약',
-    sql.includes('CONSTRAINT `fk_Entity2_Entity1` FOREIGN KEY (`entity1_id`) REFERENCES `Entity1` (`id`)'));
+    sql.includes('CONSTRAINT `fk_Entity2_Entity1` FOREIGN KEY (`e1_id`) REFERENCES `Entity1` (`e1_id`)'));
 
   check('테이블 옵션 (InnoDB/utf8mb4)', (sql.match(/ENGINE=InnoDB DEFAULT CHARSET=utf8mb4/g) ?? []).length === 2);
 

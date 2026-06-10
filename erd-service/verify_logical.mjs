@@ -77,11 +77,15 @@ try {
   await page.click('button[title="Fit View"]');
   await page.waitForTimeout(500);
 
-  // 식별 관계 → FK 논리명 자동 생성 ("사용자 아이디")
-  const ok = await drawRelationship(0, 1, '1:M 상속+식별자');
+  // 식별 관계 → FK 자동 생성. 컬럼명/논리명은 상위 PK명 그대로(엔티티명 접두사 없음)
+  const ok = await drawRelationship(0, 1, '1:M 식별자 상속 (점선 + 실선)');
   console.log('relationship created:', ok);
   const n2Text = await page.locator('.react-flow__node').nth(1).innerText();
-  console.log('FK physical:', n2Text.includes('users_id'), '| FK logical:', n2Text.includes('사용자 아이디'));
+  console.log(
+    'FK physical 접두사 제거(users_id 아님):', !n2Text.includes('users_id'),
+    '| FK logical 접두사 제거(아이디 표시 & "사용자 아이디" 아님):',
+    n2Text.includes('아이디') && !n2Text.includes('사용자 아이디'),
+  );
 
   // 재선택 시 입력값 유지 확인 (Description 포함)
   await page.locator('.react-flow__node').nth(0).click();

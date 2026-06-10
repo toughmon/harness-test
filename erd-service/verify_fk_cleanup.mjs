@@ -54,6 +54,8 @@ async function drawRelationship(srcIdx, tgtIdx, relButtonText) {
 const childText = () => page.locator('.react-flow__node').last().innerText();
 const nodeCount = () => page.locator('.react-flow__node').count();
 const edgeCount = () => page.locator('.react-flow__edge').count();
+// FK는 link 아이콘으로 카운트 — FK명이 상위 PK명(id) 그대로라 자식의 기존 id 컬럼과 문자열로 구분 불가
+const childFkIcons = () => page.locator('.react-flow__node').last().locator('[title="Foreign Key"]').count();
 
 try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
@@ -71,7 +73,7 @@ try {
 
   const ok = await drawRelationship(0, 1, '1:M 식별자 상속 (점선 + 실선)');
   check('식별 관계 생성', ok && (await edgeCount()) === 1);
-  check('하위 엔티티에 FK 생성', (await childText()).includes('entity1_id'));
+  check('하위 엔티티에 FK 생성', (await childFkIcons()) === 1);
 
   // ── 시나리오 1: 상위 엔티티 삭제 → 하위 FK 제거 ──
   const parent = page.locator('.react-flow__node').first();
@@ -85,14 +87,14 @@ try {
 
   check('상위 삭제 → 노드 1개', (await nodeCount()) === 1);
   check('상위 삭제 → 관계선 제거', (await edgeCount()) === 0);
-  check('상위 삭제 → 하위 FK 컬럼 제거', !(await childText()).includes('entity1_id'));
+  check('상위 삭제 → 하위 FK 컬럼 제거', (await childFkIcons()) === 0);
 
   // ── 시나리오 2: Undo → 전부 복원 ──
   await page.keyboard.press('Control+z');
   await page.waitForTimeout(500);
   check('Undo → 노드 2개 복원', (await nodeCount()) === 2);
   check('Undo → 관계선 복원', (await edgeCount()) === 1);
-  check('Undo → FK 복원', (await childText()).includes('entity1_id'));
+  check('Undo → FK 복원', (await childFkIcons()) === 1);
 
   // ── 시나리오 3: 식별 관계선 삭제 → 하위 FK 제거 (엔티티는 유지) ──
   await page.locator('.react-flow__edge').first().click({ force: true });
@@ -101,17 +103,17 @@ try {
   await page.waitForTimeout(500);
   check('관계 삭제 → 관계선 제거', (await edgeCount()) === 0);
   check('관계 삭제 → 노드 2개 유지', (await nodeCount()) === 2);
-  check('관계 삭제 → 하위 FK 컬럼 제거', !(await childText()).includes('entity1_id'));
+  check('관계 삭제 → 하위 FK 컬럼 제거', (await childFkIcons()) === 0);
 
   // ── 시나리오 4: 비식별 관계 — FK 생성(식별자 미포함) 후 관계 삭제 시 FK 제거 ──
   const ok2 = await drawRelationship(0, 1, '1:M 비식별 (점선 + 실선)');
   const pkIcons = await page.locator('.react-flow__node').last().locator('[title="Primary Key"]').count();
-  check('비식별 관계 → FK 생성 (식별자 미포함)', ok2 && (await childText()).includes('entity1_id') && pkIcons === 1);
+  check('비식별 관계 → FK 생성 (식별자 미포함)', ok2 && (await childFkIcons()) === 1 && pkIcons === 1);
   await page.locator('.react-flow__edge').first().click({ force: true });
   await page.waitForTimeout(400);
   await page.click('button[title="관계 삭제"]');
   await page.waitForTimeout(500);
-  check('비식별 관계 삭제 → 하위 FK 컬럼 제거', !(await childText()).includes('entity1_id'));
+  check('비식별 관계 삭제 → 하위 FK 컬럼 제거', (await childFkIcons()) === 0);
 
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_fk_cleanup.png' });
 
