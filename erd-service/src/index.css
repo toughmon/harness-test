@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* DataModeler Pro 디자인 토큰 (M3 다크 팔레트) */
+/* EasyERD 디자인 토큰 (M3 다크 팔레트) */
 @theme {
   --color-background: #131313;
   --color-surface: #131313;

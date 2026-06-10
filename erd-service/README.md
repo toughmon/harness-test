@@ -1,4 +1,4 @@
-# DataModeler Pro (erd-service)
+# EasyERD (erd-service)
 
 온라인 ERD(Entity-Relationship Diagram) 작성 서비스.
 브라우저에서 엔티티·관계를 시각적으로 편집하고, 로그인하면 다이어그램을 사용자별로 DB에 저장할 수 있다.
@@ -174,7 +174,7 @@ pm2 logs erd --lines 20                     # "PostgreSQL 연결" 로그 확인
 | verify_fk_cleanup | 엔티티/관계 삭제 시 FK 정리, 비식별 FK (13항목) |
 | verify_column_drag | 컬럼 드래그 순서 변경 (5항목) |
 | verify_logical | 논리명/물리명 병기·FK 논리명 자동 조합 |
-| verify_design | DataModeler Pro 레이아웃·관계·FK |
+| verify_design | EasyERD 레이아웃·관계·FK |
 | verify_sidebar_cleanup / verify_gnb_cleanup | 사이드바·GNB 정리 회귀 |
 | verify_erd / verify_barker / verify_fanout | (구버전 — 디자인 개편 이전 UI 기준, 동작 불가) |
 

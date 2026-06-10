@@ -1,4 +1,4 @@
-// DataModeler Pro 디자인 적용 후 기능 동작 + 시각 검증
+// EasyERD 디자인 적용 후 기능 동작 + 시각 검증
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5174';
@@ -55,7 +55,7 @@ try {
 
   // 레이아웃 요소 확인
   const checks = {
-    topbarBrand: await page.locator('text=DataModeler Pro').count(),
+    topbarBrand: await page.locator('text=EasyERD').count(),
     sidebarAddEntity: await page.locator('button:has-text("Add Entity")').count(),
     propertiesHeader: await page.locator('h3:has-text("Properties")').count(),
     saveButton: await page.locator('button:has-text("Save")').count(),

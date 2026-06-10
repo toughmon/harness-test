@@ -20,7 +20,7 @@ try {
   const res = await page.goto(BASE, { waitUntil: 'networkidle' });
   check('루트 응답 200', res.status() === 200);
   await page.waitForTimeout(1500);
-  check('앱 렌더링 (브랜드 표시)', await page.locator('text=DataModeler Pro').count() === 1);
+  check('앱 렌더링 (브랜드 표시)', await page.locator('text=EasyERD').count() === 1);
 
   // 2. 기본 기능 동작 (엔티티 추가)
   await page.click('button:has-text("Add Entity")');
@@ -31,7 +31,7 @@ try {
   const deep = await page.goto(`${BASE}/some/client/route`, { waitUntil: 'networkidle' });
   check('SPA fallback 응답 200', deep.status() === 200);
   await page.waitForTimeout(1500);
-  check('SPA fallback에서 앱 렌더링', await page.locator('text=DataModeler Pro').count() === 1);
+  check('SPA fallback에서 앱 렌더링', await page.locator('text=EasyERD').count() === 1);
 
   // 4. /api/* 는 fallback 제외 — 404 JSON
   const api = await page.request.get(`${BASE}/api/anything`);
