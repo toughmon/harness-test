@@ -29,8 +29,8 @@ import { alertDialog } from '../../store/dialogStore';
 const nodeTypes = { entity: EntityNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
-// 디자인 시안의 플로팅 글래스 줌 툴바 — 줌/핏 + 자동 정렬 + PNG/SQL 내보내기
-function ZoomToolbar() {
+// 디자인 시안의 플로팅 글래스 줌 툴바 — 줌/핏 + 자동 정렬 + PNG/SQL 내보내기 + 전체화면
+function ZoomToolbar({ isFullscreen, onToggleFullscreen }: { isFullscreen: boolean; onToggleFullscreen: () => void }) {
   const { zoomIn, zoomOut, fitView, getNodes } = useReactFlow();
   const { zoom } = useViewport();
   const { entities, relationships, setAllPositions } = useERDStore();
@@ -39,7 +39,6 @@ function ZoomToolbar() {
     const nodes = getNodes();
     if (nodes.length === 0) return;
     setAllPositions(computeAutoLayout(nodes, relationships));
-    // 위치 반영 후 화면 맞춤
     window.setTimeout(() => fitView({ padding: 0.3 }), 60);
   };
 
@@ -87,6 +86,12 @@ function ZoomToolbar() {
         <button className={btn} title="SQL 내보내기 (MySQL)" onClick={handleExportSql}>
           <span className="material-symbols-outlined text-[18px]">database</span>
         </button>
+        <div className="w-px h-5 bg-outline-variant mx-1" />
+        <button className={btn} title={isFullscreen ? '전체화면 종료 (Esc)' : '전체화면'} onClick={onToggleFullscreen}>
+          <span className="material-symbols-outlined text-[18px]">
+            {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+          </span>
+        </button>
       </div>
     </Panel>
   );
@@ -100,6 +105,24 @@ export default function ERDCanvas() {
   } = useERDStore();
 
   const [pendingConn, setPendingConn] = useState<Connection | null>(null);
+
+  // 전체화면 상태
+  const canvasRef = useRef<HTMLElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!document.fullscreenElement) {
+      await canvasRef.current?.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  }, []);
 
   const rfNodes: Node[] = useMemo(() =>
     entities.map(e => ({
@@ -168,7 +191,7 @@ export default function ERDCanvas() {
   };
 
   return (
-    <main className="flex-1 relative overflow-hidden" style={{ background: '#121212' }}>
+    <main ref={canvasRef} className="flex-1 relative overflow-hidden" style={{ background: '#121212' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -194,7 +217,7 @@ export default function ERDCanvas() {
           size={1}
           color="#334155"
         />
-        <ZoomToolbar />
+        <ZoomToolbar isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
         <MiniMap
           nodeColor={(node) => {
             const e = entities.find(e => e.id === node.id);
