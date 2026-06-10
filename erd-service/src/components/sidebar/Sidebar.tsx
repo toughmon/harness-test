@@ -176,18 +176,34 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="border-t border-outline-variant p-2 flex flex-col gap-1">
         <NavItem icon="help" label="Help" />
-        <NavItem icon="description" label="Docs" />
+        <NavItem icon="description" label="Docs" href="/manual.html" />
       </div>
     </aside>
   );
 }
 
-function NavItem({ icon, label }: { icon: string; label: string }) {
+// href가 있으면 새 탭으로 여는 링크, 없으면 비활성 placeholder
+function NavItem({ icon, label, href }: { icon: string; label: string; href?: string }) {
+  const className =
+    'flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant hover:bg-surface-variant hover:text-on-surface';
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${className} cursor-pointer no-underline`}
+        title={`${label} (새 탭)`}
+      >
+        <span className="material-symbols-outlined text-[18px]">{icon}</span>
+        {label}
+      </a>
+    );
+  }
+
   return (
-    <span
-      className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-default transition-all text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant hover:bg-surface-variant hover:text-on-surface"
-      title={`${label} (준비 중)`}
-    >
+    <span className={`${className} cursor-default`} title={`${label} (준비 중)`}>
       <span className="material-symbols-outlined text-[18px]">{icon}</span>
       {label}
     </span>
