@@ -57,6 +57,18 @@ const edgeCount = () => page.locator('.react-flow__edge').count();
 // FK는 link 아이콘으로 카운트 — FK명이 상위 PK명(id) 그대로라 자식의 기존 id 컬럼과 문자열로 구분 불가
 const childFkIcons = () => page.locator('.react-flow__node').last().locator('[title="Foreign Key"]').count();
 
+// 에지 경로 중간점 좌표로 클릭 (bbox 중앙은 꺾인 경로에서 빗나갈 수 있음)
+async function clickEdge(idx = 0) {
+  const pt = await page.locator('.react-flow__edge').nth(idx).evaluate(g => {
+    const path = g.querySelector('path');
+    const p = path.getPointAtLength(path.getTotalLength() / 2);
+    const m = path.getScreenCTM();
+    return { x: p.x * m.a + p.y * m.c + m.e, y: p.x * m.b + p.y * m.d + m.f };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  await page.waitForTimeout(400);
+}
+
 try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
@@ -97,8 +109,9 @@ try {
   check('Undo → FK 복원', (await childFkIcons()) === 1);
 
   // ── 시나리오 3: 식별 관계선 삭제 → 하위 FK 제거 (엔티티는 유지) ──
-  await page.locator('.react-flow__edge').first().click({ force: true });
-  await page.waitForTimeout(400);
+  await page.click('button[title="Fit View"]');
+  await page.waitForTimeout(600);
+  await clickEdge(0);
   await page.click('button[title="관계 삭제"]');
   await page.waitForTimeout(500);
   check('관계 삭제 → 관계선 제거', (await edgeCount()) === 0);
@@ -108,9 +121,9 @@ try {
   // ── 시나리오 4: 비식별 관계 — FK 생성(식별자 미포함) 후 관계 삭제 시 FK 제거 ──
   const ok2 = await drawRelationship(0, 1, '1:M 비식별 (점선 + 실선)');
   const pkIcons = await page.locator('.react-flow__node').last().locator('[title="Primary Key"]').count();
-  check('비식별 관계 → FK 생성 (식별자 미포함)', ok2 && (await childFkIcons()) === 1 && pkIcons === 1);
-  await page.locator('.react-flow__edge').first().click({ force: true });
-  await page.waitForTimeout(400);
+  // 이름 충돌로 기존 PK가 교체됐으므로 PK 아이콘 0개, FK 아이콘 1개
+  check('비식별 관계 → FK 생성 (식별자 미포함)', ok2 && (await childFkIcons()) === 1 && pkIcons === 0);
+  await clickEdge(0);
   await page.click('button[title="관계 삭제"]');
   await page.waitForTimeout(500);
   check('비식별 관계 삭제 → 하위 FK 컬럼 제거', (await childFkIcons()) === 0);

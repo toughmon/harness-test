@@ -391,9 +391,20 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
       // 모든 관계 타입에서 FK 생성 — 식별이면 PK 포함, 비식별/선택이면 일반 FK
       const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsFor(type));
+      // 이름 충돌 컬럼 제거: FK명과 같은 이름의 기존 컬럼을 교체
+      // (단, 다른 관계에서 만들어진 FK는 유지)
+      const fkNames = new Set(newFKColumns.map(c => c.name));
       set(s => ({
         entities: s.entities.map(e =>
-          e.id === targetId ? { ...e, columns: [...e.columns, ...newFKColumns] } : e
+          e.id === targetId
+            ? {
+                ...e,
+                columns: [
+                  ...e.columns.filter(c => !fkNames.has(c.name) || (c.isFK && c.refEntityId !== sourceId)),
+                  ...newFKColumns,
+                ],
+              }
+            : e
         ),
         relationships: [...s.relationships, { id: genId(), sourceId, targetId, type }],
       }));
@@ -424,8 +435,10 @@ export const useERDStore = create<ERDStore>((set, get) => {
             ),
           };
         }
-        // FK가 없는 기존 데이터(과거 비식별로 생성) — 새로 생성
-        return { ...e, columns: [...e.columns, ...buildFKColumns(sourceEntity, rel.sourceId, flags)] };
+        // FK가 없는 기존 데이터(과거 비식별로 생성) — 새로 생성 (이름 충돌 컬럼 교체)
+        const newCols = buildFKColumns(sourceEntity, rel.sourceId, flags);
+        const names = new Set(newCols.map(c => c.name));
+        return { ...e, columns: [...e.columns.filter(c => !names.has(c.name) || (c.isFK && c.refEntityId !== rel.sourceId)), ...newCols] };
       });
 
       set({
