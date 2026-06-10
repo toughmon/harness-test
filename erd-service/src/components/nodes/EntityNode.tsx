@@ -71,12 +71,12 @@ function EntityNode({ data }: NodeProps) {
                 onClick={e => e.stopPropagation()}
               />
             ) : (
-              <span className="flex items-baseline gap-1.5 min-w-0 select-none">
-                <span className="font-mono text-xs font-bold text-on-surface truncate">
+              <span className="flex items-baseline gap-1.5 select-none">
+                <span className="font-mono text-xs font-bold text-on-surface whitespace-nowrap">
                   {entityData.name}
                 </span>
                 {entityData.logicalName && (
-                  <span className="font-sans text-[11px] text-on-surface-variant truncate shrink-0 max-w-28">
+                  <span className="font-sans text-[11px] text-on-surface-variant whitespace-nowrap shrink-0">
                     {entityData.logicalName}
                   </span>
                 )}
@@ -122,9 +122,9 @@ function EntityNode({ data }: NodeProps) {
                   {col.isFK && (
                     <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
                   )}
-                  <span className="font-mono text-[11px] font-bold text-on-surface truncate">{col.name}</span>
+                  <span className="font-mono text-[11px] font-bold text-on-surface whitespace-nowrap">{col.name}</span>
                   {col.logicalName && (
-                    <span className="font-sans text-[10px] text-on-surface-variant truncate shrink-0 max-w-24">{col.logicalName}</span>
+                    <span className="font-sans text-[10px] text-on-surface-variant whitespace-nowrap shrink-0">{col.logicalName}</span>
                   )}
                   {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
                 </div>
@@ -144,9 +144,9 @@ function EntityNode({ data }: NodeProps) {
                 {col.isFK && (
                   <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
                 )}
-                <span className="font-mono text-[11px] text-on-surface truncate">{col.name}</span>
+                <span className="font-mono text-[11px] text-on-surface whitespace-nowrap">{col.name}</span>
                 {col.logicalName && (
-                  <span className="font-sans text-[10px] text-on-surface-variant truncate shrink-0 max-w-24">{col.logicalName}</span>
+                  <span className="font-sans text-[10px] text-on-surface-variant whitespace-nowrap shrink-0">{col.logicalName}</span>
                 )}
                 {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
               </div>
@@ -169,7 +169,7 @@ function EntityNode({ data }: NodeProps) {
             {/* SubSet 그룹 헤더 */}
             <div className="flex items-center gap-1.5 mb-1.5 px-1">
               <span className="material-symbols-outlined text-[13px] text-on-surface-variant shrink-0">account_tree</span>
-              <span className="font-mono text-[10px] font-bold text-on-surface-variant truncate">
+              <span className="font-mono text-[10px] font-bold text-on-surface-variant whitespace-nowrap">
                 {entityData.subsetName || 'SubSet'}
               </span>
               <span className="font-sans text-[9px] px-1 py-px rounded bg-surface-container text-on-surface-variant shrink-0">
