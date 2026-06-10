@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDiagramStore } from '../../store/diagramStore';
+import { useThemeStore } from '../../store/themeStore';
 import { saveERD, loadERD } from '../../utils/fileIO';
 import { fromERDData } from '../../utils/erdData';
 import { alertDialog } from '../../store/dialogStore';
@@ -15,6 +16,7 @@ export default function Toolbar() {
   } = useERDStore();
   const { user, status, openModal, logout } = useAuthStore();
   const { currentId, dirty, saving, list, saveCurrent } = useDiagramStore();
+  const { theme, toggleTheme } = useThemeStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const currentName = currentId !== null ? list.find(d => d.id === currentId)?.name : null;
@@ -105,6 +107,17 @@ export default function Toolbar() {
         </button>
 
         <div className="flex items-center gap-2 border-l border-outline-variant pl-4 ml-2">
+          <button
+            aria-label="Toggle theme"
+            data-testid="theme-toggle"
+            className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer"
+            title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+            onClick={toggleTheme}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
           <button aria-label="Notifications" className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-default" title="알림 (준비 중)">
             <span className="material-symbols-outlined text-[20px]">notifications</span>
           </button>

@@ -36,6 +36,39 @@
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
 }
 
+/* 라이트 테마 오버라이드 — html[data-theme="light"]이 :root보다 명시도 높아 우선 적용됨 */
+html[data-theme="light"] {
+  --color-background: #f8f9ff;
+  --color-surface: #f8f9ff;
+  --color-surface-dim: #e0dce6;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f0f9;
+  --color-surface-container: #ece8f5;
+  --color-surface-container-high: #e6e2ef;
+  --color-surface-container-highest: #e0dce9;
+  --color-surface-variant: #e4e1ec;
+  --color-on-surface: #1c1a22;
+  --color-on-surface-variant: #46444f;
+  --color-outline: #787480;
+  --color-outline-variant: #c8c4d0;
+  --color-primary: #494bd6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #e0e0ff;
+  --color-on-primary-container: #00006e;
+  --color-inverse-primary: #c0c1ff;
+  --color-secondary-container: #dce2f9;
+  --color-on-secondary-container: #141b2e;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-node-header: #e9e6f4;
+  --color-node-bg: #f2f0f9;
+  --color-node-border: #b0a8d0;
+  --color-pk-color: #d97706;
+  --color-fk-color: #4338ca;
+  --color-input-bg: #ffffff;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -46,7 +79,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #131313;
+  background: var(--color-background);
   font-family: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -70,6 +103,9 @@ html, body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+html[data-theme="light"] .glass-toolbar {
+  background: rgba(248, 249, 255, 0.8);
+}
 
 /* 커스텀 스크롤바 */
 .custom-scrollbar::-webkit-scrollbar {
@@ -86,6 +122,12 @@ html, body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #908fa0;
 }
+html[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c8c4d0;
+}
+html[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #787480;
+}
 
 /* 엔티티 노드 그림자/호버 */
 .entity-node {
@@ -100,11 +142,18 @@ html, body {
 .react-flow__background {
   background: #121212 !important;
 }
+html[data-theme="light"] .react-flow__background {
+  background: #f0eeff !important;
+}
 
 .react-flow__minimap {
   background: #0e0e0e !important;
   border: 1px solid #464554 !important;
   border-radius: 8px !important;
+}
+html[data-theme="light"] .react-flow__minimap {
+  background: #f2f0f9 !important;
+  border: 1px solid #c8c4d0 !important;
 }
 
 /* 노드 선택 시 기본 outline 제거, 디자인 시안의 primary ring 적용 */
@@ -115,6 +164,10 @@ html, body {
 .react-flow__node.selected .entity-node {
   border-color: #c0c1ff !important;
   box-shadow: 0 0 0 1px rgba(192, 193, 255, 0.35), 0 0 15px rgba(192, 193, 255, 0.12);
+}
+html[data-theme="light"] .react-flow__node.selected .entity-node {
+  border-color: #494bd6 !important;
+  box-shadow: 0 0 0 1px rgba(73, 75, 214, 0.35), 0 0 15px rgba(73, 75, 214, 0.12);
 }
 
 /* 연결선 핸들 */
@@ -139,6 +192,9 @@ main:fullscreen {
   width: 100vw;
   height: 100vh;
   background: #121212;
+}
+html[data-theme="light"] main:fullscreen {
+  background: #f0eeff;
 }
 main:fullscreen .react-flow {
   width: 100% !important;

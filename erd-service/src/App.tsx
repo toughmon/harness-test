@@ -7,15 +7,21 @@ import AuthModal from './components/auth/AuthModal';
 import DialogModal from './components/common/DialogModal';
 import { useERDStore } from './store/erdStore';
 import { useAuthStore } from './store/authStore';
+import { useThemeStore } from './store/themeStore';
 
 function App() {
   const { undo, redo } = useERDStore();
   const { modalOpen, init } = useAuthStore();
+  const { theme } = useThemeStore();
 
   // 앱 시작 시 세션 복원 (쿠키의 JWT로 GET /me)
   useEffect(() => {
     init();
   }, [init]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // 전역 Undo/Redo 단축키 — 입력 필드 포커스 중에는 브라우저 기본 동작 유지
   useEffect(() => {
