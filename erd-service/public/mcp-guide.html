@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EasyERD · MCP 연결 가이드</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #131313;
+      --surface-low: #1c1b1b;
+      --surface: #201f1f;
+      --surface-high: #2a2a2a;
+      --surface-variant: #353534;
+      --on-surface: #e5e2e1;
+      --on-surface-variant: #c7c4d7;
+      --outline: #908fa0;
+      --outline-variant: #464554;
+      --primary: #c0c1ff;
+      --primary-container: #8083ff;
+      --pk: #f59e0b;
+      --fk: #6366f1;
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--on-surface);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.7;
+      scroll-behavior: smooth;
+    }
+    .layout { display: flex; max-width: 1180px; margin: 0 auto; align-items: flex-start; }
+
+    /* 좌측 목차 */
+    nav.toc {
+      position: sticky; top: 0; align-self: flex-start;
+      width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      padding: 28px 16px 40px 24px;
+      border-right: 1px solid var(--outline-variant);
+    }
+    nav.toc .brand {
+      font-size: 22px; font-weight: 900; letter-spacing: -0.02em;
+      color: var(--primary); margin-bottom: 4px;
+    }
+    nav.toc .sub { font-family: var(--font-mono); font-size: 11px; color: var(--on-surface-variant); margin-bottom: 20px; }
+    nav.toc a {
+      display: block; color: var(--on-surface-variant); text-decoration: none;
+      font-size: 13px; padding: 6px 10px; border-radius: 6px; transition: all .15s;
+      border-left: 2px solid transparent;
+    }
+    nav.toc a:hover { background: var(--surface-variant); color: var(--on-surface); }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+
+    /* 본문 */
+    main { flex: 1; min-width: 0; padding: 40px 48px 120px; }
+    main h1 {
+      font-size: 32px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px;
+    }
+    main h1 .badge {
+      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+      color: var(--primary); background: rgba(128,131,255,.12);
+      padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 10px;
+    }
+    .lead { color: var(--on-surface-variant); font-size: 15px; margin: 0 0 8px; }
+    .note {
+      border-left: 3px solid var(--primary-container);
+      background: rgba(128,131,255,.06);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+    .warn {
+      border-left: 3px solid var(--warn);
+      background: rgba(251,191,36,.07);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+    section { scroll-margin-top: 24px; padding-top: 16px; }
+    h2 {
+      font-size: 22px; font-weight: 700; margin: 36px 0 14px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--outline-variant);
+    }
+    h2 .step {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 999px; margin-right: 10px;
+      background: var(--primary-container); color: #1a1a2e;
+      font-size: 14px; font-weight: 700; font-family: var(--font-mono);
+    }
+    h3 { font-size: 16px; font-weight: 700; margin: 26px 0 10px; color: var(--on-surface); }
+    p { margin: 10px 0; }
+    ul, ol { margin: 10px 0; padding-left: 22px; }
+    li { margin: 5px 0; }
+    strong { color: #fff; font-weight: 700; }
+    code {
+      font-family: var(--font-mono); font-size: 12.5px;
+      background: var(--surface-high); color: var(--primary);
+      padding: 1px 6px; border-radius: 4px;
+    }
+    pre {
+      background: var(--surface-low); border: 1px solid var(--outline-variant);
+      border-radius: 10px; padding: 16px 18px; overflow-x: auto;
+      font-family: var(--font-mono); font-size: 12px; color: var(--on-surface-variant);
+      line-height: 1.55;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    table {
+      width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px;
+      border: 1px solid var(--outline-variant); border-radius: 10px; overflow: hidden;
+    }
+    th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--outline-variant); vertical-align: top; }
+    th { background: var(--surface); font-weight: 600; color: var(--on-surface); font-size: 12.5px; }
+    tr:last-child td { border-bottom: none; }
+    td:first-child, th:first-child { white-space: nowrap; }
+    footer {
+      margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--outline-variant);
+      color: var(--outline); font-size: 12px;
+    }
+    @media (max-width: 860px) {
+      nav.toc { display: none; }
+      main { padding: 28px 22px 80px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="brand">EasyERD</div>
+      <div class="sub">MCP 연결 가이드</div>
+      <a href="#intro">개요</a>
+      <a href="#prereq">사전 준비</a>
+      <a href="#step1">1. 의존성 설치</a>
+      <a href="#step2">2. 서비스 계정 만들기</a>
+      <a href="#step3">3. .mcp.json 작성</a>
+      <a href="#step4">4. 재시작 &amp; 연결 확인</a>
+      <a href="#usage">사용법</a>
+      <a href="#tools">도구 목록</a>
+      <a href="#trouble">문제 해결</a>
+      <a href="#caveats">주의사항</a>
+      <a href="/manual.html" class="back">← 사용자 매뉴얼</a>
+    </nav>
+
+    <main>
+      <h1>MCP 연결 가이드 <span class="badge">Claude Code</span></h1>
+      <p class="lead">Claude Code에서 자연어로 이 EasyERD 서비스의 다이어그램을 만들고 편집하도록 MCP 서버를 연결하는 방법입니다.</p>
+
+      <section id="intro">
+        <h2>개요</h2>
+        <p><strong>MCP(Model Context Protocol)</strong>는 Claude Code 같은 AI 클라이언트가 외부 도구를 호출하도록 연결하는 표준입니다. EasyERD에는 전용 MCP 서버가 포함돼 있어, 연결하면 다음처럼 말할 수 있습니다:</p>
+        <div class="note">"user 엔티티 만들고 PK는 seq(사용자고유번호) integer, name(이름) varchar(100)으로 추가해줘" → 엔티티·컬럼·관계가 자동으로 생성되고 서버에 저장됩니다.</div>
+        <p>동작 구조는 다음과 같습니다. MCP 서버는 변경할 때마다 다이어그램을 통째로 받아 → 변형 → 다시 저장합니다.</p>
+        <pre><code>Claude Code ──stdio──▶ erd-mcp (로컬) ──HTTP(로그인 쿠키)──▶ EasyERD 서버 (/api)</code></pre>
+      </section>
+
+      <section id="prereq">
+        <h2>사전 준비</h2>
+        <ul>
+          <li><strong>Claude Code</strong> 설치 (CLI 또는 IDE 확장)</li>
+          <li><strong>Node.js</strong> 18 이상</li>
+          <li>이 저장소(<code>harness-test</code>)를 로컬에 클론 — MCP 서버 소스가 <code>erd-service/mcp/</code>에 있습니다</li>
+          <li>EasyERD 서버 주소. 이 가이드는 배포 서버 <code>http://toughdev.cafe24.com:8080</code> 기준입니다(로컬 테스트는 <code>http://localhost:8080</code>)</li>
+        </ul>
+      </section>
+
+      <section id="step1">
+        <h2><span class="step">1</span>의존성 설치</h2>
+        <p>클론한 저장소에서 MCP 패키지의 의존성을 설치합니다.</p>
+        <pre><code>cd erd-service/mcp
+npm install</code></pre>
+      </section>
+
+      <section id="step2">
+        <h2><span class="step">2</span>서비스 계정 만들기</h2>
+        <p>MCP는 EasyERD에 <strong>로그인 계정</strong>으로 접속합니다. 본인 전용 계정을 하나 만드세요(아이디 3자 이상, 비밀번호 8자 이상). 그 계정으로 만든 다이어그램만 MCP에서 보이고 편집됩니다.</p>
+        <pre><code>curl -X POST http://toughdev.cafe24.com:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"내아이디-mcp","password":"내비밀번호"}'</code></pre>
+        <div class="note">웹 화면 우측 상단 아바타 → 회원가입으로 만들어도 됩니다. 사람이 쓰는 계정과 분리하면(예: <code>홍길동-mcp</code>) 관리가 편합니다.</div>
+      </section>
+
+      <section id="step3">
+        <h2><span class="step">3</span>.mcp.json 작성</h2>
+        <p>저장소의 <strong>프로젝트 루트</strong>에 <code>.mcp.json</code> 파일을 만들고 아래 내용을 넣습니다. 값(계정·비밀번호)은 본인 것으로 바꾸세요.</p>
+        <pre><code>{
+  "mcpServers": {
+    "erd": {
+      "command": "npx",
+      "args": ["-y", "tsx", "erd-service/mcp/src/index.ts"],
+      "env": {
+        "ERD_BASE_URL": "http://toughdev.cafe24.com:8080",
+        "ERD_USERNAME": "내아이디-mcp",
+        "ERD_PASSWORD": "내비밀번호"
+      }
+    }
+  }
+}</code></pre>
+        <p>CLI로도 등록할 수 있습니다.</p>
+        <pre><code>claude mcp add erd \
+  --env ERD_BASE_URL=http://toughdev.cafe24.com:8080 \
+  --env ERD_USERNAME=내아이디-mcp \
+  --env ERD_PASSWORD=내비밀번호 \
+  -- npx -y tsx erd-service/mcp/src/index.ts</code></pre>
+        <div class="warn">⚠️ <code>.mcp.json</code>에는 비밀번호가 평문으로 들어갑니다. <strong>커밋·공유하지 마세요.</strong> <code>.gitignore</code>에 <code>.mcp.json</code>을 추가하는 것을 권장합니다. 특정 다이어그램을 시작 시 자동 선택하려면 env에 <code>"ERD_DIAGRAM_ID": "5"</code>처럼 id를 넣을 수 있습니다.</div>
+      </section>
+
+      <section id="step4">
+        <h2><span class="step">4</span>재시작 &amp; 연결 확인</h2>
+        <p>MCP 서버는 시작 시점에 로드되므로 <strong>Claude Code를 재시작</strong>합니다. 그다음:</p>
+        <ul>
+          <li><code>/mcp</code> 입력 → <code>erd</code> 서버와 도구 목록이 보이면 연결 성공</li>
+          <li>또는 "ERD 다이어그램 목록 보여줘"라고 요청 → <code>list_diagrams</code> 실행</li>
+        </ul>
+        <div class="note">첫 실행은 <code>npx -y tsx</code>가 tsx를 받아오느라 몇 초 걸릴 수 있습니다(최초 1회).</div>
+      </section>
+
+      <section id="usage">
+        <h2>사용법</h2>
+        <p>연결되면 자연어로 요청하면 됩니다. 예:</p>
+        <ul>
+          <li>"주문 시스템 ERD 새로 만들어줘"</li>
+          <li>"User(사용자)와 Order(주문) 엔티티 추가하고, User→Order 1:M 비식별 관계 연결해줘"</li>
+          <li>"User에 email(이메일) varchar(255) 컬럼 추가해줘"</li>
+          <li>"방금 만든 다이어그램 요약 보여줘"</li>
+        </ul>
+        <p>관계를 연결하면 상위 엔티티의 PK가 하위에 <strong>FK 컬럼으로 자동 생성</strong>됩니다(식별 관계면 FK가 하위 PK에도 포함).</p>
+      </section>
+
+      <section id="tools">
+        <h2>도구 목록</h2>
+        <p>참조 인자(엔티티·컬럼·source·target)는 <strong>id 또는 이름</strong> 둘 다 사용할 수 있습니다.</p>
+        <table>
+          <thead><tr><th>도구</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>list_diagrams</code></td><td>내 다이어그램 목록</td></tr>
+            <tr><td><code>create_diagram</code></td><td>빈 다이어그램 생성 + 현재 선택</td></tr>
+            <tr><td><code>select_diagram</code></td><td>작업 대상 선택 (id 또는 이름)</td></tr>
+            <tr><td><code>get_diagram</code></td><td>현재/지정 다이어그램 요약 조회</td></tr>
+            <tr><td><code>rename_diagram</code> / <code>delete_diagram</code></td><td>이름 변경 / 삭제</td></tr>
+            <tr><td><code>add_entity</code></td><td>엔티티 추가 (기본 id PK 포함)</td></tr>
+            <tr><td><code>update_entity</code> / <code>delete_entity</code></td><td>수정 / 삭제 (연쇄 FK·관계 정리)</td></tr>
+            <tr><td><code>add_column</code> / <code>update_column</code> / <code>delete_column</code></td><td>컬럼 CRUD</td></tr>
+            <tr><td><code>add_relationship</code></td><td>관계 추가 + 상위 PK를 하위 FK로 자동 생성</td></tr>
+            <tr><td><code>update_relationship_type</code></td><td>관계 타입 변경 (식별↔비식별)</td></tr>
+            <tr><td><code>delete_relationship</code></td><td>관계 삭제 + 자동 FK 제거</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="trouble">
+        <h2>문제 해결</h2>
+        <table>
+          <thead><tr><th>증상</th><th>원인 / 해결</th></tr></thead>
+          <tbody>
+            <tr><td>도구가 안 보임</td><td><code>.mcp.json</code>이 프로젝트 루트에 있는지, Claude Code를 재시작했는지 확인. <code>/mcp</code>로 상태 확인</td></tr>
+            <tr><td>로그인 실패 (401)</td><td><code>ERD_USERNAME</code>/<code>ERD_PASSWORD</code> 확인, 서버에 그 계정이 가입돼 있는지 확인</td></tr>
+            <tr><td>token 쿠키 없음</td><td>HTTPS 서버라면 <code>ERD_BASE_URL</code>이 <code>https://</code>인지 확인</td></tr>
+            <tr><td>모듈/tsx 못 찾음</td><td><code>cd erd-service/mcp &amp;&amp; npm install</code> 실행 여부 확인</td></tr>
+            <tr><td>편집했는데 화면에 안 보임</td><td>설계상 정상 — 다이어그램을 다시 열거나 새로고침(아래 주의사항)</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="caveats">
+        <h2>주의사항</h2>
+        <ul>
+          <li><strong>새로고침 필요</strong>: MCP 편집은 DB에 저장됩니다. 이미 열려 있는 브라우저에는 자동 반영되지 않으니 다이어그램을 다시 열거나 새로고침하세요.</li>
+          <li><strong>마지막 저장 우선</strong>: 같은 다이어그램을 MCP와 브라우저에서 동시에 저장하면 나중 저장이 앞 저장을 덮어씁니다.</li>
+          <li><strong>계정 격리</strong>: 각자 자기 MCP 계정의 다이어그램만 보고 편집합니다. 공유하려면 같은 계정을 함께 쓰면 됩니다.</li>
+          <li>서브타입(SubSet)·일괄 생성·실시간 동기화는 현재 범위 밖입니다.</li>
+        </ul>
+        <div class="note">자세한 개발자용 문서는 저장소의 <code>erd-service/mcp/README.md</code>를 참고하세요.</div>
+      </section>
+
+      <footer>
+        EasyERD · MCP 연결 가이드 — 이 페이지는 EasyERD 서버에서 <code>/mcp-guide.html</code>로 제공됩니다.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

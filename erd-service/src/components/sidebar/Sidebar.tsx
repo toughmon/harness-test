@@ -175,6 +175,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-outline-variant p-2 flex flex-col gap-1">
+        <NavItem icon="cable" label="MCP 연결 가이드" href="/mcp-guide.html" />
         <NavItem icon="help" label="Help" />
         <NavItem icon="description" label="Docs" href="/manual.html" />
       </div>

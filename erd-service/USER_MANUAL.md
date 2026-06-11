@@ -61,6 +61,7 @@ EasyERD는 브라우저에서 ERD(Entity-Relationship Diagram, 개체-관계 다
 - **접기/펼치기** — 헤더 오른쪽의 패널 접기 버튼(⊟)을 누르면 사이드바가 얇은 막대로
   접혀 캔버스를 넓게 볼 수 있습니다. 접힌 상태에서도 펼치기 버튼과 Add Entity
   단축 아이콘은 남아 있습니다.
+- **하단 메뉴** — **MCP 연결 가이드**(Claude Code로 ERD를 자연어 제어하는 방법, `/mcp-guide.html` 새 탭) · **Help** · **Docs**(이 매뉴얼).
 
 ---
 

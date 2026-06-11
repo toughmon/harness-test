@@ -29,8 +29,10 @@ try {
   // 2. 유지 대상 요소는 그대로 있어야 함
   check('Add Entity 버튼 유지', await aside.locator('button:has-text("Add Entity")').count() === 1);
   check('Entity List 헤더 유지', await aside.locator('text=Entity List').count() === 1);
-  check('Help 메뉴 유지', await aside.locator('span:text-is("Help")').count() === 1);
-  check('Docs 메뉴 유지', await aside.locator('span:text-is("Docs")').count() === 1);
+  // Help는 placeholder(span, title 속성), Docs는 manual.html 링크(a)로 렌더됨
+  check('Help 메뉴 유지', await aside.locator('[title="Help (준비 중)"]').count() === 1);
+  check('Docs 메뉴 유지', await aside.locator('a[href="/manual.html"]').count() === 1);
+  check('MCP 연결 가이드 메뉴 존재', await aside.locator('a[href="/mcp-guide.html"]').count() === 1);
 
   // 3. Entity List 기능 동작 확인 (추가 → 목록 표시 → 선택)
   await page.click('button:has-text("Add Entity")');
