@@ -1,0 +1,15 @@
+{
+  "//": "이 파일을 프로젝트 루트(C:/project/harness-test/.mcp.json)에 복사하고 값을 채우세요. 비밀번호는 커밋하지 마세요.",
+  "mcpServers": {
+    "erd": {
+      "command": "npx",
+      "args": ["-y", "tsx", "erd-service/mcp/src/index.ts"],
+      "env": {
+        "ERD_BASE_URL": "https://your-erd-domain.example.com",
+        "ERD_USERNAME": "mcp-bot",
+        "ERD_PASSWORD": "change-me",
+        "ERD_DIAGRAM_ID": ""
+      }
+    }
+  }
+}

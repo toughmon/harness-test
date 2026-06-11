@@ -94,12 +94,24 @@ try {
   await page.click('button[title="Fit View"]');
   await page.waitForTimeout(500);
 
+  // 부모 Entity1의 PK명을 자식 기본 PK(id)와 겹치지 않게 변경 — 이름 충돌 시 자식 PK가
+  // FK로 교체되는 동작(verify_fk_namedup에서 검증)과 분리해, 여기선 FK 플래그 전환만 본다.
+  await page.locator('.react-flow__node').nth(0).click();
+  await page.waitForTimeout(300);
+  const setupPanel = page.locator('aside').last();
+  await setupPanel.locator('.font-mono', { hasText: /^id$/ }).first().click();
+  await page.waitForTimeout(300);
+  await setupPanel.locator('input[placeholder="물리명"]').first().fill('pid');
+  await page.waitForTimeout(300);
+  await page.mouse.click(700, 750);
+  await page.waitForTimeout(300);
+
   const relOk = await drawRelationship(0, 1, '1:M 비식별 (점선 + 실선)');
   check('관계 생성 (비식별)', relOk && await edgeCount() === 1);
-  // FK는 link 아이콘으로 카운트 — FK명이 상위 PK명(id) 그대로라 컬럼명 문자열로는 식별 불가
+  // FK는 link 아이콘으로 카운트 (PK/FK 아이콘 수로 플래그 판정)
   const fkIconCount = () => page.locator('.react-flow__node').nth(1).locator('[title="Foreign Key"]').count();
   const pkIconCount = () => page.locator('.react-flow__node').nth(1).locator('[title="Primary Key"]').count();
-  // 비식별도 FK는 생성되되 PK(식별자)에는 미포함 — PK 아이콘은 원래 id 1개, FK 아이콘 1개 추가
+  // 비식별 FK는 생성되되 식별자(PK) 미포함 — 자식 원래 PK(id) 1개 + FK(pid) 1개
   let pkIcons = await pkIconCount();
   let fkIcons = await fkIconCount();
   check('비식별 → FK 생성 (식별자 미포함)', fkIcons === 1 && pkIcons === 1);

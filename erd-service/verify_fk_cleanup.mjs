@@ -109,8 +109,9 @@ try {
   check('Undo → FK 복원', (await childFkIcons()) === 1);
 
   // ── 시나리오 3: 식별 관계선 삭제 → 하위 FK 제거 (엔티티는 유지) ──
-  await page.click('button[title="Fit View"]');
-  await page.waitForTimeout(600);
+  // 기본 배치는 노드 간격이 좁아 엣지 중간점이 핸들에 가려짐 → 자동 정렬로 간격 확보
+  await page.click('button[title="자동 정렬"]');
+  await page.waitForTimeout(800);
   await clickEdge(0);
   await page.click('button[title="관계 삭제"]');
   await page.waitForTimeout(500);

@@ -63,7 +63,9 @@ erd-service/
 │   │   ├── autoLayout.ts    # dagre 자동 정렬
 │   │   ├── exportImage.ts   # PNG 내보내기
 │   │   └── edgeConnection.ts# 관계선 연결점 분산 계산
+│   ├── core/erdOps.ts       # ERD 변형 순수 로직 (store·MCP 서버가 공유)
 │   └── types/erd.ts         # Entity/Column/Relationship/ERDData 타입
+├── mcp/                     # MCP 서버 — Claude Code에서 ERD 제어 (아래 "MCP 연동")
 └── verify_*.mjs             # Playwright e2e (아래 QA 체계)
 ```
 
@@ -77,17 +79,17 @@ ERDData      { version: "1.0", entities: { entity, position }[], relationships }
 ```
 
 - `ERDData`는 JSON 파일 저장과 DB 저장(`diagrams.data` JSONB)에 동일하게 사용
-- 관계 타입: `ONE_TO_MANY_IDENTIFYING` / `ONE_TO_MANY_NON_IDENTIFYING` / `ONE_TO_MANY_OPTIONAL` / `ONE_TO_ONE_IDENTIFYING` / `ONE_TO_ONE_NON_IDENTIFYING`
+- 관계 타입(8종): `1:M`·`1:1` 각각 `IDENTIFYING`(식별, 점선+실선) / `IDENTIFYING_SOLID`(식별, 실선+실선) / `NON_IDENTIFYING`(비식별, 점선+실선) / `OPTIONAL`(비식별, 점선+점선·NULL 허용) — 예: `ONE_TO_MANY_IDENTIFYING`, `ONE_TO_ONE_OPTIONAL`. SOLID는 렌더링(전체 실선)만 다르고 FK 플래그는 일반 식별과 동일
 
 ### FK 자동 생성 규칙
 
-관계 연결 시 상위 엔티티의 PK가 하위 엔티티에 FK 컬럼으로 자동 생성된다 (`{상위명소문자}_{pk명}`, 논리명 자동 조합).
+관계 연결 시 상위 엔티티의 PK가 하위 엔티티에 FK 컬럼으로 자동 생성된다. 컬럼명은 **상위 PK명 그대로**(엔티티명 접두사 없음), 논리명도 **상위 PK 논리명 그대로** 가져온다. 하위에 같은 이름의 컬럼이 이미 있으면 그 컬럼을 FK로 교체한다(단, 다른 관계로 생성된 FK는 보존 — `verify_fk_namedup`).
 
 | 관계 타입 | FK 생성 | PK(식별자) 포함 | NOT NULL |
 |---|:---:|:---:|:---:|
-| 식별 (1:M, 1:1) | O | O | O |
+| 식별 / 식별-SOLID (1:M, 1:1) | O | O | O |
 | 비식별 (1:M, 1:1) | O | X | O |
-| 선택 (1:M) | O | X | X (NULL 허용) |
+| 선택 OPTIONAL (1:M, 1:1) | O | X | X (NULL 허용) |
 
 - 관계 **타입 변경** 시 FK 플래그만 전환 (PK 승격/해제 — 사용자가 수정한 컬럼명 보존)
 - 관계/상위 엔티티 **삭제** 시 자동 생성된 FK도 함께 제거 (`refEntityId` 기준), Undo로 복원 가능
@@ -161,6 +163,20 @@ pm2 restart erd --update-env                # 최초: pm2 start server/index.js 
 pm2 logs erd --lines 20                     # "PostgreSQL 연결" 로그 확인
 ```
 
+## MCP 연동 (Claude Code)
+
+Claude Code에서 **배포된 이 서비스의 다이어그램을 자연어로 생성·편집**할 수 있는 MCP 서버를 `mcp/`에 포함한다. 백엔드는 blob 단위 CRUD만 제공하므로, MCP 서버는 매 변형마다 `GET blob → 공유 로직(src/core/erdOps) 적용 → PUT blob`으로 동작한다(백엔드 변경 없음).
+
+```
+Claude Code ──stdio──> erd-service/mcp ──https(JWT 쿠키)──> /api/diagrams
+```
+
+- 도구 15종: 다이어그램 CRUD + 엔티티/컬럼/관계 CRUD + FK 자동생성(참조는 id·이름 모두 허용)
+- 인증: MCP 전용 서비스 계정으로 `/api/auth/login` → 쿠키 보관 + 401 재로그인
+- 편집은 DB에 반영되며, **이미 열린 브라우저는 재오픈/새로고침 시 반영**(라이브 싱크 미포함)
+
+설치·서비스 계정 등록·`.mcp.json` 작성·문제 해결은 **[`mcp/README.md`](mcp/README.md)** 참고. 등록 예시는 `mcp/.mcp.json.example`.
+
 ## QA 체계 (Playwright e2e)
 
 서버 기동 후 `node verify_<이름>.mjs` 실행. `BASE_URL` env 지원 (기본은 스크립트별 5174 또는 8080).
@@ -172,10 +188,12 @@ pm2 logs erd --lines 20                     # "PostgreSQL 연결" 로그 확인
 | verify_backend | 가입→DB저장→세션복원→열기·모달·401/409 (24항목) |
 | verify_features | Undo/Redo·관계 타입 변경·자동 정렬·PNG (14항목) |
 | verify_fk_cleanup | 엔티티/관계 삭제 시 FK 정리, 비식별 FK (13항목) |
+| verify_fk_namedup | FK명이 하위 컬럼과 충돌 시 교체 처리 (식별/비식별 상속) |
 | verify_column_drag | 컬럼 드래그 순서 변경 (5항목) |
 | verify_logical | 논리명/물리명 병기·FK 논리명 자동 조합 |
 | verify_design | EasyERD 레이아웃·관계·FK |
 | verify_sidebar_cleanup / verify_gnb_cleanup | 사이드바·GNB 정리 회귀 |
 | verify_erd / verify_barker / verify_fanout | (구버전 — 디자인 개편 이전 UI 기준, 동작 불가) |
+| mcp/verify_mcp | MCP 서버 — stdio 도구 호출→저장 blob FK 검증→브라우저 렌더 (24항목, `mcp/`에서 실행) |
 
 변경 이력은 루트 `CLAUDE.md`의 변경 이력 테이블에 기록한다.

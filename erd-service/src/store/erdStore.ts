@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import { Entity, Column, Relationship, RelationshipType, ColumnType, Subtype } from '../types/erd';
+import { Entity, Column, Relationship, RelationshipType, Subtype } from '../types/erd';
+import * as erdOps from '../core/erdOps';
+import { genId, DEFAULT_COLUMN, type NodePosition, type ErdDoc } from '../core/erdOps';
 
-const genId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-
-interface NodePosition { x: number; y: number }
+// 변형 로직은 ../core/erdOps(순수 함수, MCP 서버와 공유)에 있고, 여기서는 히스토리·
+// 선택 상태·dirty 추적 같은 UI 관심사만 감싼다. erdOps.fn(docOf(s), ...)을 호출해 결과
+// 문서를 set으로 머지한다. 서브타입/위치/undo·redo/loadData는 UI 전용이라 인라인 유지.
 
 // Undo/Redo용 문서 상태 스냅샷 (선택 상태는 제외)
 interface Snapshot {
@@ -16,49 +18,12 @@ const HISTORY_LIMIT = 50;
 // 같은 대상 연속 편집(키 입력 등)은 이 시간 내 병합되어 스냅샷 1개만 남긴다
 const COALESCE_MS = 800;
 
-function isIdentifyingType(type: RelationshipType): boolean {
-  return (
-    type === 'ONE_TO_MANY_IDENTIFYING' ||
-    type === 'ONE_TO_MANY_IDENTIFYING_SOLID' ||
-    type === 'ONE_TO_ONE_IDENTIFYING' ||
-    type === 'ONE_TO_ONE_IDENTIFYING_SOLID'
-  );
-}
-
-function isOptionalType(type: RelationshipType): boolean {
-  return type === 'ONE_TO_MANY_OPTIONAL' || type === 'ONE_TO_ONE_OPTIONAL';
-}
-
-// 관계 타입별 FK 컬럼 플래그 — 식별: PK 포함, 비식별: 일반 FK, 선택: NULL 허용
-function fkFlagsFor(type: RelationshipType): { isPK: boolean; isNN: boolean } {
-  return {
-    isPK: isIdentifyingType(type),
-    isNN: !isOptionalType(type),
-  };
-}
-
-// FK 컬럼 생성 (상위 엔티티 PK → 하위 엔티티 FK, 플래그는 관계 타입에 따름)
-function buildFKColumns(
-  sourceEntity: Entity,
-  sourceId: string,
-  flags: { isPK: boolean; isNN: boolean }
-): Column[] {
-  return sourceEntity.columns.filter(c => c.isPK).map(pk => ({
-    id: genId(),
-    // FK 컬럼명: 상위 엔티티 PK명 그대로 사용 (엔티티명 접두사 없음)
-    name: pk.name,
-    // 논리명: 상위 PK 논리명 그대로 (엔티티명 접두사 없음), 없으면 빈 값
-    logicalName: pk.logicalName ?? '',
-    type: pk.type as ColumnType,
-    size: pk.size,
-    isPK: flags.isPK,
-    isFK: true,
-    isNN: flags.isNN,
-    isUnique: false,
-    refEntityId: sourceId,
-    refColumnId: pk.id,
-  }));
-}
+// 스토어 상태에서 erdOps가 다루는 문서 슬라이스만 추출
+const docOf = (s: { entities: Entity[]; relationships: Relationship[]; nodePositions: Record<string, NodePosition> }): ErdDoc => ({
+  entities: s.entities,
+  relationships: s.relationships,
+  nodePositions: s.nodePositions,
+});
 
 interface ERDStore {
   entities: Entity[];
@@ -103,16 +68,6 @@ interface ERDStore {
 
   loadData: (entities: Entity[], relationships: Relationship[], positions: Record<string, NodePosition>) => void;
 }
-
-const DEFAULT_COLUMN: Omit<Column, 'id' | 'name'> = {
-  logicalName: '',
-  type: 'VARCHAR',
-  size: '255',
-  isPK: false,
-  isFK: false,
-  isNN: false,
-  isUnique: false,
-};
 
 export const useERDStore = create<ERDStore>((set, get) => {
   // ---- Undo/Redo 내부 상태 ----
@@ -180,54 +135,21 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
     addEntity: () => {
       pushHistory('addEntity');
-      const id = genId();
-      const count = get().entities.length + 1;
-      const pkId = genId();
-      const newEntity: Entity = {
-        id,
-        name: `Entity${count}`,
-        logicalName: '',
-        description: '',
-        color: '#3b82f6',
-        columns: [{
-          id: pkId,
-          name: 'id',
-          type: 'INT',
-          size: '',
-          isPK: true,
-          isFK: false,
-          isNN: true,
-          isUnique: true,
-        }],
-      };
-      // 가로로 나란히 배치 (240px 간격)
-      const col = (count - 1) % 4;
-      const row = Math.floor((count - 1) / 4);
-      set(s => ({
-        entities: [...s.entities, newEntity],
-        nodePositions: { ...s.nodePositions, [id]: { x: 80 + col * 260, y: 80 + row * 200 } },
-        selectedEntityId: id,
-      }));
+      set(s => {
+        const { doc, entityId } = erdOps.addEntity(docOf(s));
+        return { ...doc, selectedEntityId: entityId };
+      });
     },
 
     updateEntity: (id, updates) => {
       pushHistory(`updateEntity:${id}:${Object.keys(updates).join(',')}`);
-      set(s => ({
-        entities: s.entities.map(e => e.id === id ? { ...e, ...updates } : e),
-      }));
+      set(s => erdOps.updateEntity(docOf(s), id, updates));
     },
 
     deleteEntity: (id) => {
       pushHistory('deleteEntity');
       set(s => ({
-        // 엔티티 삭제 + 다른 엔티티에 남은, 삭제 대상을 참조하는 FK 컬럼도 함께 제거
-        entities: s.entities
-          .filter(e => e.id !== id)
-          .map(e => {
-            const columns = e.columns.filter(c => !(c.isFK && c.refEntityId === id));
-            return columns.length === e.columns.length ? e : { ...e, columns };
-          }),
-        relationships: s.relationships.filter(r => r.sourceId !== id && r.targetId !== id),
+        ...erdOps.deleteEntity(docOf(s), id),
         selectedEntityId: s.selectedEntityId === id ? null : s.selectedEntityId,
       }));
     },
@@ -236,52 +158,25 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
     addColumn: (entityId) => {
       pushHistory('addColumn');
-      const newCol: Column = {
-        ...DEFAULT_COLUMN,
-        id: genId(),
-        name: 'column',
-      };
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === entityId ? { ...e, columns: [...e.columns, newCol] } : e
-        ),
-      }));
+      set(s => erdOps.addColumn(docOf(s), entityId).doc);
     },
 
     updateColumn: (entityId, columnId, updates) => {
       pushHistory(`updateColumn:${columnId}:${Object.keys(updates).join(',')}`);
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === entityId
-            ? { ...e, columns: e.columns.map(c => c.id === columnId ? { ...c, ...updates } : c) }
-            : e
-        ),
-      }));
+      set(s => erdOps.updateColumn(docOf(s), entityId, columnId, updates));
     },
 
     deleteColumn: (entityId, columnId) => {
       pushHistory('deleteColumn');
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === entityId ? { ...e, columns: e.columns.filter(c => c.id !== columnId) } : e
-        ),
-      }));
+      set(s => erdOps.deleteColumn(docOf(s), entityId, columnId));
     },
 
     moveColumn: (entityId, fromIdx, toIdx) => {
       pushHistory('moveColumn');
-      set(s => ({
-        entities: s.entities.map(e => {
-          if (e.id !== entityId) return e;
-          const cols = [...e.columns];
-          const [moved] = cols.splice(fromIdx, 1);
-          cols.splice(toIdx, 0, moved);
-          return { ...e, columns: cols };
-        }),
-      }));
+      set(s => erdOps.moveColumn(docOf(s), entityId, fromIdx, toIdx));
     },
 
-    // ── 배타적 서브타입(SubSet) ──
+    // ── 배타적 서브타입(SubSet) — UI 전용, 인라인 유지 ──
     addSubtype: (entityId) => {
       pushHistory('addSubtype');
       set(s => ({
@@ -383,82 +278,26 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
     addRelationship: (sourceId, targetId, type) => {
       const { entities } = get();
-      const targetEntity = entities.find(e => e.id === targetId);
-      const sourceEntity = entities.find(e => e.id === sourceId);
-      if (!targetEntity || !sourceEntity) return;
-
+      // 엔티티가 모두 존재할 때만 히스토리를 남긴다 (erdOps도 동일하게 no-op 처리)
+      if (!entities.find(e => e.id === targetId) || !entities.find(e => e.id === sourceId)) return;
       pushHistory('addRelationship');
-
-      // 모든 관계 타입에서 FK 생성 — 식별이면 PK 포함, 비식별/선택이면 일반 FK
-      const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsFor(type));
-      // 이름 충돌 컬럼 제거: FK명과 같은 이름의 기존 컬럼을 교체
-      // (단, 다른 관계에서 만들어진 FK는 유지)
-      const fkNames = new Set(newFKColumns.map(c => c.name));
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === targetId
-            ? {
-                ...e,
-                columns: [
-                  ...e.columns.filter(c => !fkNames.has(c.name) || (c.isFK && c.refEntityId !== sourceId)),
-                  ...newFKColumns,
-                ],
-              }
-            : e
-        ),
-        relationships: [...s.relationships, { id: genId(), sourceId, targetId, type }],
-      }));
+      set(s => erdOps.addRelationship(docOf(s), sourceId, targetId, type).doc);
     },
 
-    // 관계 타입 변경 — FK 컬럼은 유지하고 플래그만 전환 (식별: PK 승격, 비식별: PK 해제, 선택: NULL 허용)
     updateRelationshipType: (id, newType) => {
       const s = get();
       const rel = s.relationships.find(r => r.id === id);
       if (!rel || rel.type === newType) return;
-      const sourceEntity = s.entities.find(e => e.id === rel.sourceId);
-      if (!sourceEntity) return;
-
+      if (!s.entities.find(e => e.id === rel.sourceId)) return;
       pushHistory(`relType:${id}`);
-
-      const flags = fkFlagsFor(newType);
-      const entities = s.entities.map(e => {
-        if (e.id !== rel.targetId) return e;
-        const hasAutoFK = e.columns.some(c => c.isFK && c.refEntityId === rel.sourceId);
-        if (hasAutoFK) {
-          // 기존 FK 플래그만 갱신 — 사용자가 수정한 컬럼명/논리명은 보존
-          return {
-            ...e,
-            columns: e.columns.map(c =>
-              c.isFK && c.refEntityId === rel.sourceId
-                ? { ...c, isPK: flags.isPK, isNN: flags.isNN }
-                : c
-            ),
-          };
-        }
-        // FK가 없는 기존 데이터(과거 비식별로 생성) — 새로 생성 (이름 충돌 컬럼 교체)
-        const newCols = buildFKColumns(sourceEntity, rel.sourceId, flags);
-        const names = new Set(newCols.map(c => c.name));
-        return { ...e, columns: [...e.columns.filter(c => !names.has(c.name) || (c.isFK && c.refEntityId !== rel.sourceId)), ...newCols] };
-      });
-
-      set({
-        entities,
-        relationships: s.relationships.map(r => r.id === id ? { ...r, type: newType } : r),
-      });
+      set(st => erdOps.updateRelationshipType(docOf(st), id, newType).doc);
     },
 
     deleteRelationship: (id) => {
       const s = get();
-      const rel = s.relationships.find(r => r.id === id);
-      if (!rel) return;
+      if (!s.relationships.find(r => r.id === id)) return;
       pushHistory('deleteRelationship');
-      // 관계 삭제 시 이 관계로 자동 추가됐던 FK 컬럼도 제거 (모든 타입이 FK를 생성하므로)
-      const entities = s.entities.map(e =>
-        e.id === rel.targetId
-          ? { ...e, columns: e.columns.filter(c => !(c.isFK && c.refEntityId === rel.sourceId)) }
-          : e
-      );
-      set({ entities, relationships: s.relationships.filter(r => r.id !== id) });
+      set(st => erdOps.deleteRelationship(docOf(st), id).doc);
     },
 
     setEditingRel: (id) => set({ editingRelId: id }),
