@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDiagramStore } from '../../store/diagramStore';
+import { useMcpStore } from '../../store/mcpStore';
 
 // 디자인 시안의 SideNavBar — Add Entity / Entity List는 실제 기능 연결,
 // 로그인 시 "내 다이어그램" 섹션 표시, Help/Docs는 비활성 placeholder
@@ -10,6 +11,7 @@ export default function Sidebar() {
   const { entities, selectedEntityId, selectEntity, addEntity } = useERDStore();
   const { status } = useAuthStore();
   const { list, currentId, open, startNew, rename, remove } = useDiagramStore();
+  const openMcp = useMcpStore(s => s.openModal);
   const [collapsed, setCollapsed] = useState(false);
 
   // 접힌 상태: 얇은 레일만 표시 — 펼치기 버튼 + 엔티티 추가 단축 아이콘
@@ -175,7 +177,8 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-outline-variant p-2 flex flex-col gap-1">
-        <NavItem icon="cable" label="MCP 연결 가이드" href="/mcp-guide.html" />
+        <NavItem icon="cable" label="MCP 연결" onClick={openMcp} testid="sidebar-mcp-connect" />
+        <NavItem icon="menu_book" label="MCP 연결 가이드" href="/mcp-guide.html" />
         <NavItem icon="help" label="Help" />
         <NavItem icon="description" label="Docs" href="/manual.html" />
       </div>
@@ -183,10 +186,19 @@ export default function Sidebar() {
   );
 }
 
-// href가 있으면 새 탭으로 여는 링크, 없으면 비활성 placeholder
-function NavItem({ icon, label, href }: { icon: string; label: string; href?: string }) {
+// onClick이 있으면 버튼, href가 있으면 새 탭 링크, 둘 다 없으면 비활성 placeholder
+function NavItem({ icon, label, href, onClick, testid }: { icon: string; label: string; href?: string; onClick?: () => void; testid?: string }) {
   const className =
     'flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant hover:bg-surface-variant hover:text-on-surface';
+
+  if (onClick) {
+    return (
+      <button className={`${className} cursor-pointer text-left`} onClick={onClick} title={label} data-testid={testid}>
+        <span className="material-symbols-outlined text-[18px]">{icon}</span>
+        {label}
+      </button>
+    );
+  }
 
   if (href) {
     return (

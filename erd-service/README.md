@@ -146,11 +146,13 @@ diagrams (id SERIAL PK, user_id INT FK→users ON DELETE CASCADE,
 ```bash
 # 개발 (터미널 2개)
 npm run dev          # Vite :5173 (API는 :8080으로 프록시)
-npm start            # Fastify :8080
+npm start            # Fastify :8080 (node --import tsx)
 
 # 프로덕션
 npm ci && npm run build && npm start
 ```
+
+> **`npm start`는 `node --import tsx server/index.js`로 실행된다.** 서버가 원격 MCP 브리지(`mcp/src/httpServer.ts`, TS)와 공유 로직을 직접 import하기 때문이다. `tsx`·`@modelcontextprotocol/sdk`·`zod`는 루트 의존성에 포함돼 있어 **루트 `npm install` 한 번**이면 충분하다(`mcp/`를 따로 설치할 필요 없음). 단일 Node 프로세스 구성은 그대로 유지된다.
 
 ### 배포 (Ubuntu + pm2)
 
@@ -159,21 +161,40 @@ cd /tough/app/harness-test/erd-service
 git pull
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci   # 의존성 변경 시
 npm run build
-pm2 restart erd --update-env                # 최초: pm2 start server/index.js --name erd && pm2 save
+pm2 restart erd --update-env                # 최초: pm2 start npm --name erd -- start && pm2 save
 pm2 logs erd --lines 20                     # "PostgreSQL 연결" 로그 확인
 ```
 
+> pm2 등록은 반드시 `pm2 start npm --name erd -- start`로 한다(`npm start`가 tsx로 기동). 과거처럼 `pm2 start server/index.js`(순수 node)로 띄우면 TS import에서 실패한다.
+
 ## MCP 연동 (Claude Code)
 
-Claude Code에서 **배포된 이 서비스의 다이어그램을 자연어로 생성·편집**할 수 있는 MCP 서버를 `mcp/`에 포함한다. 백엔드는 blob 단위 CRUD만 제공하므로, MCP 서버는 매 변형마다 `GET blob → 공유 로직(src/core/erdOps) 적용 → PUT blob`으로 동작한다(백엔드 변경 없음).
+Claude Code에서 **배포된 이 서비스의 다이어그램을 자연어로 생성·편집**할 수 있는 MCP 서버를 제공한다. 두 가지 연결 방식이 있으며 도구 15종(다이어그램 CRUD + 엔티티/컬럼/관계 CRUD + FK 자동생성, 참조는 id·이름 모두 허용)은 공통이다. 변형은 매번 `GET blob → 공유 로직(src/core/erdOps) 적용 → PUT blob`(백엔드 blob CRUD 그대로).
+
+### 원격 HTTP + 개인 토큰 (권장 — 원클릭)
+
+서버가 `/mcp`에 StreamableHTTP MCP 엔드포인트를 함께 호스팅한다. 사용자는 웹 좌측 사이드바 **MCP 연결**에서 개인 토큰(PAT)을 발급받아 명령 한 줄만 붙여넣으면 된다(레포·Node·재시작 불필요).
+
+```
+Claude Code ──HTTP(Bearer PAT)──> /mcp ──(요청 사용자 단기 JWT)──> /api/diagrams
+```
+
+```bash
+claude mcp add --transport http --header "Authorization: Bearer <PAT>" erd https://<도메인>/mcp
+```
+
+- 인증: `Authorization: Bearer erdmcp_…`(PAT) → `mcp_tokens`(sha256 해시 저장) 조회 → 해당 사용자로 동작. 서비스계정 불필요, 사용자별 격리 유지. PAT 발급/취소는 `/api/mcp-tokens`.
+- 구현: `mcp/src/httpServer.ts`(Fastify에 `/mcp` 마운트, 세션별 transport), 요청 컨텍스트는 `reqCtx`(AsyncLocalStorage)로 도구에 전달.
+
+### 로컬 stdio (개발·디버깅)
 
 ```
 Claude Code ──stdio──> erd-service/mcp ──https(JWT 쿠키)──> /api/diagrams
 ```
 
-- 도구 15종: 다이어그램 CRUD + 엔티티/컬럼/관계 CRUD + FK 자동생성(참조는 id·이름 모두 허용)
-- 인증: MCP 전용 서비스 계정으로 `/api/auth/login` → 쿠키 보관 + 401 재로그인
-- 편집은 DB에 반영되며, **이미 열린 브라우저는 재오픈/새로고침 시 반영**(라이브 싱크 미포함)
+- 서비스 계정으로 `/api/auth/login` → 쿠키 보관 + 401 재로그인. `cd mcp && npm install` 후 `.mcp.json`에 등록.
+
+편집은 DB에 반영되며, **이미 열린 브라우저는 재오픈/새로고침 시 반영**(라이브 싱크 미포함).
 
 설치·서비스 계정 등록·`.mcp.json` 작성·문제 해결은 **[`mcp/README.md`](mcp/README.md)** 참고. 등록 예시는 `mcp/.mcp.json.example`.
 

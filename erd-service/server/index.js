@@ -7,6 +7,9 @@ import path from 'node:path';
 import { createDb, initSchema } from './db.js';
 import authRoutes from './auth-routes.js';
 import diagramRoutes from './diagram-routes.js';
+import mcpTokenRoutes from './mcp-token-routes.js';
+import { hashToken, TOKEN_PREFIX } from './mcp-token-util.js';
+import { attachMcpHttp } from '../mcp/src/httpServer.ts';
 
 // 로컬 개발용 .env 로드 (없으면 무시)
 if (process.env.NODE_ENV !== 'production') {
@@ -40,9 +43,42 @@ app.decorate('authenticate', async (req, reply) => {
   }
 });
 
+// MCP 개인 토큰(PAT) 또는 JWT(쿠키/베어러) 둘 다 허용 — 원격 MCP(/mcp) 인증용
+app.decorate('authenticateAny', async (req, reply) => {
+  const auth = req.headers['authorization'];
+  if (auth && auth.startsWith(`Bearer ${TOKEN_PREFIX}`)) {
+    const token = auth.slice('Bearer '.length);
+    const res = await app.db.query(
+      `SELECT t.id, u.id AS user_id, u.username
+         FROM mcp_tokens t JOIN users u ON u.id = t.user_id
+        WHERE t.token_hash = $1`,
+      [hashToken(token)]
+    );
+    if (res.rows.length === 0) {
+      return reply.code(401).send({ error: 'invalid_token' });
+    }
+    req.user = { id: res.rows[0].user_id, username: res.rows[0].username };
+    // 마지막 사용시각 갱신(베스트 에포트 — 실패해도 요청은 진행)
+    app.db.query('UPDATE mcp_tokens SET last_used_at = now() WHERE id = $1', [res.rows[0].id]).catch(() => {});
+    return;
+  }
+  try {
+    await req.jwtVerify();
+  } catch {
+    reply.code(401).send({ error: 'Unauthorized' });
+  }
+});
+
 // API 라우트
 await app.register(authRoutes, { prefix: '/api/auth' });
 await app.register(diagramRoutes, { prefix: '/api/diagrams' });
+await app.register(mcpTokenRoutes, { prefix: '/api/mcp-tokens' });
+
+// 원격 MCP 전송 (/mcp) — 정적 서빙/SPA fallback 보다 먼저 등록해 우선 매칭
+attachMcpHttp(app, {
+  selfOrigin: `http://127.0.0.1:${PORT}`,
+  mintJwt: (user) => app.jwt.sign({ id: user.id, username: user.username }, { expiresIn: '10m' }),
+});
 
 // 정적 서빙
 await app.register(fastifyStatic, {

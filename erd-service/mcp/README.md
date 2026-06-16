@@ -2,6 +2,8 @@
 
 Claude Code(또는 다른 MCP 클라이언트)에서 **배포된 ERD 서비스의 다이어그램을 자연어로 생성·편집**하기 위한 MCP 서버입니다.
 
+> **연결이 목적이라면 이 문서(stdio)가 아니라 원격 방식을 권장합니다.** 서버가 `/mcp`에 원격 HTTP MCP를 함께 호스팅하므로, 웹 좌측 사이드바 **MCP 연결**에서 개인 토큰(PAT)을 발급받아 `claude mcp add --transport http --header "Authorization: Bearer <PAT>" erd https://<도메인>/mcp` 한 줄이면 끝입니다(레포·Node·재시작 불필요). 자세히는 `public/mcp-guide.html`. 아래는 이 패키지를 **로컬 stdio**로 직접 실행하는 개발·디버깅 경로입니다. 두 방식 모두 같은 도구·로직(`src/core/erdOps`)을 공유합니다.
+
 백엔드는 다이어그램을 JSON blob 단위로만 저장하므로(엔티티/컬럼 단위 API 없음), 이 서버는 매 변형마다 **`GET blob → 순수 로직(erdOps) 적용 → PUT blob`** 방식으로 동작합니다. 변형 로직은 프론트엔드와 동일한 [`../src/core/erdOps.ts`](../src/core/erdOps.ts)를 공유해 동작이 어긋나지 않습니다.
 
 ```

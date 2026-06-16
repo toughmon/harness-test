@@ -17,6 +17,21 @@ export interface Diagram extends DiagramMeta {
   data: ERDData;
 }
 
+export interface McpToken {
+  id: number;
+  label: string | null;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+// 발급 응답 — token 원문은 이 응답에서만 1회 노출
+export interface McpTokenIssued {
+  id: number;
+  label: string | null;
+  created_at: string;
+  token: string;
+}
+
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -61,4 +76,11 @@ export const api = {
     request<DiagramMeta>(`/api/diagrams/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) }),
   deleteDiagram: (id: number) =>
     request<{ ok: boolean }>(`/api/diagrams/${id}`, { method: 'DELETE' }),
+
+  // MCP 개인 액세스 토큰
+  listMcpTokens: () => request<McpToken[]>('/api/mcp-tokens'),
+  createMcpToken: (label?: string) =>
+    request<McpTokenIssued>('/api/mcp-tokens', { method: 'POST', body: JSON.stringify({ label }) }),
+  deleteMcpToken: (id: number) =>
+    request<{ ok: boolean }>(`/api/mcp-tokens/${id}`, { method: 'DELETE' }),
 };

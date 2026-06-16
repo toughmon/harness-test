@@ -1,8 +1,13 @@
 // 배포된 ERD 서비스 HTTP 클라이언트.
-// 브라우저처럼 JWT를 httpOnly 쿠키로 받아 보관하고, 401이면 1회 재로그인 후 재시도한다.
-// 백엔드 변경 없이 기존 /api/auth/login + /api/diagrams 계약을 그대로 사용.
+// 두 가지 동작 모드:
+//  ① 원격(co-host) HTTP 모드 — reqCtx에 단기 JWT가 있으면, 그 사용자로서 자기 백엔드
+//     (/api/*)를 Authorization: Bearer로 호출한다. 서비스계정/쿠키 보관 없음.
+//  ② stdio 모드 — reqCtx가 비어 있으면 기존처럼 서비스계정으로 로그인해 JWT 쿠키를
+//     메모리에 보관하고, 401이면 1회 재로그인 후 재시도한다.
+// 어느 모드든 백엔드 /api/auth/login + /api/diagrams 계약은 그대로 사용.
 
 import { getConfig } from './config';
+import { reqCtx } from './requestContext';
 
 let cookie: string | null = null;
 
@@ -45,6 +50,22 @@ async function doLogin(): Promise<void> {
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const ctx = reqCtx.getStore();
+
+  // ① 원격 HTTP 모드 — 요청 사용자의 단기 JWT를 베어러로 첨부해 자기 백엔드 호출
+  if (ctx?.jwt) {
+    const base = (ctx.baseUrl ?? getConfig().baseUrl).replace(/\/+$/, '');
+    return fetch(`${base}${path}`, {
+      ...init,
+      headers: {
+        ...(init.headers ?? {}),
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        Authorization: `Bearer ${ctx.jwt}`,
+      },
+    });
+  }
+
+  // ② stdio 모드 — 서비스계정 쿠키 로그인 + 401 재시도
   const { baseUrl } = getConfig();
   if (!cookie) await doLogin();
 

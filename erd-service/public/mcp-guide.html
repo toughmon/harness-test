@@ -135,13 +135,12 @@
       <div class="brand">EasyERD</div>
       <div class="sub">MCP 연결 가이드</div>
       <a href="#intro">개요</a>
-      <a href="#prereq">사전 준비</a>
-      <a href="#step1">1. 의존성 설치</a>
-      <a href="#step2">2. 서비스 계정 만들기</a>
-      <a href="#step3">3. .mcp.json 작성</a>
-      <a href="#step4">4. 재시작 &amp; 연결 확인</a>
+      <a href="#step1">1. 로그인 &amp; 토큰 발급</a>
+      <a href="#step2">2. 명령 한 줄 붙여넣기</a>
+      <a href="#step3">3. 연결 확인</a>
       <a href="#usage">사용법</a>
       <a href="#tools">도구 목록</a>
+      <a href="#advanced">고급: 로컬 stdio 방식</a>
       <a href="#trouble">문제 해결</a>
       <a href="#caveats">주의사항</a>
       <a href="/manual.html" class="back">← 사용자 매뉴얼</a>
@@ -153,71 +152,48 @@
 
       <section id="intro">
         <h2>개요</h2>
-        <p><strong>MCP(Model Context Protocol)</strong>는 Claude Code 같은 AI 클라이언트가 외부 도구를 호출하도록 연결하는 표준입니다. EasyERD에는 전용 MCP 서버가 포함돼 있어, 연결하면 다음처럼 말할 수 있습니다:</p>
+        <p><strong>MCP(Model Context Protocol)</strong>는 Claude Code 같은 AI 클라이언트가 외부 도구를 호출하도록 연결하는 표준입니다. EasyERD는 서버에 <strong>원격 MCP 엔드포인트(<code>/mcp</code>)</strong>를 직접 제공하므로, 연결하면 다음처럼 말할 수 있습니다:</p>
         <div class="note">"user 엔티티 만들고 PK는 seq(사용자고유번호) integer, name(이름) varchar(100)으로 추가해줘" → 엔티티·컬럼·관계가 자동으로 생성되고 서버에 저장됩니다.</div>
-        <p>동작 구조는 다음과 같습니다. MCP 서버는 변경할 때마다 다이어그램을 통째로 받아 → 변형 → 다시 저장합니다.</p>
-        <pre><code>Claude Code ──stdio──▶ erd-mcp (로컬) ──HTTP(로그인 쿠키)──▶ EasyERD 서버 (/api)</code></pre>
-      </section>
-
-      <section id="prereq">
-        <h2>사전 준비</h2>
-        <ul>
-          <li><strong>Claude Code</strong> 설치 (CLI 또는 IDE 확장)</li>
-          <li><strong>Node.js</strong> 18 이상</li>
-          <li>이 저장소(<code>harness-test</code>)를 로컬에 클론 — MCP 서버 소스가 <code>erd-service/mcp/</code>에 있습니다</li>
-          <li>EasyERD 서버 주소. 이 가이드는 배포 서버 <code>http://toughdev.cafe24.com:8080</code> 기준입니다(로컬 테스트는 <code>http://localhost:8080</code>)</li>
-        </ul>
+        <p>예전처럼 저장소를 클론하거나 Node를 설치하거나 <code>.mcp.json</code>을 손으로 편집하거나 Claude Code를 재시작할 필요가 <strong>없습니다.</strong> 웹에서 발급한 <strong>개인 토큰</strong>이 박힌 명령 한 줄을 붙여넣으면 끝입니다.</p>
+        <pre><code>Claude Code ──HTTP(개인 토큰)──▶ EasyERD 서버 /mcp  (별도 프로세스·레포 불필요)</code></pre>
       </section>
 
       <section id="step1">
-        <h2><span class="step">1</span>의존성 설치</h2>
-        <p>클론한 저장소에서 MCP 패키지의 의존성을 설치합니다.</p>
-        <pre><code>cd erd-service/mcp
-npm install</code></pre>
+        <h2><span class="step">1</span>로그인 &amp; 토큰 발급</h2>
+        <ul>
+          <li>EasyERD에 <strong>로그인</strong>합니다(없으면 우측 상단 아바타 → 회원가입). 본인 계정의 다이어그램만 MCP에서 보이고 편집됩니다.</li>
+          <li>좌측 사이드바 하단 <strong>“MCP 연결”</strong> 메뉴를 엽니다.</li>
+          <li><strong>“토큰 발급”</strong>을 누르면 개인 액세스 토큰(PAT)이 만들어지고, 토큰이 채워진 연결 명령이 표시됩니다.</li>
+        </ul>
+        <div class="warn">⚠️ 토큰 원문은 <strong>발급 직후 한 번만</strong> 표시됩니다. 그 자리에서 명령을 복사하세요. 분실하면 새로 발급하면 되고, 쓰지 않는 토큰은 목록에서 취소할 수 있습니다.</div>
       </section>
 
       <section id="step2">
-        <h2><span class="step">2</span>서비스 계정 만들기</h2>
-        <p>MCP는 EasyERD에 <strong>로그인 계정</strong>으로 접속합니다. 본인 전용 계정을 하나 만드세요(아이디 3자 이상, 비밀번호 8자 이상). 그 계정으로 만든 다이어그램만 MCP에서 보이고 편집됩니다.</p>
-        <pre><code>curl -X POST http://toughdev.cafe24.com:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"내아이디-mcp","password":"내비밀번호"}'</code></pre>
-        <div class="note">웹 화면 우측 상단 아바타 → 회원가입으로 만들어도 됩니다. 사람이 쓰는 계정과 분리하면(예: <code>홍길동-mcp</code>) 관리가 편합니다.</div>
-      </section>
-
-      <section id="step3">
-        <h2><span class="step">3</span>.mcp.json 작성</h2>
-        <p>저장소의 <strong>프로젝트 루트</strong>에 <code>.mcp.json</code> 파일을 만들고 아래 내용을 넣습니다. 값(계정·비밀번호)은 본인 것으로 바꾸세요.</p>
+        <h2><span class="step">2</span>명령 한 줄 붙여넣기</h2>
+        <p>모달의 <strong>복사</strong> 버튼으로 명령을 복사해 터미널에 붙여넣습니다. (아래는 형태 예시 — 실제로는 발급된 토큰이 채워져 있습니다.)</p>
+        <pre><code>claude mcp add --transport http \
+  --header "Authorization: Bearer &lt;발급한_토큰&gt;" \
+  erd http://toughdev.cafe24.com:8080/mcp</code></pre>
+        <p>또는 <code>.mcp.json</code>에 직접 추가해도 됩니다(모달의 “또는 .mcp.json에 직접 추가” 펼치기).</p>
         <pre><code>{
   "mcpServers": {
     "erd": {
-      "command": "npx",
-      "args": ["-y", "tsx", "erd-service/mcp/src/index.ts"],
-      "env": {
-        "ERD_BASE_URL": "http://toughdev.cafe24.com:8080",
-        "ERD_USERNAME": "내아이디-mcp",
-        "ERD_PASSWORD": "내비밀번호"
-      }
+      "type": "http",
+      "url": "http://toughdev.cafe24.com:8080/mcp",
+      "headers": { "Authorization": "Bearer &lt;발급한_토큰&gt;" }
     }
   }
 }</code></pre>
-        <p>CLI로도 등록할 수 있습니다.</p>
-        <pre><code>claude mcp add erd \
-  --env ERD_BASE_URL=http://toughdev.cafe24.com:8080 \
-  --env ERD_USERNAME=내아이디-mcp \
-  --env ERD_PASSWORD=내비밀번호 \
-  -- npx -y tsx erd-service/mcp/src/index.ts</code></pre>
-        <div class="warn">⚠️ <code>.mcp.json</code>에는 비밀번호가 평문으로 들어갑니다. <strong>커밋·공유하지 마세요.</strong> <code>.gitignore</code>에 <code>.mcp.json</code>을 추가하는 것을 권장합니다. 특정 다이어그램을 시작 시 자동 선택하려면 env에 <code>"ERD_DIAGRAM_ID": "5"</code>처럼 id를 넣을 수 있습니다.</div>
       </section>
 
-      <section id="step4">
-        <h2><span class="step">4</span>재시작 &amp; 연결 확인</h2>
-        <p>MCP 서버는 시작 시점에 로드되므로 <strong>Claude Code를 재시작</strong>합니다. 그다음:</p>
+      <section id="step3">
+        <h2><span class="step">3</span>연결 확인</h2>
+        <p>원격 MCP는 즉시 등록되므로 재시작이 필요 없습니다. Claude Code에서:</p>
         <ul>
           <li><code>/mcp</code> 입력 → <code>erd</code> 서버와 도구 목록이 보이면 연결 성공</li>
           <li>또는 "ERD 다이어그램 목록 보여줘"라고 요청 → <code>list_diagrams</code> 실행</li>
         </ul>
-        <div class="note">첫 실행은 <code>npx -y tsx</code>가 tsx를 받아오느라 몇 초 걸릴 수 있습니다(최초 1회).</div>
+        <div class="note">토큰은 <code>Authorization: Bearer</code> 헤더로 전송되므로, 안전을 위해 가능하면 <strong>https</strong> 주소로 연결하세요.</div>
       </section>
 
       <section id="usage">
@@ -253,15 +229,36 @@ npm install</code></pre>
         </table>
       </section>
 
+      <section id="advanced">
+        <h2>고급: 로컬 stdio 방식</h2>
+        <p>저장소를 클론해 <strong>로컬에서 MCP 서버를 직접 실행</strong>하는 예전 방식도 계속 지원됩니다(개발·디버깅용). Node 18+와 저장소 클론이 필요하며, 서비스 계정 자격증명을 <code>.mcp.json</code>에 넣습니다.</p>
+        <pre><code>cd erd-service/mcp &amp;&amp; npm install
+
+# 프로젝트 루트 .mcp.json
+{
+  "mcpServers": {
+    "erd": {
+      "command": "npx",
+      "args": ["-y", "tsx", "erd-service/mcp/src/index.ts"],
+      "env": {
+        "ERD_BASE_URL": "http://toughdev.cafe24.com:8080",
+        "ERD_USERNAME": "내아이디-mcp",
+        "ERD_PASSWORD": "내비밀번호"
+      }
+    }
+  }
+}</code></pre>
+        <div class="warn">⚠️ 이 방식은 <code>.mcp.json</code>에 비밀번호가 평문으로 들어갑니다 — 커밋·공유하지 마세요. 일반 사용자는 위의 <strong>원격 토큰 방식(권장)</strong>을 쓰세요.</div>
+      </section>
+
       <section id="trouble">
         <h2>문제 해결</h2>
         <table>
           <thead><tr><th>증상</th><th>원인 / 해결</th></tr></thead>
           <tbody>
-            <tr><td>도구가 안 보임</td><td><code>.mcp.json</code>이 프로젝트 루트에 있는지, Claude Code를 재시작했는지 확인. <code>/mcp</code>로 상태 확인</td></tr>
-            <tr><td>로그인 실패 (401)</td><td><code>ERD_USERNAME</code>/<code>ERD_PASSWORD</code> 확인, 서버에 그 계정이 가입돼 있는지 확인</td></tr>
-            <tr><td>token 쿠키 없음</td><td>HTTPS 서버라면 <code>ERD_BASE_URL</code>이 <code>https://</code>인지 확인</td></tr>
-            <tr><td>모듈/tsx 못 찾음</td><td><code>cd erd-service/mcp &amp;&amp; npm install</code> 실행 여부 확인</td></tr>
+            <tr><td>도구가 안 보임</td><td><code>/mcp</code>로 상태 확인. 명령의 서버 주소(<code>/mcp</code>)와 <code>Authorization</code> 헤더가 정확한지 확인</td></tr>
+            <tr><td>연결 거부 (401)</td><td>토큰이 만료·취소됐거나 잘못됨 — 웹 “MCP 연결”에서 새 토큰을 발급해 명령을 다시 등록</td></tr>
+            <tr><td>다이어그램이 비어 보임</td><td>토큰은 발급한 <strong>그 계정</strong>의 다이어그램만 봅니다. 로그인 계정이 맞는지 확인</td></tr>
             <tr><td>편집했는데 화면에 안 보임</td><td>설계상 정상 — 다이어그램을 다시 열거나 새로고침(아래 주의사항)</td></tr>
           </tbody>
         </table>

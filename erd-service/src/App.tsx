@@ -5,13 +5,16 @@ import ERDCanvas from './components/canvas/ERDCanvas';
 import EntityEditPanel from './components/panels/EntityEditPanel';
 import AuthModal from './components/auth/AuthModal';
 import DialogModal from './components/common/DialogModal';
+import McpConnectModal from './components/mcp/McpConnectModal';
 import { useERDStore } from './store/erdStore';
 import { useAuthStore } from './store/authStore';
+import { useMcpStore } from './store/mcpStore';
 import { useThemeStore } from './store/themeStore';
 
 function App() {
   const { undo, redo } = useERDStore();
   const { modalOpen, init } = useAuthStore();
+  const mcpModalOpen = useMcpStore(s => s.modalOpen);
   const { theme } = useThemeStore();
 
   // 앱 시작 시 세션 복원 (쿠키의 JWT로 GET /me)
@@ -54,6 +57,7 @@ function App() {
         <EntityEditPanel />
       </div>
       {modalOpen && <AuthModal />}
+      {mcpModalOpen && <McpConnectModal />}
       <DialogModal />
     </div>
   );

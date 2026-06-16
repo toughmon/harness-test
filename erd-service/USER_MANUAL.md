@@ -61,7 +61,10 @@ EasyERD는 브라우저에서 ERD(Entity-Relationship Diagram, 개체-관계 다
 - **접기/펼치기** — 헤더 오른쪽의 패널 접기 버튼(⊟)을 누르면 사이드바가 얇은 막대로
   접혀 캔버스를 넓게 볼 수 있습니다. 접힌 상태에서도 펼치기 버튼과 Add Entity
   단축 아이콘은 남아 있습니다.
-- **하단 메뉴** — **MCP 연결 가이드**(Claude Code로 ERD를 자연어 제어하는 방법, `/mcp-guide.html` 새 탭) · **Help** · **Docs**(이 매뉴얼).
+- **하단 메뉴**
+  - **MCP 연결** — 로그인 후 **개인 액세스 토큰(PAT)**을 발급하고, 토큰이 박힌 `claude mcp add --transport http …` 한 줄을 복사하는 모달. 이 한 줄을 Claude Code에 붙여넣으면 레포 복제·Node 설치·재시작 없이 바로 연결됩니다. 발급한 토큰은 목록에서 취소할 수 있습니다.
+  - **MCP 연결 가이드** — 연결 방법 상세 설명 (`/mcp-guide.html`, 새 탭).
+  - **Help** · **Docs**(이 매뉴얼).
 
 ---
 
