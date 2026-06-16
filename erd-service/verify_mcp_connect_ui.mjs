@@ -25,6 +25,10 @@ try {
 
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
+  // http 배포(비보안 컨텍스트) 재현 — navigator.clipboard를 제거해 execCommand 폴백 경로를 강제
+  await page.addInitScript(() => {
+    try { Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true }); } catch { /* noop */ }
+  });
   await page.setViewportSize({ width: 1600, height: 900 });
   page.on('pageerror', e => console.log('PAGE ERROR:', e.message));
   await page.goto(BASE, { waitUntil: 'networkidle' });
@@ -63,6 +67,12 @@ try {
   const cmd1 = await page.locator('[data-testid="mcp-command"]').textContent();
   check('명령에 실제 토큰(erdmcp_) 반영', !!cmd1 && cmd1.includes('erdmcp_'));
   check('placeholder 사라짐', !!cmd1 && !cmd1.includes('<발급한_토큰>'));
+
+  // 비보안(http) 컨텍스트에서도 복사 동작: navigator.clipboard 없음 → execCommand 폴백 → 'check' 아이콘
+  await page.click('[data-testid="mcp-copy"]');
+  await page.waitForTimeout(300);
+  const copyIcon = (await page.locator('[data-testid="mcp-copy"]').textContent())?.trim();
+  check('복사 버튼 동작(http 폴백) → check 표시', copyIcon === 'check', `icon=${copyIcon}`);
 
   // ③ 토큰 목록/취소
   const listCount = await page.locator('[data-testid="mcp-token-list"] > div').count();

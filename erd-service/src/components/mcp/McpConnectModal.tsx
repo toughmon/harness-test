@@ -23,6 +23,27 @@ function buildJson(token: string) {
   );
 }
 
+// http(비보안 컨텍스트)에선 navigator.clipboard가 없으므로 execCommand로 폴백 복사.
+function legacyCopy(text: string): boolean {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export default function McpConnectModal() {
   const { closeModal } = useMcpStore();
   const { status, openModal: openAuth } = useAuthStore();
@@ -67,10 +88,13 @@ export default function McpConnectModal() {
   };
 
   const copy = (text: string, which: string) => {
-    navigator.clipboard?.writeText(text).then(
-      () => { setCopied(which); setTimeout(() => setCopied(''), 1500); },
-      () => { /* 클립보드 불가 시 무시 — 사용자가 수동 선택 */ }
-    );
+    const done = () => { setCopied(which); setTimeout(() => setCopied(''), 1500); };
+    // navigator.clipboard는 HTTPS·localhost 등 보안 컨텍스트에서만 존재 → http 배포에선 execCommand 폴백
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(done, () => { if (legacyCopy(text)) done(); });
+    } else if (legacyCopy(text)) {
+      done();
+    }
   };
 
   const shownToken = issued?.token ?? TOKEN_PLACEHOLDER;
