@@ -146,26 +146,24 @@ diagrams (id SERIAL PK, user_id INT FK→users ON DELETE CASCADE,
 ```bash
 # 개발 (터미널 2개)
 npm run dev          # Vite :5173 (API는 :8080으로 프록시)
-npm start            # Fastify :8080 (node --import tsx)
+npm start            # Fastify :8080
 
 # 프로덕션
 npm ci && npm run build && npm start
 ```
 
-> **`npm start`는 `node --import tsx server/index.js`로 실행된다.** 서버가 원격 MCP 브리지(`mcp/src/httpServer.ts`, TS)와 공유 로직을 직접 import하기 때문이다. `tsx`·`@modelcontextprotocol/sdk`·`zod`는 루트 의존성에 포함돼 있어 **루트 `npm install` 한 번**이면 충분하다(`mcp/`를 따로 설치할 필요 없음). 단일 Node 프로세스 구성은 그대로 유지된다.
+> 서버는 원격 MCP 브리지(`mcp/src/httpServer.ts`, TS)를 런타임에 `tsx`의 `tsImport`로 로드하므로 **plain `node server/index.js`로 그대로 뜬다**(별도 `--import` 플래그 불필요). `tsx`·`@modelcontextprotocol/sdk`·`zod`가 루트 의존성에 포함돼 있어 **루트 `npm install`(또는 `npm ci`) 한 번**이면 충분하다(`mcp/`를 따로 설치할 필요 없음). 단일 Node 프로세스 구성 유지.
 
 ### 배포 (Ubuntu + pm2)
 
 ```bash
 cd /tough/app/harness-test/erd-service
 git pull
-PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci   # 의존성 변경 시
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci   # 의존성 변경 시 (tsx·sdk·zod 포함)
 npm run build
-pm2 restart erd --update-env                # 최초: pm2 start npm --name erd -- start && pm2 save
-pm2 logs erd --lines 20                     # "PostgreSQL 연결" 로그 확인
+pm2 restart erd --update-env                # 최초: pm2 start server/index.js --name erd && pm2 save
+pm2 logs erd --lines 20                     # "Server listening" 로그 확인
 ```
-
-> pm2 등록은 반드시 `pm2 start npm --name erd -- start`로 한다(`npm start`가 tsx로 기동). 과거처럼 `pm2 start server/index.js`(순수 node)로 띄우면 TS import에서 실패한다.
 
 ## MCP 연동 (Claude Code)
 

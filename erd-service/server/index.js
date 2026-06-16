@@ -9,7 +9,11 @@ import authRoutes from './auth-routes.js';
 import diagramRoutes from './diagram-routes.js';
 import mcpTokenRoutes from './mcp-token-routes.js';
 import { hashToken, TOKEN_PREFIX } from './mcp-token-util.js';
-import { attachMcpHttp } from '../mcp/src/httpServer.ts';
+import { tsImport } from 'tsx/esm/api';
+
+// MCP 브리지는 TS(전이 의존 포함)라, plain node에서도 로드되도록 tsx의 tsImport로 런타임에 가져온다.
+// (정적 import 시 `node --import tsx`로만 떠서, pm2가 plain node로 띄우면 .ts 확장자 에러로 크래시)
+const { attachMcpHttp } = await tsImport('../mcp/src/httpServer.ts', import.meta.url);
 
 // 로컬 개발용 .env 로드 (없으면 무시)
 if (process.env.NODE_ENV !== 'production') {
