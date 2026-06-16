@@ -178,7 +178,8 @@ Claude Code ──HTTP(Bearer PAT)──> /mcp ──(요청 사용자 단기 JW
 ```
 
 ```bash
-claude mcp add --transport http --header "Authorization: Bearer <PAT>" erd https://<도메인>/mcp
+# --header 는 가변인자라 반드시 name·url 뒤(맨 끝)에 둔다
+claude mcp add --transport http erd https://<도메인>/mcp --header "Authorization: Bearer <PAT>"
 ```
 
 - 인증: `Authorization: Bearer erdmcp_…`(PAT) → `mcp_tokens`(sha256 해시 저장) 조회 → 해당 사용자로 동작. 서비스계정 불필요, 사용자별 격리 유지. PAT 발급/취소는 `/api/mcp-tokens`.

@@ -54,6 +54,8 @@ try {
   check('명령에 원격 HTTP 형태', !!cmd0 && cmd0.includes('claude mcp add --transport http') && cmd0.includes('/mcp'));
   check('발급 전엔 토큰 placeholder', !!cmd0 && cmd0.includes('<발급한_토큰>'));
   check('명령에 현재 오리진 포함', !!cmd0 && cmd0.includes(new URL(BASE).host));
+  // --header는 가변인자라 반드시 name/url 뒤(맨 끝)에 와야 함 (앞에 두면 CLI가 name을 못 찾음)
+  check('인자 순서: --header가 url(/mcp) 뒤', !!cmd0 && cmd0.includes('--header') && cmd0.indexOf('/mcp') < cmd0.indexOf('--header'));
 
   await page.click('[data-testid="mcp-issue-token"]');
   await page.waitForTimeout(600);

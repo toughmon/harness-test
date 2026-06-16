@@ -172,8 +172,9 @@
         <h2><span class="step">2</span>명령 한 줄 붙여넣기</h2>
         <p>모달의 <strong>복사</strong> 버튼으로 명령을 복사해 터미널에 붙여넣습니다. (아래는 형태 예시 — 실제로는 발급된 토큰이 채워져 있습니다.)</p>
         <pre><code>claude mcp add --transport http \
-  --header "Authorization: Bearer &lt;발급한_토큰&gt;" \
-  erd http://toughdev.cafe24.com:8080/mcp</code></pre>
+  erd http://toughdev.cafe24.com:8080/mcp \
+  --header "Authorization: Bearer &lt;발급한_토큰&gt;"</code></pre>
+        <p style="font-size:13px;color:var(--on-surface-variant)"><code>--header</code>는 반드시 <strong>맨 뒤</strong>에 옵니다(가변인자라 앞에 두면 이름·주소를 삼켜 오류).</p>
         <p>또는 <code>.mcp.json</code>에 직접 추가해도 됩니다(모달의 “또는 .mcp.json에 직접 추가” 펼치기).</p>
         <pre><code>{
   "mcpServers": {
