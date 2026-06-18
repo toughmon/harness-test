@@ -7,6 +7,18 @@ import { alertDialog, confirmDialog, promptDialog } from './dialogStore';
 // DB 다이어그램 메타 상태 — 목록/현재 열린 다이어그램/미저장 변경(dirty) 추적
 // erdStore는 수정하지 않고 subscribe로만 변경을 감지한다
 
+const LAST_DIAGRAM_KEY = 'erd_last_diagram_id';
+
+function saveLastId(id: number | null) {
+  if (id === null) localStorage.removeItem(LAST_DIAGRAM_KEY);
+  else localStorage.setItem(LAST_DIAGRAM_KEY, String(id));
+}
+
+function loadLastId(): number | null {
+  const v = localStorage.getItem(LAST_DIAGRAM_KEY);
+  return v ? Number(v) : null;
+}
+
 interface DiagramState {
   list: DiagramMeta[];
   currentId: number | null;
@@ -22,6 +34,7 @@ interface DiagramState {
   remove: (id: number) => Promise<void>;
   confirmDiscard: () => Promise<boolean>;
   reset: () => void;
+  restoreLastOpened: () => Promise<void>;
 }
 
 // loadData(다이어그램 열기)로 인한 스토어 변경은 dirty로 치지 않는다
@@ -57,6 +70,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     useERDStore.getState().loadData(entities, relationships, positions);
     suppressDirty = false;
     set({ currentId: id, dirty: false });
+    saveLastId(id);
   },
 
   saveCurrent: async () => {
@@ -78,6 +92,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
         if (!name) return;
         const created = await api.createDiagram(name, data);
         set({ currentId: created.id });
+        saveLastId(created.id);
       }
       set({ dirty: false });
       await get().fetchList();
@@ -112,6 +127,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     useERDStore.getState().loadData([], [], {});
     suppressDirty = false;
     set({ currentId: null, dirty: false });
+    saveLastId(null);
   },
 
   rename: async (id) => {
@@ -136,11 +152,28 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     });
     if (!ok) return;
     await api.deleteDiagram(id);
-    if (get().currentId === id) set({ currentId: null });
+    if (get().currentId === id) {
+      set({ currentId: null });
+      saveLastId(null);
+    }
     await get().fetchList();
   },
 
-  reset: () => set({ list: [], currentId: null, dirty: false, saving: false }),
+  reset: () => {
+    saveLastId(null);
+    set({ list: [], currentId: null, dirty: false, saving: false });
+  },
+
+  restoreLastOpened: async () => {
+    const lastId = loadLastId();
+    if (lastId === null) return;
+    const { list } = get();
+    if (list.find(d => d.id === lastId)) {
+      await get().open(lastId);
+    } else {
+      saveLastId(null);
+    }
+  },
 }));
 
 // erdStore 데이터 변경 감지 → dirty 마킹 (undo/redo 포함 모든 변경 포착)

@@ -30,7 +30,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const user = await api.me();
       set({ user, status: 'authed' });
-      useDiagramStore.getState().fetchList();
+      await useDiagramStore.getState().fetchList();
+      await useDiagramStore.getState().restoreLastOpened();
     } catch {
       set({ user: null, status: 'anon' });
     }
