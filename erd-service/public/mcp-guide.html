@@ -171,7 +171,7 @@
       <section id="step2">
         <h2><span class="step">2</span>명령 한 줄 붙여넣기</h2>
         <p>모달의 <strong>복사</strong> 버튼으로 명령을 복사해 터미널에 붙여넣습니다. (아래는 형태 예시 — 실제로는 발급된 토큰이 채워져 있습니다.)</p>
-        <pre><code>claude mcp add --transport http \
+        <pre><code>claude mcp add --scope user --transport http \
   erd http://toughdev.cafe24.com:8080/mcp \
   --header "Authorization: Bearer &lt;발급한_토큰&gt;"</code></pre>
         <p style="font-size:13px;color:var(--on-surface-variant)"><code>--header</code>는 반드시 <strong>맨 뒤</strong>에 옵니다(가변인자라 앞에 두면 이름·주소를 삼켜 오류).</p>

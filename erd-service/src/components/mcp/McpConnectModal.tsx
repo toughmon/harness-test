@@ -14,7 +14,7 @@ const TOKEN_PLACEHOLDER = '<발급한_토큰>';
 function buildCommand(token: string) {
   // `--header`는 가변인자(<header...>)라 name/url 뒤(맨 끝)에 와야 한다.
   // 앞에 두면 뒤의 erd·URL까지 헤더 값으로 삼켜 "missing required argument 'name'" 에러가 난다.
-  return `claude mcp add --transport http erd ${MCP_URL} --header "Authorization: Bearer ${token}"`;
+  return `claude mcp add --scope user --transport http erd ${MCP_URL} --header "Authorization: Bearer ${token}"`;
 }
 function buildJson(token: string) {
   return JSON.stringify(
