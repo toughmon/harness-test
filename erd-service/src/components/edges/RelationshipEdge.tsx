@@ -2,35 +2,46 @@ import { memo, useMemo } from 'react';
 import {
   EdgeProps,
   getSmoothStepPath,
-  EdgeLabelRenderer,
   Position,
   useNodes,
 } from '@xyflow/react';
-import { Relationship, RelationshipType, RELATIONSHIP_LABELS } from '../../types/erd';
+import { Relationship } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
+import { deriveSides } from '../../core/relationshipSides';
 import { computeEdgeEndpoints, Rect } from '../../utils/edgeConnection';
 
 const EDGE_COLOR = '#7d7c8c';
-const EDGE_SELECTED = '#c0c1ff';
+const EDGE_SELECTED = '#a78bfa';   // 선택 시 더 선명한 보라
 const M = 14;  // crow's foot size
 const B = 6;   // bar offset from path end
 
-// 바커 표기법 선 스타일:
-// - 'half'  반점선+반실선: 부모(source) 쪽 절반 = 점선(선택), 자식(target/까마귀발) 쪽 절반 = 실선(필수)
-// - 'dashed' 전체 점선: 선택적 관계 (OPTIONAL)
-// - 'solid'  전체 실선: 식별자 상속(실선+실선) — 부모 쪽도 필수
-type LineStyle = 'half' | 'dashed' | 'solid';
-function lineStyleFor(type: RelationshipType): LineStyle {
-  if (type === 'ONE_TO_MANY_IDENTIFYING_SOLID' || type === 'ONE_TO_ONE_IDENTIFYING_SOLID') return 'solid';
-  if (type === 'ONE_TO_MANY_OPTIONAL' || type === 'ONE_TO_ONE_OPTIONAL') return 'dashed';
-  return 'half';
+// 자기 참조 관계 — 우하단 모퉁이를 감싸는 사각 루프 path
+function selfLoopPath(sX: number, sY: number, tX: number, tY: number): string {
+  const r = 8;
+  const ox = Math.max(sX, tX) + 50;  // 루프 오른쪽 끝
+  const oy = Math.max(sY, tY) + 50;  // 루프 아래쪽 끝
+  return [
+    `M ${sX} ${sY}`,
+    `L ${ox - r} ${sY}`,
+    `Q ${ox} ${sY} ${ox} ${sY + r}`,
+    `L ${ox} ${oy - r}`,
+    `Q ${ox} ${oy} ${ox - r} ${oy}`,
+    `L ${tX + r} ${oy}`,
+    `Q ${tX} ${oy} ${tX} ${oy - r}`,
+    `L ${tX} ${tY}`,
+  ].join(' ');
 }
 
+// 바커 표기법 — 선의 좌/우 절반을 독립적으로 그린다:
+// 부모(source, 좌) 절반은 parentOptional이면 점선·아니면 실선,
+// 자식(target, 우) 절반은 childOptional이면 점선·아니면 실선.
+// (양쪽 다 실선이면 오버레이 없이 단일 실선 path 하나로 렌더 — 기존 SOLID 동작 유지)
+
 // CrowsFoot markers at target end, extending away from entity
-function CrowsFoot({ x, y, pos, isIdentifying }: {
-  x: number; y: number; pos: Position; isIdentifying: boolean
+function CrowsFoot({ x, y, pos, isIdentifying, color }: {
+  x: number; y: number; pos: Position; isIdentifying: boolean; color: string
 }) {
-  const c = EDGE_COLOR;
+  const c = color;
   const sw = 1.5;
 
   // Direction vectors based on handle position
@@ -75,10 +86,10 @@ function CrowsFoot({ x, y, pos, isIdentifying }: {
 }
 
 // 1:1 target marker (single bar)
-function OneTargetMarker({ x, y, pos, isIdentifying }: {
-  x: number; y: number; pos: Position; isIdentifying: boolean
+function OneTargetMarker({ x, y, pos, isIdentifying, color }: {
+  x: number; y: number; pos: Position; isIdentifying: boolean; color: string
 }) {
-  const c = EDGE_COLOR;
+  const c = color;
   const sw = 1.5;
   const perps: Record<Position, [number, number]> = {
     [Position.Left]:   [0, 1],
@@ -115,7 +126,7 @@ function RelationshipEdge({
   selected,
 }: EdgeProps) {
   const rel = data as unknown as Relationship;
-  const { deleteRelationship, relationships, setEditingRel } = useERDStore();
+  const { relationships } = useERDStore();
 
   // 노드 위치/크기를 직접 읽어 연결점을 동적으로 계산
   // — 같은 면에 여러 관계가 붙으면 연결점을 분산시켜 선이 겹치지 않게 한다
@@ -146,27 +157,28 @@ function RelationshipEdge({
   const sPos = geo?.sourcePosition ?? sourcePosition;
   const tPos = geo?.targetPosition ?? targetPosition;
 
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX: sX, sourceY: sY, sourcePosition: sPos,
-    targetX: tX, targetY: tY, targetPosition: tPos,
-    borderRadius: 8,
-    offset: 36, // 핸들 앞 직선 구간 확보 — 까마귀발/uid bar가 꺾임과 겹치지 않도록
-  });
+  const isSelfLoop = rel?.sourceId === rel?.targetId;
+  const edgePath = isSelfLoop
+    ? selfLoopPath(sX, sY, tX, tY)
+    : getSmoothStepPath({
+        sourceX: sX, sourceY: sY, sourcePosition: sPos,
+        targetX: tX, targetY: tY, targetPosition: tPos,
+        borderRadius: 8,
+        offset: 36,
+      })[0];
 
-  const type = rel?.type ?? 'ONE_TO_MANY_NON_IDENTIFYING';
-  const lineStyle = lineStyleFor(type);
-  const halfDashed = lineStyle === 'half';
-  const isOneToMany =
-    type === 'ONE_TO_MANY_IDENTIFYING' ||
-    type === 'ONE_TO_MANY_IDENTIFYING_SOLID' ||
-    type === 'ONE_TO_MANY_NON_IDENTIFYING' ||
-    type === 'ONE_TO_MANY_OPTIONAL';
-  const isIdentifying =
-    type === 'ONE_TO_MANY_IDENTIFYING' ||
-    type === 'ONE_TO_MANY_IDENTIFYING_SOLID' ||
-    type === 'ONE_TO_ONE_IDENTIFYING' ||
-    type === 'ONE_TO_ONE_IDENTIFYING_SOLID';
+  const sides = useMemo(
+    () => deriveSides(rel ?? ({ type: 'ONE_TO_MANY_NON_IDENTIFYING' } as Relationship)),
+    [rel],
+  );
+  const isOneToMany = sides.childCardinality === 'many';
+  const isIdentifying = sides.identifying;
+  const parentSolid = !sides.parentOptional;   // 부모(좌) 절반 실선 여부
+  const childSolid = !sides.childOptional;      // 자식(우) 절반 실선 여부
+  const bothSolid = parentSolid && childSolid;
+  const bothDashed = !parentSolid && !childSolid;
   const color = selected ? EDGE_SELECTED : EDGE_COLOR;
+  const sw = selected ? 2.5 : 1.5;   // 선택 시 선 굵기 강조
 
   return (
     <>
@@ -178,27 +190,54 @@ function RelationshipEdge({
         strokeWidth={12}
         style={{ cursor: 'pointer' }}
       />
-      {/* Visible edge — layer 1: 선 스타일(solid=실선 전체 / half=점선 베이스 / dashed=전체 점선) */}
-      <path
-        id={id}
-        d={edgePath}
-        fill="none"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeDasharray={lineStyle === 'solid' ? undefined : lineStyle === 'half' ? '6 4' : '4 4'}
-        strokeLinecap="butt"
-      />
-      {/* layer 2: 자식(target) 쪽 후반 50%만 실선으로 덮음 (바커: 자식 쪽 필수) */}
-      {halfDashed && (
+      {/* Visible edge — 좌/우 절반 독립 렌더 */}
+      {bothSolid ? (
+        /* 양쪽 필수: 단일 실선 (기존 SOLID 동작과 동일, dasharray 없음) */
         <path
+          id={id}
           d={edgePath}
           fill="none"
           stroke={color}
-          strokeWidth={1.5}
-          pathLength={100}
-          strokeDasharray="0 50 50 0"
+          strokeWidth={sw}
           strokeLinecap="butt"
         />
+      ) : (
+        <>
+          {/* 베이스 점선 — 한쪽만 실선이면 '6 4', 양쪽 점선이면 '4 4' */}
+          <path
+            id={id}
+            d={edgePath}
+            fill="none"
+            stroke={color}
+            strokeWidth={sw}
+            strokeDasharray={bothDashed ? '4 4' : '6 4'}
+            strokeLinecap="butt"
+          />
+          {/* 부모(좌) 절반 실선 오버레이 — 전반 50% */}
+          {parentSolid && (
+            <path
+              d={edgePath}
+              fill="none"
+              stroke={color}
+              strokeWidth={sw}
+              pathLength={100}
+              strokeDasharray="50 50"
+              strokeLinecap="butt"
+            />
+          )}
+          {/* 자식(우) 절반 실선 오버레이 — 후반 50% */}
+          {childSolid && (
+            <path
+              d={edgePath}
+              fill="none"
+              stroke={color}
+              strokeWidth={sw}
+              pathLength={100}
+              strokeDasharray="0 50 50 0"
+              strokeLinecap="butt"
+            />
+          )}
+        </>
       )}
 
       {/* 상위(부모) 엔티티 쪽은 마커 없음 — 바커 표기법 */}
@@ -209,44 +248,15 @@ function RelationshipEdge({
           x={tX} y={tY}
           pos={tPos}
           isIdentifying={isIdentifying}
+          color={color}
         />
       ) : (
         <OneTargetMarker
           x={tX} y={tY}
           pos={tPos}
           isIdentifying={isIdentifying}
+          color={color}
         />
-      )}
-
-      {/* 선택 시 엣지 툴바: 타입 표시 + 변경 + 삭제 */}
-      {selected && (
-        <EdgeLabelRenderer>
-          <div
-            className="absolute z-50 glass-toolbar flex items-center gap-1 rounded-full border border-outline-variant px-1.5 py-1 shadow-lg"
-            style={{
-              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              pointerEvents: 'all',
-            }}
-          >
-            <span className="font-mono text-[10px] text-on-surface-variant px-1.5 whitespace-nowrap select-none">
-              {RELATIONSHIP_LABELS[type]}
-            </span>
-            <button
-              className="w-5 h-5 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant hover:text-primary transition-colors cursor-pointer"
-              onClick={() => setEditingRel(id)}
-              title="관계 종류 변경"
-            >
-              <span className="material-symbols-outlined text-[13px]">edit</span>
-            </button>
-            <button
-              className="w-5 h-5 rounded-full flex items-center justify-center text-on-surface hover:bg-error-container hover:text-on-surface transition-colors cursor-pointer text-xs"
-              onClick={() => deleteRelationship(id)}
-              title="관계 삭제"
-            >
-              ×
-            </button>
-          </div>
-        </EdgeLabelRenderer>
       )}
     </>
   );

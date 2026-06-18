@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Entity, Column, Relationship, RelationshipType, Subtype } from '../types/erd';
 import * as erdOps from '../core/erdOps';
 import { genId, DEFAULT_COLUMN, type NodePosition, type ErdDoc } from '../core/erdOps';
+import type { RelationshipSides } from '../core/relationshipSides';
 
 // 변형 로직은 ../core/erdOps(순수 함수, MCP 서버와 공유)에 있고, 여기서는 히스토리·
 // 선택 상태·dirty 추적 같은 UI 관심사만 감싼다. erdOps.fn(docOf(s), ...)을 호출해 결과
@@ -30,8 +31,8 @@ interface ERDStore {
   relationships: Relationship[];
   nodePositions: Record<string, NodePosition>;
   selectedEntityId: string | null;
+  selectedEdgeId: string | null;
   pendingConnection: { sourceId: string; sourceHandle: string } | null;
-  editingRelId: string | null;
 
   past: Snapshot[];
   future: Snapshot[];
@@ -42,6 +43,7 @@ interface ERDStore {
   updateEntity: (id: string, updates: Partial<Omit<Entity, 'id' | 'columns'>>) => void;
   deleteEntity: (id: string) => void;
   selectEntity: (id: string | null) => void;
+  selectEdge: (id: string | null) => void;
 
   addColumn: (entityId: string) => void;
   updateColumn: (entityId: string, columnId: string, updates: Partial<Column>) => void;
@@ -59,8 +61,8 @@ interface ERDStore {
 
   addRelationship: (sourceId: string, targetId: string, type: RelationshipType) => void;
   updateRelationshipType: (id: string, type: RelationshipType) => void;
+  updateRelationshipSides: (id: string, partial: Partial<RelationshipSides>) => void;
   deleteRelationship: (id: string) => void;
-  setEditingRel: (id: string | null) => void;
 
   updateNodePosition: (id: string, pos: NodePosition) => void;
   setAllPositions: (positions: Record<string, NodePosition>) => void;
@@ -103,8 +105,8 @@ export const useERDStore = create<ERDStore>((set, get) => {
     relationships: [],
     nodePositions: {},
     selectedEntityId: null,
+    selectedEdgeId: null,
     pendingConnection: null,
-    editingRelId: null,
 
     past: [],
     future: [],
@@ -148,13 +150,20 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
     deleteEntity: (id) => {
       pushHistory('deleteEntity');
-      set(s => ({
-        ...erdOps.deleteEntity(docOf(s), id),
-        selectedEntityId: s.selectedEntityId === id ? null : s.selectedEntityId,
-      }));
+      set(s => {
+        const doc = erdOps.deleteEntity(docOf(s), id);
+        return {
+          ...doc,
+          selectedEntityId: s.selectedEntityId === id ? null : s.selectedEntityId,
+          // 삭제로 사라진 관계를 선택 중이었다면 엣지 선택 해제
+          selectedEdgeId: doc.relationships.some(r => r.id === s.selectedEdgeId) ? s.selectedEdgeId : null,
+        };
+      });
     },
 
-    selectEntity: (id) => set({ selectedEntityId: id }),
+    // 엔티티/엣지 선택은 상호 배타 — 한쪽을 켜면 다른 쪽은 해제
+    selectEntity: (id) => set({ selectedEntityId: id, selectedEdgeId: null }),
+    selectEdge: (id) => set({ selectedEdgeId: id, selectedEntityId: null }),
 
     addColumn: (entityId) => {
       pushHistory('addColumn');
@@ -293,14 +302,25 @@ export const useERDStore = create<ERDStore>((set, get) => {
       set(st => erdOps.updateRelationshipType(docOf(st), id, newType).doc);
     },
 
+    // 관계선 좌/우 절반 속성 부분 갱신 (FK 플래그 동반 갱신, undo 지원)
+    updateRelationshipSides: (id, partial) => {
+      const s = get();
+      const rel = s.relationships.find(r => r.id === id);
+      if (!rel) return;
+      if (!s.entities.find(e => e.id === rel.sourceId)) return;
+      pushHistory(`relSides:${id}`);
+      set(st => erdOps.updateRelationshipSides(docOf(st), id, partial).doc);
+    },
+
     deleteRelationship: (id) => {
       const s = get();
       if (!s.relationships.find(r => r.id === id)) return;
       pushHistory('deleteRelationship');
-      set(st => erdOps.deleteRelationship(docOf(st), id).doc);
+      set(st => ({
+        ...erdOps.deleteRelationship(docOf(st), id).doc,
+        selectedEdgeId: st.selectedEdgeId === id ? null : st.selectedEdgeId,
+      }));
     },
-
-    setEditingRel: (id) => set({ editingRelId: id }),
 
     updateNodePosition: (id, pos) => {
       pushHistory(`movePos:${id}`);
@@ -317,7 +337,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
     loadData: (entities, relationships, positions) => {
       pushHistory('loadData');
-      set({ entities, relationships, nodePositions: positions, selectedEntityId: null });
+      set({ entities, relationships, nodePositions: positions, selectedEntityId: null, selectedEdgeId: null });
     },
   };
 });

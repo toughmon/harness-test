@@ -100,8 +100,7 @@ function ZoomToolbar({ isFullscreen, onToggleFullscreen }: { isFullscreen: boole
 export default function ERDCanvas() {
   const {
     entities, relationships, nodePositions,
-    selectEntity, addRelationship, updateNodePosition,
-    editingRelId, setEditingRel, updateRelationshipType,
+    selectEntity, selectEdge, addRelationship, updateNodePosition,
   } = useERDStore();
 
   const [pendingConn, setPendingConn] = useState<Connection | null>(null);
@@ -175,7 +174,7 @@ export default function ERDCanvas() {
     if (dragStartNodeId.current && source !== dragStartNodeId.current) {
       [source, target] = [target, source];
     }
-    if (!source || !target || source === target) return;
+    if (!source || !target) return;
     setPendingConn({ ...connection, source, target });
   }, []);
 
@@ -183,6 +182,11 @@ export default function ERDCanvas() {
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     selectEntity(node.id);
   }, [selectEntity]);
+
+  // 관계선 클릭 → 우측 패널에서 좌/우 절반 편집
+  const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    selectEdge(edge.id);
+  }, [selectEdge]);
 
   const handleRelTypeSelect = (type: RelationshipType) => {
     if (!pendingConn?.source || !pendingConn?.target) return;
@@ -202,7 +206,8 @@ export default function ERDCanvas() {
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onNodeClick={onNodeClick}
-        onPaneClick={() => selectEntity(null)}
+        onEdgeClick={onEdgeClick}
+        onPaneClick={() => { selectEntity(null); selectEdge(null); }}
         connectionMode={ConnectionMode.Loose}
         fitView
         fitViewOptions={{ padding: 0.3 }}
@@ -244,16 +249,6 @@ export default function ERDCanvas() {
         <RelTypeModal
           onSelect={handleRelTypeSelect}
           onCancel={() => setPendingConn(null)}
-        />
-      )}
-
-      {/* 기존 관계선의 타입 변경 */}
-      {editingRelId && (
-        <RelTypeModal
-          title="관계 종류 변경"
-          current={relationships.find(r => r.id === editingRelId)?.type}
-          onSelect={(type) => { updateRelationshipType(editingRelId, type); setEditingRel(null); }}
-          onCancel={() => setEditingRel(null)}
         />
       )}
     </main>

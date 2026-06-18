@@ -69,6 +69,13 @@ export interface Relationship {
   sourceId: string;
   targetId: string;
   type: RelationshipType;
+  // ── per-side(좌/우 절반) 명시 속성 — 모두 optional이라 기존 저장 파일과 호환 ──
+  // 있으면 렌더·FK의 단일 진실 원천이 되고, 없으면 type에서 파생(core/relationshipSides).
+  // type은 호환/생성 프리셋용으로 항상 유지된다(가장 근접한 enum).
+  parentOptional?: boolean;            // 부모(좌) 절반 점선 = 선택 참여
+  childOptional?: boolean;             // 자식(우) 절반 점선 = 선택 참여(FK NULL 허용)
+  childCardinality?: 'one' | 'many';   // 자식쪽 카디널리티 (까마귀발 유무)
+  identifying?: boolean;               // FK가 자식 PK에 포함(식별 관계)
 }
 
 export interface ERDData {

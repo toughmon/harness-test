@@ -113,7 +113,9 @@ try {
   await page.click('button[title="자동 정렬"]');
   await page.waitForTimeout(800);
   await clickEdge(0);
-  await page.click('button[title="관계 삭제"]');
+  await page.click('[data-testid="rel-delete"]');
+  await page.waitForTimeout(300);
+  await page.click('[data-testid="dialog-ok"]');
   await page.waitForTimeout(500);
   check('관계 삭제 → 관계선 제거', (await edgeCount()) === 0);
   check('관계 삭제 → 노드 2개 유지', (await nodeCount()) === 2);
@@ -125,7 +127,9 @@ try {
   // 이름 충돌로 기존 PK가 교체됐으므로 PK 아이콘 0개, FK 아이콘 1개
   check('비식별 관계 → FK 생성 (식별자 미포함)', ok2 && (await childFkIcons()) === 1 && pkIcons === 0);
   await clickEdge(0);
-  await page.click('button[title="관계 삭제"]');
+  await page.click('[data-testid="rel-delete"]');
+  await page.waitForTimeout(300);
+  await page.click('[data-testid="dialog-ok"]');
   await page.waitForTimeout(500);
   check('비식별 관계 삭제 → 하위 FK 컬럼 제거', (await childFkIcons()) === 0);
 

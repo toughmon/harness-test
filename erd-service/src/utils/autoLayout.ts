@@ -18,7 +18,8 @@ export function computeAutoLayout(
     });
   }
   for (const r of relationships) {
-    if (g.hasNode(r.sourceId) && g.hasNode(r.targetId)) {
+    // 자기 참조는 dagre 레이아웃에서 제외 (자기 루프는 위치 계산에 영향 없음)
+    if (r.sourceId !== r.targetId && g.hasNode(r.sourceId) && g.hasNode(r.targetId)) {
       g.setEdge(r.sourceId, r.targetId);
     }
   }

@@ -107,6 +107,18 @@ export function computeEdgeEndpoints(
   const tgtRect = rects[rel.targetId];
   if (!srcRect || !tgtRect) return null;
 
+  // 자기 참조(재귀) — 우측 상단에서 나가 하단으로 들어오는 L자 루프
+  if (rel.sourceId === rel.targetId) {
+    return {
+      sourceX: srcRect.x + srcRect.w,
+      sourceY: srcRect.y + srcRect.h * 0.33,
+      sourcePosition: Position.Right,
+      targetX: srcRect.x + srcRect.w * 0.67,
+      targetY: srcRect.y + srcRect.h,
+      targetPosition: Position.Bottom,
+    };
+  }
+
   const sourcePosition = sideOf(srcRect, tgtRect);
   const targetPosition = sideOf(tgtRect, srcRect);
 

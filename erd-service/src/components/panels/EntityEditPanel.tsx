@@ -99,9 +99,9 @@ export default function EntityEditPanel() {
               />
             </div>
 
-            {/* Table color */}
+            {/* Entity color */}
             <div className="flex flex-col gap-2 mt-1">
-              <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Table Color</label>
+              <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Entity Color</label>
               <div className="grid grid-cols-6 gap-2">
                 {ENTITY_COLORS.map(c => (
                   <button

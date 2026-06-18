@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EasyERD · Claude 프롬프트 가이드</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #131313;
+      --surface-low: #1c1b1b;
+      --surface: #201f1f;
+      --surface-high: #2a2a2a;
+      --surface-variant: #353534;
+      --on-surface: #e5e2e1;
+      --on-surface-variant: #c7c4d7;
+      --outline: #908fa0;
+      --outline-variant: #464554;
+      --primary: #c0c1ff;
+      --primary-container: #8083ff;
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--on-surface);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.7;
+      scroll-behavior: smooth;
+    }
+    .layout { display: flex; max-width: 1180px; margin: 0 auto; align-items: flex-start; }
+
+    /* 목차 */
+    nav.toc {
+      position: sticky; top: 0; align-self: flex-start;
+      width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      padding: 28px 16px 40px 24px;
+      border-right: 1px solid var(--outline-variant);
+    }
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--primary); margin-bottom: 4px; }
+    nav.toc .sub { font-family: var(--font-mono); font-size: 11px; color: var(--on-surface-variant); margin-bottom: 20px; }
+    nav.toc a {
+      display: block; color: var(--on-surface-variant); text-decoration: none;
+      font-size: 13px; padding: 6px 10px; border-radius: 6px; transition: all .15s;
+      border-left: 2px solid transparent;
+    }
+    nav.toc a:hover { background: var(--surface-variant); color: var(--on-surface); }
+    nav.toc .section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--outline); padding: 14px 10px 4px; margin-top: 4px;
+    }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+
+    /* 본문 */
+    main { flex: 1; min-width: 0; padding: 40px 48px 120px; }
+    main h1 { font-size: 32px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+    main h1 .badge {
+      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+      color: var(--primary); background: rgba(128,131,255,.12);
+      padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 10px;
+    }
+    .lead { color: var(--on-surface-variant); font-size: 15px; margin: 0 0 8px; }
+    .note {
+      border-left: 3px solid var(--primary-container);
+      background: rgba(128,131,255,.06);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+    .warn {
+      border-left: 3px solid var(--warn);
+      background: rgba(251,191,36,.07);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+    .ok {
+      border-left: 3px solid var(--ok);
+      background: rgba(74,222,128,.06);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+    section { scroll-margin-top: 24px; padding-top: 16px; }
+    h2 {
+      font-size: 22px; font-weight: 700; margin: 36px 0 14px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--outline-variant);
+    }
+    h2 .ico {
+      font-size: 20px; vertical-align: middle; margin-right: 8px;
+      font-family: "Material Symbols Outlined", sans-serif;
+    }
+    h3 { font-size: 16px; font-weight: 700; margin: 26px 0 10px; color: var(--on-surface); }
+    p { margin: 10px 0; }
+    ul, ol { margin: 10px 0; padding-left: 22px; }
+    li { margin: 5px 0; }
+    strong { color: #fff; font-weight: 700; }
+    code {
+      font-family: var(--font-mono); font-size: 12.5px;
+      background: var(--surface-high); color: var(--primary);
+      padding: 1px 6px; border-radius: 4px;
+    }
+
+    /* 프롬프트 블록 */
+    .prompt-block {
+      background: var(--surface-low);
+      border: 1px solid var(--outline-variant);
+      border-left: 3px solid var(--primary-container);
+      border-radius: 0 10px 10px 0;
+      padding: 14px 18px;
+      margin: 10px 0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--on-surface);
+      line-height: 1.6;
+      position: relative;
+    }
+    .prompt-block::before {
+      content: "💬";
+      position: absolute;
+      top: 12px; right: 14px;
+      font-size: 14px; opacity: .5;
+    }
+    .prompt-block em {
+      font-style: normal;
+      color: var(--on-surface-variant);
+      font-size: 11px;
+    }
+
+    /* 결과 블록 */
+    .result-block {
+      background: rgba(74,222,128,.04);
+      border: 1px solid rgba(74,222,128,.18);
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin: 6px 0 16px;
+      font-size: 13px;
+      color: var(--on-surface-variant);
+    }
+    .result-block::before { content: "→  "; color: var(--ok); font-weight: 700; font-family: var(--font-mono); }
+
+    /* 카드 그리드 */
+    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+    .card {
+      background: var(--surface-low); border: 1px solid var(--outline-variant);
+      border-radius: 10px; padding: 16px 18px;
+    }
+    .card h4 { font-size: 13px; font-weight: 700; color: var(--primary); margin: 0 0 8px; }
+    .card .prompts { display: flex; flex-direction: column; gap: 6px; }
+    .card .p { font-family: var(--font-mono); font-size: 12px; color: var(--on-surface-variant); }
+
+    pre {
+      background: var(--surface-low); border: 1px solid var(--outline-variant);
+      border-radius: 10px; padding: 16px 18px; overflow-x: auto;
+      font-family: var(--font-mono); font-size: 12px; color: var(--on-surface-variant);
+      line-height: 1.55;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    table {
+      width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px;
+      border: 1px solid var(--outline-variant); border-radius: 10px; overflow: hidden;
+    }
+    th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--outline-variant); vertical-align: top; }
+    th { background: var(--surface); font-weight: 600; color: var(--on-surface); font-size: 12.5px; }
+    tr:last-child td { border-bottom: none; }
+    td:first-child, th:first-child { white-space: nowrap; }
+    footer {
+      margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--outline-variant);
+      color: var(--outline); font-size: 12px;
+    }
+    @media (max-width: 860px) {
+      nav.toc { display: none; }
+      main { padding: 28px 22px 80px; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">EasyERD</div>
+    <div class="sub">Claude 프롬프트 가이드</div>
+    <div class="section-label">기본 조작</div>
+    <a href="#entity">엔티티 생성</a>
+    <a href="#column">컬럼 추가/수정</a>
+    <a href="#relation">관계 설정</a>
+    <a href="#delete">삭제</a>
+    <div class="section-label">활용 시나리오</div>
+    <a href="#scenario-shop">쇼핑몰 ERD</a>
+    <a href="#scenario-blog">블로그/커뮤니티</a>
+    <a href="#scenario-hr">인사/조직 관리</a>
+    <a href="#scenario-recurse">재귀(계층 구조)</a>
+    <div class="section-label">팁</div>
+    <a href="#tips">효과적인 프롬프트 작성</a>
+    <a href="#types">데이터 타입 치트시트</a>
+    <a href="/mcp-guide.html" class="back">← MCP 연결 가이드</a>
+    <a href="/manual.html" class="back">← 사용자 매뉴얼</a>
+  </nav>
+
+  <main>
+    <h1>Claude 프롬프트 가이드 <span class="badge">MCP</span></h1>
+    <p class="lead">MCP로 연결된 Claude에게 자연어로 ERD를 그리는 방법입니다. 아래 예시를 그대로 복사하거나 참고해 말해보세요.</p>
+
+    <div class="note">
+      먼저 <strong>MCP 연결이 완료</strong>되어 있어야 합니다.
+      연결 방법은 <a href="/mcp-guide.html" style="color:var(--primary)">MCP 연결 가이드</a>를 참고하세요.
+      연결 후 Claude Code에서 "easyerd MCP가 연결됐어?" 라고 확인해보세요.
+    </div>
+
+    <!-- ─────────────── 엔티티 생성 ─────────────── -->
+    <section id="entity">
+      <h2>엔티티 생성</h2>
+
+      <h3>단일 엔티티</h3>
+      <div class="prompt-block">"사용자 엔티티 만들어줘"</div>
+      <div class="result-block">User 엔티티 + 기본 id(PK) 컬럼이 생성됩니다.</div>
+
+      <div class="prompt-block">"회원(User) 엔티티를 만들어줘. 논리명은 '회원'으로."</div>
+      <div class="result-block">물리명 User, 논리명 회원인 엔티티가 생성됩니다.</div>
+
+      <h3>여러 엔티티 한 번에</h3>
+      <div class="prompt-block">"사용자, 주문, 상품 엔티티 만들어줘"</div>
+      <div class="result-block">세 개의 엔티티가 각각 기본 PK와 함께 생성됩니다.</div>
+
+      <div class="prompt-block">"쇼핑몰 ERD에 필요한 엔티티들 전부 만들어줘 — 회원, 상품, 주문, 주문상세, 배송, 카테고리 포함"</div>
+      <div class="result-block">6개 엔티티가 순서대로 생성됩니다.</div>
+
+      <h3>엔티티 이름 변경</h3>
+      <div class="prompt-block">"User 엔티티 이름을 Member로 바꿔줘"</div>
+      <div class="prompt-block">"Order 엔티티의 논리명을 '주문정보'로 수정해줘"</div>
+    </section>
+
+    <!-- ─────────────── 컬럼 ─────────────── -->
+    <section id="column">
+      <h2>컬럼 추가 / 수정</h2>
+
+      <h3>기본 컬럼 추가</h3>
+      <div class="prompt-block">"User 엔티티에 username, email, password 컬럼 추가해줘"</div>
+      <div class="result-block">세 컬럼이 VARCHAR 타입으로 추가됩니다.</div>
+
+      <div class="prompt-block">"Product 엔티티에 name(VARCHAR 200), price(DECIMAL), stock(INT), created_at(DATETIME) 컬럼 추가해줘"</div>
+      <div class="result-block">타입·크기가 지정된 컬럼이 추가됩니다.</div>
+
+      <h3>논리명(한글명) 포함</h3>
+      <div class="prompt-block">"User 엔티티에 다음 컬럼 추가해줘:<br>- username (사용자명) VARCHAR(50)<br>- email (이메일) VARCHAR(200) UNIQUE<br>- phone (휴대폰번호) VARCHAR(20)<br>- created_at (가입일시) DATETIME"</div>
+
+      <h3>제약 조건 지정</h3>
+      <div class="prompt-block">"Order 엔티티에 status (주문상태) VARCHAR(20) NOT NULL, ordered_at (주문일시) DATETIME NOT NULL 추가해줘"</div>
+
+      <div class="prompt-block">"Product 엔티티의 price 컬럼을 DECIMAL(12,2)로 변경하고 NOT NULL로 설정해줘"</div>
+
+      <h3>PK 설정</h3>
+      <div class="prompt-block">"User 엔티티의 id 컬럼 이름을 user_id로 바꾸고 PK 유지해줘"</div>
+
+      <div class="warn">⚠️ <strong>PK 컬럼은 삭제 금지입니다.</strong> 관계에서 FK로 참조 중인 PK를 삭제하면 FK 컬럼이 끊깁니다. PK를 교체하고 싶으면 먼저 관계를 삭제하고 PK를 변경한 뒤 관계를 다시 만드세요.</div>
+    </section>
+
+    <!-- ─────────────── 관계 ─────────────── -->
+    <section id="relation">
+      <h2>관계 설정</h2>
+
+      <h3>1:N 비식별 관계 (가장 일반적)</h3>
+      <div class="prompt-block">"User와 Order를 1:N으로 연결해줘 — 한 사용자가 여러 주문을 가질 수 있어"</div>
+      <div class="result-block">Order 엔티티에 user_id FK가 자동 생성됩니다.</div>
+
+      <div class="prompt-block">"Category와 Product를 1:N 비식별 관계로 연결해줘"</div>
+
+      <h3>1:N 식별 관계 (자식이 부모 PK 포함)</h3>
+      <div class="prompt-block">"Order와 OrderItem을 1:N 식별 관계로 연결해줘 — OrderItem은 Order 없이 존재할 수 없어"</div>
+      <div class="result-block">OrderItem의 FK(order_id)가 복합 PK의 일부로 설정됩니다.</div>
+
+      <h3>1:1 관계</h3>
+      <div class="prompt-block">"User와 UserProfile을 1:1로 연결해줘"</div>
+      <div class="prompt-block">"Order와 Payment를 1:1 식별 관계로 연결해줘 — 결제는 주문 없이 존재할 수 없어"</div>
+
+      <h3>관계 한 번에 여러 개</h3>
+      <div class="prompt-block">"다음 관계를 설정해줘:<br>- User → Order (1:N 비식별)<br>- Order → OrderItem (1:N 식별)<br>- Product → OrderItem (1:N 비식별)"</div>
+
+      <h3>관계 타입 변경</h3>
+      <div class="prompt-block">"User-Order 관계를 식별 관계로 바꿔줘"</div>
+      <div class="prompt-block">"Order-OrderItem 관계를 비식별로 변경해줘"</div>
+
+      <div class="note">
+        <strong>식별 vs 비식별 선택 기준:</strong><br>
+        • <strong>식별 관계</strong>: 자식 레코드가 부모 없이 의미 없을 때 (주문상세, 결제이력 등)<br>
+        • <strong>비식별 관계</strong>: 자식이 독립적으로도 존재 가능할 때 (게시글-작성자, 상품-카테고리 등)
+      </div>
+    </section>
+
+    <!-- ─────────────── 삭제 ─────────────── -->
+    <section id="delete">
+      <h2>삭제</h2>
+
+      <div class="prompt-block">"Address 엔티티 삭제해줘"</div>
+      <div class="result-block">엔티티와 해당 엔티티를 참조하는 FK 컬럼이 함께 제거됩니다.</div>
+
+      <div class="prompt-block">"User-Address 관계 제거해줘"</div>
+      <div class="result-block">관계선과 자동 생성된 FK 컬럼이 제거됩니다.</div>
+
+      <div class="prompt-block">"Product 엔티티에서 description 컬럼 삭제해줘"</div>
+    </section>
+
+    <!-- ─────────────── 시나리오: 쇼핑몰 ─────────────── -->
+    <section id="scenario-shop">
+      <h2>시나리오 — 쇼핑몰 ERD</h2>
+      <p>처음부터 한 번에 요청하면 Claude가 전체 구조를 설계합니다.</p>
+
+      <div class="prompt-block">
+"쇼핑몰 ERD를 만들어줘. 아래 구조로:<br><br>
+엔티티:<br>
+- User (회원): id, username(사용자명), email(이메일), phone(휴대폰), created_at(가입일시)<br>
+- Product (상품): id, name(상품명), price(가격) DECIMAL, stock(재고수량) INT, category_id FK<br>
+- Category (카테고리): id, name(분류명), parent_id(상위카테고리)<br>
+- Order (주문): id, user_id FK, status(주문상태), total(합계금액) DECIMAL, ordered_at(주문일시)<br>
+- OrderItem (주문상세): order_id FK+PK, product_id FK+PK, qty(수량) INT, price(단가) DECIMAL<br>
+- Delivery (배송): id, order_id FK, address(배송주소), status(배송상태), shipped_at(출고일시)<br><br>
+관계:<br>
+- Category → Product (1:N 비식별)<br>
+- User → Order (1:N 비식별)<br>
+- Order → OrderItem (1:N 식별)<br>
+- Product → OrderItem (1:N 비식별)<br>
+- Order → Delivery (1:1)"
+      </div>
+
+      <h3>단계별로 나눠서 만들기</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h4>1단계 — 엔티티 골격</h4>
+          <div class="prompts">
+            <div class="p">"User, Product, Order, OrderItem 엔티티 만들어줘"</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>2단계 — 컬럼 채우기</h4>
+          <div class="prompts">
+            <div class="p">"User에 email, password, created_at 컬럼 추가해줘"</div>
+            <div class="p">"Product에 name, price(DECIMAL), stock(INT) 추가해줘"</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>3단계 — 관계 연결</h4>
+          <div class="prompts">
+            <div class="p">"User→Order 1:N, Order→OrderItem 1:N 식별 관계 설정해줘"</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>4단계 — 검토 요청</h4>
+          <div class="prompts">
+            <div class="p">"현재 다이어그램의 엔티티 목록이랑 관계 구조 알려줘"</div>
+            <div class="p">"누락된 컬럼이나 정규화 문제가 있으면 말해줘"</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── 시나리오: 블로그 ─────────────── -->
+    <section id="scenario-blog">
+      <h2>시나리오 — 블로그 / 커뮤니티</h2>
+
+      <div class="prompt-block">
+"블로그 ERD 만들어줘:<br><br>
+- User (사용자): id, nickname(닉네임), email(이메일), created_at(가입일)<br>
+- Post (게시글): id, user_id FK, title(제목), content(본문) TEXT, published_at(게시일)<br>
+- Comment (댓글): id, post_id FK, user_id FK, content(내용), created_at(작성일)<br>
+- Tag (태그): id, name(태그명) UNIQUE<br>
+- PostTag (게시글-태그): post_id FK+PK, tag_id FK+PK<br><br>
+관계:<br>
+- User → Post (1:N 비식별)<br>
+- Post → Comment (1:N 식별)<br>
+- User → Comment (1:N 비식별)<br>
+- Post → PostTag (1:N 식별)<br>
+- Tag → PostTag (1:N 비식별)"
+      </div>
+
+      <div class="note">
+        <strong>N:M 관계 표현법:</strong> EasyERD는 N:M을 직접 지원하지 않습니다.
+        중간 엔티티(PostTag, OrderItem 등)를 만들고 각각 1:N으로 연결하세요.
+        Claude에게 "Post와 Tag를 N:M으로 연결해줘"라고 하면 중간 테이블을 자동으로 만들어줍니다.
+      </div>
+    </section>
+
+    <!-- ─────────────── 시나리오: 인사관리 ─────────────── -->
+    <section id="scenario-hr">
+      <h2>시나리오 — 인사 / 조직 관리</h2>
+
+      <div class="prompt-block">
+"인사 관리 시스템 ERD 만들어줘:<br><br>
+- Department (부서): id, name(부서명), manager_id(부서장) FK nullable<br>
+- Employee (직원): id, dept_id FK, name(이름), email(이메일), hire_date(입사일), salary(급여) DECIMAL<br>
+- Position (직급): id, name(직급명), level(레벨) INT<br>
+- EmployeePosition (직원-직급이력): id, emp_id FK, pos_id FK, assigned_at(발령일), ended_at(종료일) nullable<br><br>
+관계:<br>
+- Department → Employee (1:N 비식별)<br>
+- Employee → Department (1:1 비식별, manager_id — 자기 참조와 별개)<br>
+- Position → EmployeePosition (1:N 비식별)<br>
+- Employee → EmployeePosition (1:N 비식별)"
+      </div>
+    </section>
+
+    <!-- ─────────────── 시나리오: 재귀 ─────────────── -->
+    <section id="scenario-recurse">
+      <h2>시나리오 — 재귀 / 계층 구조</h2>
+      <p>EasyERD는 <strong>자기 자신에게 관계선을 연결하는 재귀 관계</strong>를 지원합니다.</p>
+
+      <h3>단순 재귀 (상위-하위)</h3>
+      <div class="prompt-block">"Category 엔티티를 만들고 자기 자신과 1:N 비식별 재귀 관계 설정해줘 — 상위 카테고리-하위 카테고리 계층 구조"</div>
+      <div class="result-block">Category 엔티티에 parent_id FK가 자동 추가되고 자기 참조 루프 관계선이 생깁니다.</div>
+
+      <div class="prompt-block">"Employee 엔티티에 manager(관리자) 자기 참조 관계 추가해줘 — 한 직원이 여러 부하 직원을 가질 수 있어"</div>
+
+      <div class="prompt-block">"Comment 엔티티에 대댓글 지원을 위해 parent_comment_id 자기 참조 관계 추가해줘 (선택 참여, nullable)"</div>
+
+      <h3>무한 계층 (중첩 경로)</h3>
+      <div class="prompt-block">
+"폴더 계층 구조 ERD 만들어줘:<br>
+- Folder: id, name(폴더명), owner_id FK, parent_id(상위폴더) 자기참조 FK nullable<br>
+- File: id, folder_id FK, name(파일명), size(크기) BIGINT, created_at<br><br>
+관계: User → Folder (1:N), Folder → Folder (1:N 재귀), Folder → File (1:N)"
+      </div>
+    </section>
+
+    <!-- ─────────────── 팁 ─────────────── -->
+    <section id="tips">
+      <h2>효과적인 프롬프트 작성 팁</h2>
+
+      <div class="card-grid">
+        <div class="card">
+          <h4>✅ 잘 되는 방식</h4>
+          <div class="prompts">
+            <div class="p">물리명(영문)과 논리명(한글)을 함께 명시</div>
+            <div class="p">데이터 타입을 명시 (VARCHAR, INT, DECIMAL…)</div>
+            <div class="p">관계의 방향과 종류를 명확히 ("1:N 비식별")</div>
+            <div class="p">한 번에 여러 단계를 묶어 요청</div>
+            <div class="p">도메인 맥락을 설명 ("주문 없이 존재 불가")</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>⚠️ 주의할 점</h4>
+          <div class="prompts">
+            <div class="p">N:M은 중간 엔티티로 나눠서 요청</div>
+            <div class="p">FK PK를 직접 삭제하지 말 것</div>
+            <div class="p">관계 후 PK명 변경 시 관계를 먼저 삭제</div>
+            <div class="p">저장은 "이 다이어그램 저장해줘"로 명시</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>현재 상태 확인</h3>
+      <div class="prompt-block">"지금 다이어그램에 엔티티가 뭐뭐 있어?"</div>
+      <div class="prompt-block">"User 엔티티의 컬럼 목록 보여줘"</div>
+      <div class="prompt-block">"Order와 관계된 엔티티가 뭐야?"</div>
+
+      <h3>저장 요청</h3>
+      <div class="prompt-block">"지금까지 작업한 거 DB에 저장해줘"</div>
+      <div class="prompt-block">"'쇼핑몰 v2' 이름으로 새 다이어그램으로 저장해줘"</div>
+
+      <h3>다이어그램 조회/전환</h3>
+      <div class="prompt-block">"내 다이어그램 목록 보여줘"</div>
+      <div class="prompt-block">"'블로그 ERD' 다이어그램 열어줘"</div>
+    </section>
+
+    <!-- ─────────────── 데이터 타입 ─────────────── -->
+    <section id="types">
+      <h2>데이터 타입 치트시트</h2>
+      <p>Claude에게 타입을 명시할 때 아래 이름을 사용하면 정확하게 처리됩니다.</p>
+      <table>
+        <thead><tr><th>타입</th><th>용도</th><th>Claude에게 말하는 방법</th></tr></thead>
+        <tbody>
+          <tr><td><code>INT</code></td><td>정수 (카운트, 수량, 인덱스)</td><td>"정수", "INT", "integer"</td></tr>
+          <tr><td><code>BIGINT</code></td><td>큰 정수 (파일크기, 타임스탬프)</td><td>"BIGINT", "큰 숫자"</td></tr>
+          <tr><td><code>VARCHAR(n)</code></td><td>가변길이 문자열</td><td>"VARCHAR(100)", "문자열 100자"</td></tr>
+          <tr><td><code>CHAR(n)</code></td><td>고정길이 (코드, 전화번호)</td><td>"CHAR(10)", "고정 10자"</td></tr>
+          <tr><td><code>TEXT</code></td><td>긴 텍스트 (본문, 설명)</td><td>"TEXT", "긴 문자열", "본문"</td></tr>
+          <tr><td><code>DECIMAL(p,s)</code></td><td>정밀 소수 (금액, 비율)</td><td>"DECIMAL(12,2)", "금액", "가격"</td></tr>
+          <tr><td><code>FLOAT</code></td><td>부동소수점 (좌표, 통계)</td><td>"FLOAT", "실수"</td></tr>
+          <tr><td><code>DATETIME</code></td><td>날짜+시각</td><td>"DATETIME", "일시", "타임스탬프"</td></tr>
+          <tr><td><code>DATE</code></td><td>날짜만</td><td>"DATE", "날짜"</td></tr>
+          <tr><td><code>BOOLEAN</code></td><td>참/거짓</td><td>"BOOLEAN", "bool", "참/거짓"</td></tr>
+          <tr><td><code>UUID</code></td><td>고유 식별자 (CHAR(36)로 저장)</td><td>"UUID"</td></tr>
+          <tr><td><code>JSON</code></td><td>비정형 데이터</td><td>"JSON", "메타데이터"</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      EasyERD · Claude 프롬프트 가이드 · MCP로 자연어 ERD 설계
+    </footer>
+  </main>
+</div>
+</body>
+</html>

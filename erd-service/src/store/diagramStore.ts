@@ -16,6 +16,7 @@ interface DiagramState {
   fetchList: () => Promise<void>;
   open: (id: number) => Promise<void>;
   saveCurrent: () => Promise<void>;
+  autoSave: () => Promise<void>;
   startNew: () => Promise<void>;
   rename: (id: number) => Promise<void>;
   remove: (id: number) => Promise<void>;
@@ -82,6 +83,23 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       await get().fetchList();
     } catch (err) {
       alertDialog(`저장에 실패했습니다.\n${(err as Error).message}`, '저장 실패');
+    } finally {
+      set({ saving: false });
+    }
+  },
+
+  // 5초 자동 저장용 — currentId가 없는 새 다이어그램은 건너뜀(이름 입력 불필요)
+  autoSave: async () => {
+    const { currentId, dirty, saving } = get();
+    if (!dirty || currentId === null || saving) return;
+    const { entities, relationships, nodePositions } = useERDStore.getState();
+    const data = toERDData(entities, relationships, nodePositions);
+    set({ saving: true });
+    try {
+      await api.updateDiagram(currentId, data);
+      set({ dirty: false });
+    } catch {
+      // 자동 저장 실패는 조용히 무시 — 다음 인터벌에 재시도
     } finally {
       set({ saving: false });
     }

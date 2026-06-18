@@ -1,4 +1,12 @@
 import { Column, ColumnType, Entity, Relationship, RelationshipType } from '../types/erd';
+import {
+  RelationshipSides,
+  sidesFromType,
+  sidesToType,
+  deriveSides,
+  fkFlagsForSides,
+  applySides,
+} from './relationshipSides';
 
 // ──────────────────────────────────────────────────────────────────────────
 // 프레임워크 비의존 ERD 변형 로직 — Zustand store(브라우저)와 MCP 서버(Node)가 공유.
@@ -51,13 +59,12 @@ export function fkFlagsFor(type: RelationshipType): { isPK: boolean; isNN: boole
 export function buildFKColumns(
   sourceEntity: Entity,
   sourceId: string,
-  flags: { isPK: boolean; isNN: boolean }
+  flags: { isPK: boolean; isNN: boolean },
+  namePrefix = '',  // 자기 참조 시 'parent_' 등으로 PK명 충돌 방지
 ): Column[] {
   return sourceEntity.columns.filter(c => c.isPK).map(pk => ({
     id: genId(),
-    // FK 컬럼명: 상위 엔티티 PK명 그대로 사용 (엔티티명 접두사 없음)
-    name: pk.name,
-    // 논리명: 상위 PK 논리명 그대로 (엔티티명 접두사 없음), 없으면 빈 값
+    name: namePrefix + pk.name,
     logicalName: pk.logicalName ?? '',
     type: pk.type as ColumnType,
     size: pk.size,
@@ -211,16 +218,31 @@ export function addRelationship(
   doc: ErdDoc,
   sourceId: string,
   targetId: string,
-  type: RelationshipType
+  type: RelationshipType,
+  sidesOverride?: Partial<RelationshipSides>
 ): { doc: ErdDoc; relationshipId: string | null; fkColumnsAdded: Column[] } {
   const sourceEntity = doc.entities.find(e => e.id === sourceId);
   const targetEntity = doc.entities.find(e => e.id === targetId);
   if (!sourceEntity || !targetEntity) {
     return { doc, relationshipId: null, fkColumnsAdded: [] };
   }
-  const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsFor(type));
+  // 생성 시점에 per-side를 확정해 명시 필드로 저장한다(type은 가장 근접한 enum으로 재계산).
+  const sides: RelationshipSides = { ...sidesFromType(type), ...sidesOverride };
+  // 자기 참조(재귀): FK명이 PK명과 동일해 충돌하므로 'parent_' 접두사로 회피
+  const isSelfRef = sourceId === targetId;
+  const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsForSides(sides), isSelfRef ? 'parent_' : '');
   const fkNames = new Set(newFKColumns.map(c => c.name));
   const relationshipId = genId();
+  const newRel: Relationship = {
+    id: relationshipId,
+    sourceId,
+    targetId,
+    type: sidesToType(sides),
+    parentOptional: sides.parentOptional,
+    childOptional: sides.childOptional,
+    childCardinality: sides.childCardinality,
+    identifying: sides.identifying,
+  };
   return {
     doc: {
       ...doc,
@@ -235,7 +257,7 @@ export function addRelationship(
             }
           : e
       ),
-      relationships: [...doc.relationships, { id: relationshipId, sourceId, targetId, type }],
+      relationships: [...doc.relationships, newRel],
     },
     relationshipId,
     fkColumnsAdded: newFKColumns,
@@ -284,6 +306,53 @@ export function updateRelationshipType(
       ...doc,
       entities,
       relationships: doc.relationships.map(r => (r.id === id ? { ...r, type: newType } : r)),
+    },
+    changed: true,
+  };
+}
+
+// 관계 per-side(좌/우 절반) 부분 갱신 — 명시 필드를 머지하고 호환 type을 재계산하며,
+// 자식 FK 플래그(isPK/isNN)도 새 side에 맞춰 갱신한다(updateRelationshipType과 동일한
+// "기존 auto-FK는 플래그만 전환, 없으면 새로 생성" 규칙으로 컬럼명/논리명 보존).
+export function updateRelationshipSides(
+  doc: ErdDoc,
+  id: string,
+  partial: Partial<RelationshipSides>
+): { doc: ErdDoc; changed: boolean } {
+  const rel = doc.relationships.find(r => r.id === id);
+  if (!rel) return { doc, changed: false };
+  const sourceEntity = doc.entities.find(e => e.id === rel.sourceId);
+  if (!sourceEntity) return { doc, changed: false };
+
+  const updatedRel = applySides(rel, partial);
+  const flags = fkFlagsForSides(deriveSides(updatedRel));
+  const entities = doc.entities.map(e => {
+    if (e.id !== rel.targetId) return e;
+    const hasAutoFK = e.columns.some(c => c.isFK && c.refEntityId === rel.sourceId);
+    if (hasAutoFK) {
+      return {
+        ...e,
+        columns: e.columns.map(c =>
+          c.isFK && c.refEntityId === rel.sourceId ? { ...c, isPK: flags.isPK, isNN: flags.isNN } : c
+        ),
+      };
+    }
+    const newCols = buildFKColumns(sourceEntity, rel.sourceId, flags);
+    const names = new Set(newCols.map(c => c.name));
+    return {
+      ...e,
+      columns: [
+        ...e.columns.filter(c => !names.has(c.name) || (c.isFK && c.refEntityId !== rel.sourceId)),
+        ...newCols,
+      ],
+    };
+  });
+
+  return {
+    doc: {
+      ...doc,
+      entities,
+      relationships: doc.relationships.map(r => (r.id === id ? updatedRel : r)),
     },
     changed: true,
   };

@@ -120,34 +120,27 @@ try {
   await page.click('button[title="자동 정렬"]');
   await page.waitForTimeout(800);
 
-  // 엣지 클릭 → 툴바 → 타입 변경 (식별로)
+  // 엣지 클릭 → 우측 관계 편집 패널 표시 (선 위 팝업 대신)
   await clickEdge(0);
-  const editBtn = page.locator('button[title="관계 종류 변경"]');
-  check('엣지 선택 시 타입 변경 툴바 표시', await editBtn.count() === 1);
+  const relPanel = page.locator('[data-testid="rel-panel"]');
+  check('엣지 선택 시 관계 편집 패널 표시', await relPanel.count() === 1);
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_edge_toolbar.png' });
 
-  await editBtn.click();
-  await page.waitForTimeout(400);
-  const modalTitle = await page.locator('h3:has-text("관계 종류 변경")').count();
-  const currentChip = await page.locator('text=현재').count();
-  check('타입 변경 모달 (현재 타입 표시)', modalTitle === 1 && currentChip >= 1);
-
-  await page.locator('button').filter({ hasText: '1:M 식별자 상속 (점선 + 실선)' }).first().click();
+  // 패널에서 '식별 관계' 토글 ON → 자식 FK가 PK로 승격
+  const identifying = page.locator('[data-testid="rel-identifying"] input[type="checkbox"]');
+  await identifying.check();
   await page.waitForTimeout(500);
   pkIcons = await pkIconCount();
   fkIcons = await fkIconCount();
   // FK가 PK로 승격 — 중복 생성 없이 FK 아이콘 1개, PK 아이콘은 원래 id + 승격된 FK = 2개
-  check('비식별→식별 전환 시 FK가 PK로 승격', fkIcons === 1 && pkIcons === 2);
+  check('식별 토글 ON → FK가 PK로 승격', fkIcons === 1 && pkIcons === 2);
 
-  // 다시 비식별로 → FK 유지 + PK 해제
-  await clickEdge(0);
-  await page.locator('button[title="관계 종류 변경"]').click();
-  await page.waitForTimeout(400);
-  await page.locator('button').filter({ hasText: '1:M 비식별 (점선 + 실선)' }).first().click();
+  // 다시 OFF → FK 유지 + PK 해제
+  await identifying.uncheck();
   await page.waitForTimeout(500);
   pkIcons = await pkIconCount();
   fkIcons = await fkIconCount();
-  check('식별→비식별 전환 시 FK 유지 + PK 해제', fkIcons === 1 && pkIcons === 1);
+  check('식별 토글 OFF → FK 유지 + PK 해제', fkIcons === 1 && pkIcons === 1);
 
   // ───── 3. 자동 정렬 ─────
   await page.click('button:has-text("Add Entity")');

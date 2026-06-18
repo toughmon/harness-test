@@ -48,6 +48,18 @@ try {
   await page.click('button:has-text("Add Entity")');
   await page.waitForTimeout(300);
 
+  // 부모(Entity1) PK명을 자식 기본 PK(id)와 겹치지 않게 변경 — 이름 충돌 시 자식 PK가
+  // FK로 교체돼 식별 SOLID의 PK FK 추가가 가려지는 문제 회피(verify_features와 동일 셋업)
+  await page.locator('.react-flow__node').nth(0).click();
+  await page.waitForTimeout(300);
+  const setupPanel = page.locator('aside').last();
+  await setupPanel.locator('.font-mono', { hasText: /^id$/ }).first().click();
+  await page.waitForTimeout(300);
+  await setupPanel.locator('input[placeholder="물리명"]').first().fill('pid');
+  await page.waitForTimeout(300);
+  await page.mouse.click(700, 780);
+  await page.waitForTimeout(300);
+
   const opened = await drawRelationship(0, 1);
   check('관계 그리기 → 타입 선택 모달 표시', opened);
   if (!opened) throw new Error('모달이 열리지 않음');

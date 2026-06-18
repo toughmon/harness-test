@@ -179,7 +179,7 @@ export default function Sidebar() {
       <div className="border-t border-outline-variant p-2 flex flex-col gap-1">
         <NavItem icon="cable" label="MCP 연결" onClick={openMcp} testid="sidebar-mcp-connect" />
         <NavItem icon="menu_book" label="MCP 연결 가이드" href="/mcp-guide.html" />
-        <NavItem icon="help" label="Help" />
+        <NavItem icon="smart_toy" label="Claude 프롬프트 가이드" href="/prompt-guide.html" />
         <NavItem icon="description" label="Docs" href="/manual.html" />
       </div>
     </aside>

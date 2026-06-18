@@ -3,17 +3,21 @@ import Toolbar from './components/toolbar/Toolbar';
 import Sidebar from './components/sidebar/Sidebar';
 import ERDCanvas from './components/canvas/ERDCanvas';
 import EntityEditPanel from './components/panels/EntityEditPanel';
+import RelationshipEditPanel from './components/panels/RelationshipEditPanel';
 import AuthModal from './components/auth/AuthModal';
 import DialogModal from './components/common/DialogModal';
 import McpConnectModal from './components/mcp/McpConnectModal';
 import { useERDStore } from './store/erdStore';
 import { useAuthStore } from './store/authStore';
+import { useDiagramStore } from './store/diagramStore';
 import { useMcpStore } from './store/mcpStore';
 import { useThemeStore } from './store/themeStore';
 
 function App() {
   const { undo, redo } = useERDStore();
-  const { modalOpen, init } = useAuthStore();
+  const selectedEdgeId = useERDStore(s => s.selectedEdgeId);
+  const { modalOpen, init, status } = useAuthStore();
+  const autoSave = useDiagramStore(s => s.autoSave);
   const mcpModalOpen = useMcpStore(s => s.modalOpen);
   const { theme } = useThemeStore();
 
@@ -21,6 +25,13 @@ function App() {
   useEffect(() => {
     init();
   }, [init]);
+
+  // 로그인 상태일 때 5초마다 자동 저장 (currentId 없는 새 다이어그램은 skip)
+  useEffect(() => {
+    if (status !== 'authed') return;
+    const id = setInterval(autoSave, 5000);
+    return () => clearInterval(id);
+  }, [status, autoSave]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -54,7 +65,7 @@ function App() {
       <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />
         <ERDCanvas />
-        <EntityEditPanel />
+        {selectedEdgeId ? <RelationshipEditPanel /> : <EntityEditPanel />}
       </div>
       {modalOpen && <AuthModal />}
       {mcpModalOpen && <McpConnectModal />}
