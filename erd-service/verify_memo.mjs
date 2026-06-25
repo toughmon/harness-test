@@ -30,10 +30,11 @@ check('Add Memo 클릭 후 메모 노드 생성됨', await memoNodes.count() ===
 const memoPanel = page.locator('[data-testid="memo-edit-panel"]');
 check('메모 선택 시 MemoEditPanel 표시', await memoPanel.count() > 0);
 
-// 4. 패널에서 텍스트 입력
+// 4. 패널에서 텍스트 입력 (blur 시점에 store 반영 — IME 안전을 위해 입력 중 store 미갱신)
 const panelTextarea = memoPanel.locator('textarea');
 await panelTextarea.click();
 await panelTextarea.fill('테스트 메모 내용');
+await panelTextarea.evaluate(el => el.blur());
 await page.waitForTimeout(400);
 
 // 5. 노드에도 텍스트 반영 확인
@@ -43,6 +44,7 @@ check('패널 텍스트 입력이 노드에 반영됨', nodeText.includes('테�
 
 // 6. 노드 직접 텍스트 편집 (React Flow 노드 내 textarea는 force 필요)
 await nodeTextarea.fill('노드 직접 편집', { force: true });
+await nodeTextarea.evaluate(el => el.blur());
 await page.waitForTimeout(400);
 const panelText = await panelTextarea.inputValue();
 check('노드 직접 편집이 패널에 반영됨', panelText.includes('노드 직접 편집'));

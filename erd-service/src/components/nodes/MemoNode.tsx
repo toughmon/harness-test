@@ -10,9 +10,8 @@ export default function MemoNode({ data }: NodeProps) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const focusedRef = useRef(false);
 
-  // 다른 곳(우측 패널)에서 텍스트가 바뀌면 노드 textarea에 반영한다.
-  // 단, 이 textarea에 포커스가 있으면(=사용자가 여기서 입력 중이면) DOM value를 절대 건드리지 않는다.
-  // controlled 갱신/programmatic value 쓰기는 한글 IME 조합 버퍼를 깨뜨려 글자가 누락된다.
+  // 다른 곳(우측 패널)에서 텍스트가 바뀌면 노드 textarea에 반영.
+  // 입력 중(포커스 보유)에는 절대 건드리지 않는다 — IME 조합 취소 방지.
   useEffect(() => {
     const ta = taRef.current;
     if (ta && !focusedRef.current && ta.value !== memo.text) {
@@ -69,15 +68,15 @@ export default function MemoNode({ data }: NodeProps) {
         </div>
       </div>
 
-      {/* Text area — uncontrolled(defaultValue+ref). value prop을 쓰지 않아 React가 입력 중 DOM을 덮어쓰지 않음. */}
+      {/* Text area — 순수 uncontrolled. 입력 중에는 store를 갱신하지 않아(리렌더 0) IME 조합이 안전하다.
+          포커스가 빠질 때(onBlur)만 한 번 store에 저장한다. */}
       <textarea
         ref={taRef}
         defaultValue={memo.text}
         className="nodrag nopan flex-1 bg-transparent resize-none outline-none border-none p-2 text-[13px] leading-relaxed placeholder:text-gray-400"
         style={{ color: '#1e293b', fontFamily: 'inherit' }}
-        onChange={e => updateMemo(memo.id, { text: e.target.value })}
         onFocus={() => { focusedRef.current = true; selectMemo(memo.id); }}
-        onBlur={() => { focusedRef.current = false; }}
+        onBlur={e => { focusedRef.current = false; updateMemo(memo.id, { text: e.target.value }); }}
         placeholder="메모를 입력하세요..."
       />
     </div>

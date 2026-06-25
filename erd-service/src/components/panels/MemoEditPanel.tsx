@@ -85,9 +85,8 @@ export default function MemoEditPanel() {
               defaultValue={memo.text}
               className="w-full bg-surface-container rounded-lg border border-outline-variant px-3 py-2 text-sm text-on-surface resize-none outline-none focus:border-primary transition-colors"
               style={{ minHeight: 160 }}
-              onChange={e => updateMemo(memo.id, { text: e.target.value })}
               onFocus={() => { focusedRef.current = true; }}
-              onBlur={() => { focusedRef.current = false; }}
+              onBlur={e => { focusedRef.current = false; updateMemo(memo.id, { text: e.target.value }); }}
               placeholder="메모 내용을 입력하세요..."
             />
           </div>
