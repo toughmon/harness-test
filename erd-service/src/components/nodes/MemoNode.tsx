@@ -8,12 +8,14 @@ export default function MemoNode({ data }: NodeProps) {
   const { updateMemo, deleteMemo, selectMemo, selectedMemoId, updateMemoSize } = useERDStore();
   const isSelected = selectedMemoId === memo.id;
   const taRef = useRef<HTMLTextAreaElement>(null);
-  const composingRef = useRef(false);
+  const focusedRef = useRef(false);
 
-  // 외부(패널 등)에서 텍스트가 바뀌면 DOM에 직접 반영. 조합 중이거나 값이 같으면 건너뜀.
+  // 다른 곳(우측 패널)에서 텍스트가 바뀌면 노드 textarea에 반영한다.
+  // 단, 이 textarea에 포커스가 있으면(=사용자가 여기서 입력 중이면) DOM value를 절대 건드리지 않는다.
+  // controlled 갱신/programmatic value 쓰기는 한글 IME 조합 버퍼를 깨뜨려 글자가 누락된다.
   useEffect(() => {
     const ta = taRef.current;
-    if (!composingRef.current && ta && ta.value !== memo.text) {
+    if (ta && !focusedRef.current && ta.value !== memo.text) {
       ta.value = memo.text;
     }
   }, [memo.text]);
@@ -67,29 +69,15 @@ export default function MemoNode({ data }: NodeProps) {
         </div>
       </div>
 
-      {/* Text area — uncontrolled: value prop 없이 defaultValue만 사용.
-          controlled input(value=...)은 onChange마다 React가 textarea.value를 덮어써 IME 조합 버퍼를 리셋한다. */}
+      {/* Text area — uncontrolled(defaultValue+ref). value prop을 쓰지 않아 React가 입력 중 DOM을 덮어쓰지 않음. */}
       <textarea
         ref={taRef}
         defaultValue={memo.text}
         className="nodrag nopan flex-1 bg-transparent resize-none outline-none border-none p-2 text-[13px] leading-relaxed placeholder:text-gray-400"
         style={{ color: '#1e293b', fontFamily: 'inherit' }}
-        onChange={e => {
-          if (!composingRef.current) updateMemo(memo.id, { text: e.target.value });
-        }}
-        onCompositionStart={() => { composingRef.current = true; }}
-        onCompositionEnd={e => {
-          composingRef.current = false;
-          updateMemo(memo.id, { text: (e.target as HTMLTextAreaElement).value });
-        }}
-        onBlur={e => {
-          // 포커스 이탈 시 compositionEnd가 안 오는 엣지 케이스 대비
-          if (composingRef.current) {
-            composingRef.current = false;
-            updateMemo(memo.id, { text: e.target.value });
-          }
-        }}
-        onClick={() => selectMemo(memo.id)}
+        onChange={e => updateMemo(memo.id, { text: e.target.value })}
+        onFocus={() => { focusedRef.current = true; selectMemo(memo.id); }}
+        onBlur={() => { focusedRef.current = false; }}
         placeholder="메모를 입력하세요..."
       />
     </div>

@@ -7,21 +7,22 @@ export default function MemoEditPanel() {
   const { memos, selectedMemoId, selectMemo, updateMemo, deleteMemo } = useERDStore();
   const memo = memos.find(m => m.id === selectedMemoId);
   const taRef = useRef<HTMLTextAreaElement>(null);
-  const composingRef = useRef(false);
+  const focusedRef = useRef(false);
 
   const memoId = memo?.id;
   const memoText = memo?.text;
 
-  // 선택 메모가 바뀌면 강제 초기화 (조합 상태도 리셋)
+  // 선택한 메모가 바뀌면 textarea를 그 메모 내용으로 초기화 (포커스 무관 — 다른 메모로 전환된 것).
   useEffect(() => {
-    composingRef.current = false;
     if (taRef.current) taRef.current.value = memoText ?? '';
-  }, [memoId]); // eslint-disable-line react-hooks/exhaustive-deps
+    // memoText는 의도적으로 deps에서 제외 — id 전환 시에만 강제 초기화
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memoId]);
 
-  // 노드 등 외부에서 텍스트가 바뀌면 동기화. 조합 중이거나 값이 같으면 건너뜀.
+  // 다른 곳(캔버스 노드)에서 텍스트가 바뀌면 패널에 반영. 단, 패널 textarea에 포커스가 있으면 건드리지 않음.
   useEffect(() => {
     const ta = taRef.current;
-    if (!composingRef.current && ta && ta.value !== (memoText ?? '')) {
+    if (ta && !focusedRef.current && ta.value !== (memoText ?? '')) {
       ta.value = memoText ?? '';
     }
   }, [memoText]);
@@ -84,20 +85,9 @@ export default function MemoEditPanel() {
               defaultValue={memo.text}
               className="w-full bg-surface-container rounded-lg border border-outline-variant px-3 py-2 text-sm text-on-surface resize-none outline-none focus:border-primary transition-colors"
               style={{ minHeight: 160 }}
-              onChange={e => {
-                if (!composingRef.current) updateMemo(memo.id, { text: e.target.value });
-              }}
-              onCompositionStart={() => { composingRef.current = true; }}
-              onCompositionEnd={e => {
-                composingRef.current = false;
-                updateMemo(memo.id, { text: (e.target as HTMLTextAreaElement).value });
-              }}
-              onBlur={e => {
-                if (composingRef.current) {
-                  composingRef.current = false;
-                  updateMemo(memo.id, { text: e.target.value });
-                }
-              }}
+              onChange={e => updateMemo(memo.id, { text: e.target.value })}
+              onFocus={() => { focusedRef.current = true; }}
+              onBlur={() => { focusedRef.current = false; }}
               placeholder="메모 내용을 입력하세요..."
             />
           </div>
