@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { MEMO_COLORS } from '../../types/erd';
 import { confirmDialog } from '../../store/dialogStore';
@@ -6,16 +6,25 @@ import { confirmDialog } from '../../store/dialogStore';
 export default function MemoEditPanel() {
   const { memos, selectedMemoId, selectMemo, updateMemo, deleteMemo } = useERDStore();
   const memo = memos.find(m => m.id === selectedMemoId);
-
-  const [localText, setLocalText] = useState(memo?.text ?? '');
+  const taRef = useRef<HTMLTextAreaElement>(null);
   const composingRef = useRef(false);
 
-  // 선택 메모 변경 또는 외부 텍스트 변경 시 동기화 (조합 중이면 건너뜀)
   const memoId = memo?.id;
   const memoText = memo?.text;
+
+  // 선택 메모가 바뀌면 강제 초기화 (조합 상태도 리셋)
   useEffect(() => {
-    if (!composingRef.current) setLocalText(memoText ?? '');
-  }, [memoId, memoText]);
+    composingRef.current = false;
+    if (taRef.current) taRef.current.value = memoText ?? '';
+  }, [memoId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 노드 등 외부에서 텍스트가 바뀌면 동기화. 조합 중이거나 값이 같으면 건너뜀.
+  useEffect(() => {
+    const ta = taRef.current;
+    if (!composingRef.current && ta && ta.value !== (memoText ?? '')) {
+      ta.value = memoText ?? '';
+    }
+  }, [memoText]);
 
   return (
     <aside
@@ -71,20 +80,23 @@ export default function MemoEditPanel() {
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant opacity-70">내용</label>
             <textarea
+              ref={taRef}
+              defaultValue={memo.text}
               className="w-full bg-surface-container rounded-lg border border-outline-variant px-3 py-2 text-sm text-on-surface resize-none outline-none focus:border-primary transition-colors"
               style={{ minHeight: 160 }}
-              value={localText}
               onChange={e => {
-                const text = e.target.value;
-                setLocalText(text);
-                if (!composingRef.current) updateMemo(memo.id, { text });
+                if (!composingRef.current) updateMemo(memo.id, { text: e.target.value });
               }}
               onCompositionStart={() => { composingRef.current = true; }}
               onCompositionEnd={e => {
                 composingRef.current = false;
-                const text = (e.target as HTMLTextAreaElement).value;
-                setLocalText(text);
-                updateMemo(memo.id, { text });
+                updateMemo(memo.id, { text: (e.target as HTMLTextAreaElement).value });
+              }}
+              onBlur={e => {
+                if (composingRef.current) {
+                  composingRef.current = false;
+                  updateMemo(memo.id, { text: e.target.value });
+                }
               }}
               placeholder="메모 내용을 입력하세요..."
             />

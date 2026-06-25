@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { NodeProps, NodeResizer } from '@xyflow/react';
 import { useERDStore } from '../../store/erdStore';
 import { Memo, MEMO_COLORS } from '../../types/erd';
@@ -7,14 +7,15 @@ export default function MemoNode({ data }: NodeProps) {
   const memo = data as unknown as Memo;
   const { updateMemo, deleteMemo, selectMemo, selectedMemoId, updateMemoSize } = useERDStore();
   const isSelected = selectedMemoId === memo.id;
-
-  // 로컬 표시용 텍스트 — 스토어보다 먼저 화면에 반영해 IME 조합과 충돌 방지
-  const [localText, setLocalText] = useState(memo.text);
+  const taRef = useRef<HTMLTextAreaElement>(null);
   const composingRef = useRef(false);
 
-  // 패널 등 외부에서 memo.text가 바뀌면 동기화 (조합 중이면 건너뜀)
+  // 외부(패널 등)에서 텍스트가 바뀌면 DOM에 직접 반영. 조합 중이거나 값이 같으면 건너뜀.
   useEffect(() => {
-    if (!composingRef.current) setLocalText(memo.text);
+    const ta = taRef.current;
+    if (!composingRef.current && ta && ta.value !== memo.text) {
+      ta.value = memo.text;
+    }
   }, [memo.text]);
 
   return (
@@ -66,22 +67,27 @@ export default function MemoNode({ data }: NodeProps) {
         </div>
       </div>
 
-      {/* Text area */}
+      {/* Text area — uncontrolled: value prop 없이 defaultValue만 사용.
+          controlled input(value=...)은 onChange마다 React가 textarea.value를 덮어써 IME 조합 버퍼를 리셋한다. */}
       <textarea
+        ref={taRef}
+        defaultValue={memo.text}
         className="nodrag nopan flex-1 bg-transparent resize-none outline-none border-none p-2 text-[13px] leading-relaxed placeholder:text-gray-400"
         style={{ color: '#1e293b', fontFamily: 'inherit' }}
-        value={localText}
         onChange={e => {
-          const text = e.target.value;
-          setLocalText(text); // 항상 즉시 표시 업데이트
-          if (!composingRef.current) updateMemo(memo.id, { text }); // 조합 중 스토어 쓰기 차단
+          if (!composingRef.current) updateMemo(memo.id, { text: e.target.value });
         }}
         onCompositionStart={() => { composingRef.current = true; }}
         onCompositionEnd={e => {
           composingRef.current = false;
-          const text = (e.target as HTMLTextAreaElement).value;
-          setLocalText(text);
-          updateMemo(memo.id, { text });
+          updateMemo(memo.id, { text: (e.target as HTMLTextAreaElement).value });
+        }}
+        onBlur={e => {
+          // 포커스 이탈 시 compositionEnd가 안 오는 엣지 케이스 대비
+          if (composingRef.current) {
+            composingRef.current = false;
+            updateMemo(memo.id, { text: e.target.value });
+          }
         }}
         onClick={() => selectMemo(memo.id)}
         placeholder="메모를 입력하세요..."
