@@ -78,10 +78,30 @@ export interface Relationship {
   identifying?: boolean;               // FK가 자식 PK에 포함(식별 관계)
 }
 
+export interface Memo {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+}
+
+export const MEMO_COLORS = [
+  '#fef08a', // yellow
+  '#bbf7d0', // green
+  '#bae6fd', // sky
+  '#fecaca', // red
+  '#e9d5ff', // purple
+  '#fed7aa', // orange
+];
+
 export interface ERDData {
   version: string;
   entities: Array<{ entity: Entity; position: { x: number; y: number } }>;
   relationships: Relationship[];
+  memos?: Memo[];
 }
 
 export const ENTITY_COLORS = [

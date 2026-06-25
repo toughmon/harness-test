@@ -11,7 +11,7 @@ import { alertDialog } from '../../store/dialogStore';
 // Save(JSON)/불러오기는 파일 저장, 로그인 시 DB 저장(cloud) 버튼 추가
 export default function Toolbar() {
   const {
-    entities, relationships, nodePositions, loadData,
+    entities, relationships, nodePositions, memos, loadData,
     undo, redo, past, future,
   } = useERDStore();
   const { user, status, openModal, logout } = useAuthStore();
@@ -22,7 +22,7 @@ export default function Toolbar() {
   const currentName = currentId !== null ? list.find(d => d.id === currentId)?.name : null;
 
   const handleSave = () => {
-    saveERD(entities, relationships, nodePositions);
+    saveERD(entities, relationships, nodePositions, memos);
   };
 
   const handleLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,8 +30,8 @@ export default function Toolbar() {
     if (!file) return;
     try {
       const data = await loadERD(file);
-      const { entities: loaded, relationships: rels, positions } = fromERDData(data);
-      loadData(loaded, rels, positions);
+      const { entities: loaded, relationships: rels, positions, memos: loadedMemos } = fromERDData(data);
+      loadData(loaded, rels, positions, loadedMemos);
     } catch (err) {
       alertDialog((err as Error).message, '불러오기 실패');
     }

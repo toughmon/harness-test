@@ -8,7 +8,7 @@ import { useMcpStore } from '../../store/mcpStore';
 // 로그인 시 "내 다이어그램" 섹션 표시, Help/Docs는 비활성 placeholder
 // 접기 기능: 캔버스를 넓게 보기 위해 좌측 패널을 얇은 레일로 접을 수 있음
 export default function Sidebar() {
-  const { entities, selectedEntityId, selectEntity, addEntity } = useERDStore();
+  const { entities, memos, selectedEntityId, selectEntity, addEntity, addMemo } = useERDStore();
   const { status } = useAuthStore();
   const { list, currentId, open, startNew, rename, remove } = useDiagramStore();
   const openMcp = useMcpStore(s => s.openModal);
@@ -41,6 +41,14 @@ export default function Sidebar() {
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
         </button>
+        <button
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant bg-surface-variant hover:bg-surface hover:text-on-surface transition-colors cursor-pointer active:scale-[0.95]"
+          onClick={() => addMemo()}
+          title="Add Memo"
+          aria-label="Add Memo"
+        >
+          <span className="material-symbols-outlined text-[20px]">note_add</span>
+        </button>
       </aside>
     );
   }
@@ -68,13 +76,20 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Add Entity */}
-      <div className="p-4">
+      {/* Add Entity / Add Memo */}
+      <div className="p-4 flex flex-col gap-2">
         <button
           className="w-full bg-primary text-on-primary py-2 rounded-lg text-sm font-semibold hover:bg-inverse-primary hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
           onClick={addEntity}
         >
           <span className="material-symbols-outlined text-[18px]">add</span> Add Entity
+        </button>
+        <button
+          data-testid="add-memo-btn"
+          className="w-full bg-surface-variant text-on-surface-variant py-2 rounded-lg text-sm font-semibold hover:bg-surface hover:text-on-surface transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+          onClick={() => addMemo()}
+        >
+          <span className="material-symbols-outlined text-[18px]">note_add</span> Add Memo
         </button>
       </div>
 

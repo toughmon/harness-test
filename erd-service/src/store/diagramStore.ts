@@ -65,9 +65,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   open: async (id) => {
     if (!(await get().confirmDiscard())) return;
     const diagram = await api.getDiagram(id);
-    const { entities, relationships, positions } = fromERDData(diagram.data);
+    const { entities, relationships, positions, memos } = fromERDData(diagram.data);
     suppressDirty = true;
-    useERDStore.getState().loadData(entities, relationships, positions);
+    useERDStore.getState().loadData(entities, relationships, positions, memos);
     suppressDirty = false;
     set({ currentId: id, dirty: false });
     saveLastId(id);
@@ -76,8 +76,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   saveCurrent: async () => {
     const { currentId, saving } = get();
     if (saving) return;
-    const { entities, relationships, nodePositions } = useERDStore.getState();
-    const data = toERDData(entities, relationships, nodePositions);
+    const { entities, relationships, nodePositions, memos } = useERDStore.getState();
+    const data = toERDData(entities, relationships, nodePositions, memos);
     set({ saving: true });
     try {
       if (currentId !== null) {
@@ -107,8 +107,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   autoSave: async () => {
     const { currentId, dirty, saving } = get();
     if (!dirty || currentId === null || saving) return;
-    const { entities, relationships, nodePositions } = useERDStore.getState();
-    const data = toERDData(entities, relationships, nodePositions);
+    const { entities, relationships, nodePositions, memos } = useERDStore.getState();
+    const data = toERDData(entities, relationships, nodePositions, memos);
     set({ saving: true });
     try {
       await api.updateDiagram(currentId, data);
@@ -124,7 +124,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   startNew: async () => {
     if (!(await get().confirmDiscard())) return;
     suppressDirty = true;
-    useERDStore.getState().loadData([], [], {});
+    useERDStore.getState().loadData([], [], {}, []);
     suppressDirty = false;
     set({ currentId: null, dirty: false });
     saveLastId(null);
@@ -182,7 +182,8 @@ useERDStore.subscribe((state, prev) => {
   if (
     state.entities !== prev.entities ||
     state.relationships !== prev.relationships ||
-    state.nodePositions !== prev.nodePositions
+    state.nodePositions !== prev.nodePositions ||
+    state.memos !== prev.memos
   ) {
     const dg = useDiagramStore.getState();
     if (!dg.dirty) useDiagramStore.setState({ dirty: true });

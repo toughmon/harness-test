@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Entity, Column, Relationship, RelationshipType, Subtype } from '../types/erd';
+import { Entity, Column, Memo, Relationship, RelationshipType, Subtype } from '../types/erd';
 import * as erdOps from '../core/erdOps';
 import { genId, DEFAULT_COLUMN, type NodePosition, type ErdDoc } from '../core/erdOps';
 import type { RelationshipSides } from '../core/relationshipSides';
@@ -13,6 +13,7 @@ interface Snapshot {
   entities: Entity[];
   relationships: Relationship[];
   nodePositions: Record<string, NodePosition>;
+  memos: Memo[];
 }
 
 const HISTORY_LIMIT = 50;
@@ -20,18 +21,21 @@ const HISTORY_LIMIT = 50;
 const COALESCE_MS = 800;
 
 // 스토어 상태에서 erdOps가 다루는 문서 슬라이스만 추출
-const docOf = (s: { entities: Entity[]; relationships: Relationship[]; nodePositions: Record<string, NodePosition> }): ErdDoc => ({
+const docOf = (s: { entities: Entity[]; relationships: Relationship[]; nodePositions: Record<string, NodePosition>; memos: Memo[] }): ErdDoc => ({
   entities: s.entities,
   relationships: s.relationships,
   nodePositions: s.nodePositions,
+  memos: s.memos,
 });
 
 interface ERDStore {
   entities: Entity[];
   relationships: Relationship[];
   nodePositions: Record<string, NodePosition>;
+  memos: Memo[];
   selectedEntityId: string | null;
   selectedEdgeId: string | null;
+  selectedMemoId: string | null;
   pendingConnection: { sourceId: string; sourceHandle: string } | null;
 
   past: Snapshot[];
@@ -44,6 +48,13 @@ interface ERDStore {
   deleteEntity: (id: string) => void;
   selectEntity: (id: string | null) => void;
   selectEdge: (id: string | null) => void;
+  selectMemo: (id: string | null) => void;
+
+  addMemo: (pos?: { x: number; y: number }) => void;
+  updateMemo: (id: string, updates: Partial<Omit<Memo, 'id'>>) => void;
+  deleteMemo: (id: string) => void;
+  updateMemoPosition: (id: string, x: number, y: number) => void;
+  updateMemoSize: (id: string, w: number, h: number) => void;
 
   addColumn: (entityId: string) => void;
   updateColumn: (entityId: string, columnId: string, updates: Partial<Column>) => void;
@@ -68,7 +79,7 @@ interface ERDStore {
   setAllPositions: (positions: Record<string, NodePosition>) => void;
   setPendingConnection: (val: ERDStore['pendingConnection']) => void;
 
-  loadData: (entities: Entity[], relationships: Relationship[], positions: Record<string, NodePosition>) => void;
+  loadData: (entities: Entity[], relationships: Relationship[], positions: Record<string, NodePosition>, memos?: Memo[]) => void;
 }
 
 export const useERDStore = create<ERDStore>((set, get) => {
@@ -82,6 +93,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
       entities: s.entities,
       relationships: s.relationships,
       nodePositions: s.nodePositions,
+      memos: s.memos,
     };
   };
 
@@ -104,8 +116,10 @@ export const useERDStore = create<ERDStore>((set, get) => {
     entities: [],
     relationships: [],
     nodePositions: {},
+    memos: [],
     selectedEntityId: null,
     selectedEdgeId: null,
+    selectedMemoId: null,
     pendingConnection: null,
 
     past: [],
@@ -161,9 +175,41 @@ export const useERDStore = create<ERDStore>((set, get) => {
       });
     },
 
-    // 엔티티/엣지 선택은 상호 배타 — 한쪽을 켜면 다른 쪽은 해제
-    selectEntity: (id) => set({ selectedEntityId: id, selectedEdgeId: null }),
-    selectEdge: (id) => set({ selectedEdgeId: id, selectedEntityId: null }),
+    // 엔티티/엣지/메모 선택은 상호 배타
+    selectEntity: (id) => set({ selectedEntityId: id, selectedEdgeId: null, selectedMemoId: null }),
+    selectEdge: (id) => set({ selectedEdgeId: id, selectedEntityId: null, selectedMemoId: null }),
+    selectMemo: (id) => set({ selectedMemoId: id, selectedEntityId: null, selectedEdgeId: null }),
+
+    addMemo: (pos) => {
+      pushHistory('addMemo');
+      set(s => {
+        const { doc, memoId } = erdOps.addMemo(docOf(s), pos ?? { x: 200, y: 200 });
+        return { ...doc, selectedMemoId: memoId, selectedEntityId: null, selectedEdgeId: null };
+      });
+    },
+
+    updateMemo: (id, updates) => {
+      pushHistory(`updateMemo:${id}:${Object.keys(updates).join(',')}`);
+      set(s => erdOps.updateMemo(docOf(s), id, updates));
+    },
+
+    deleteMemo: (id) => {
+      pushHistory('deleteMemo');
+      set(s => ({
+        ...erdOps.deleteMemo(docOf(s), id),
+        selectedMemoId: s.selectedMemoId === id ? null : s.selectedMemoId,
+      }));
+    },
+
+    updateMemoPosition: (id, x, y) => {
+      pushHistory(`moveMemo:${id}`);
+      set(s => erdOps.updateMemo(docOf(s), id, { x, y }));
+    },
+
+    updateMemoSize: (id, w, h) => {
+      pushHistory(`resizeMemo:${id}`);
+      set(s => erdOps.updateMemo(docOf(s), id, { width: w, height: h }));
+    },
 
     addColumn: (entityId) => {
       pushHistory('addColumn');
@@ -335,9 +381,9 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
     setPendingConnection: (val) => set({ pendingConnection: val }),
 
-    loadData: (entities, relationships, positions) => {
+    loadData: (entities, relationships, positions, memos = []) => {
       pushHistory('loadData');
-      set({ entities, relationships, nodePositions: positions, selectedEntityId: null, selectedEdgeId: null });
+      set({ entities, relationships, nodePositions: positions, memos, selectedEntityId: null, selectedEdgeId: null, selectedMemoId: null });
     },
   };
 });

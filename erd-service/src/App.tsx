@@ -4,6 +4,7 @@ import Sidebar from './components/sidebar/Sidebar';
 import ERDCanvas from './components/canvas/ERDCanvas';
 import EntityEditPanel from './components/panels/EntityEditPanel';
 import RelationshipEditPanel from './components/panels/RelationshipEditPanel';
+import MemoEditPanel from './components/panels/MemoEditPanel';
 import AuthModal from './components/auth/AuthModal';
 import DialogModal from './components/common/DialogModal';
 import McpConnectModal from './components/mcp/McpConnectModal';
@@ -16,6 +17,7 @@ import { useThemeStore } from './store/themeStore';
 function App() {
   const { undo, redo } = useERDStore();
   const selectedEdgeId = useERDStore(s => s.selectedEdgeId);
+  const selectedMemoId = useERDStore(s => s.selectedMemoId);
   const { modalOpen, init, status } = useAuthStore();
   const autoSave = useDiagramStore(s => s.autoSave);
   const mcpModalOpen = useMcpStore(s => s.modalOpen);
@@ -65,7 +67,7 @@ function App() {
       <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />
         <ERDCanvas />
-        {selectedEdgeId ? <RelationshipEditPanel /> : <EntityEditPanel />}
+        {selectedEdgeId ? <RelationshipEditPanel /> : selectedMemoId ? <MemoEditPanel /> : <EntityEditPanel />}
       </div>
       {modalOpen && <AuthModal />}
       {mcpModalOpen && <McpConnectModal />}

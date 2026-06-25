@@ -1,4 +1,4 @@
-import { Column, ColumnType, Entity, Relationship, RelationshipType } from '../types/erd';
+import { Column, ColumnType, Entity, Memo, MEMO_COLORS, Relationship, RelationshipType } from '../types/erd';
 import {
   RelationshipSides,
   sidesFromType,
@@ -20,6 +20,38 @@ export interface ErdDoc {
   entities: Entity[];
   relationships: Relationship[];
   nodePositions: Record<string, NodePosition>;
+  memos: Memo[];
+}
+
+export interface AddMemoOptions {
+  x?: number;
+  y?: number;
+  text?: string;
+  color?: string;
+  width?: number;
+  height?: number;
+}
+
+export function addMemo(doc: ErdDoc, opts: AddMemoOptions = {}): { doc: ErdDoc; memoId: string } {
+  const id = genId();
+  const newMemo: Memo = {
+    id,
+    text: opts.text ?? '',
+    x: opts.x ?? 100,
+    y: opts.y ?? 100,
+    width: opts.width ?? 220,
+    height: opts.height ?? 140,
+    color: opts.color ?? MEMO_COLORS[0],
+  };
+  return { doc: { ...doc, memos: [...doc.memos, newMemo] }, memoId: id };
+}
+
+export function updateMemo(doc: ErdDoc, id: string, updates: Partial<Omit<Memo, 'id'>>): ErdDoc {
+  return { ...doc, memos: doc.memos.map(m => m.id === id ? { ...m, ...updates } : m) };
+}
+
+export function deleteMemo(doc: ErdDoc, id: string): ErdDoc {
+  return { ...doc, memos: doc.memos.filter(m => m.id !== id) };
 }
 
 export const genId = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;

@@ -19,6 +19,7 @@ import '@xyflow/react/dist/style.css';
 import { useERDStore } from '../../store/erdStore';
 import { RelationshipType } from '../../types/erd';
 import EntityNode from '../nodes/EntityNode';
+import MemoNode from '../nodes/MemoNode';
 import RelationshipEdge from '../edges/RelationshipEdge';
 import RelTypeModal from '../panels/RelTypeModal';
 import { computeAutoLayout } from '../../utils/autoLayout';
@@ -26,7 +27,7 @@ import { exportDiagramPng } from '../../utils/exportImage';
 import { exportDiagramSql } from '../../utils/exportSql';
 import { alertDialog } from '../../store/dialogStore';
 
-const nodeTypes = { entity: EntityNode };
+const nodeTypes = { entity: EntityNode, memo: MemoNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
 // 디자인 시안의 플로팅 글래스 줌 툴바 — 줌/핏 + 자동 정렬 + PNG/SQL 내보내기 + 전체화면
@@ -97,10 +98,33 @@ function ZoomToolbar({ isFullscreen, onToggleFullscreen }: { isFullscreen: boole
   );
 }
 
+// ReactFlow 트리 안에서 실행되어야 screenToFlowPosition을 쓸 수 있는 핸들러
+function PaneDoubleClickHandler() {
+  const rf = useReactFlow();
+  const addMemo = useERDStore(s => s.addMemo);
+
+  useEffect(() => {
+    const pane = document.querySelector('.react-flow__pane');
+    if (!pane) return;
+    const handler = (ev: Event) => {
+      const e = ev as MouseEvent;
+      const target = e.target as HTMLElement;
+      if (target.closest('.react-flow__node') || target.closest('.react-flow__edge')) return;
+      const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      addMemo({ x: pos.x - 110, y: pos.y - 70 });
+    };
+    pane.addEventListener('dblclick', handler);
+    return () => pane.removeEventListener('dblclick', handler);
+  }, [rf, addMemo]);
+
+  return null;
+}
+
 export default function ERDCanvas() {
   const {
-    entities, relationships, nodePositions,
-    selectEntity, selectEdge, addRelationship, updateNodePosition,
+    entities, relationships, nodePositions, memos,
+    selectEntity, selectEdge, selectMemo, addRelationship, updateNodePosition,
+    addMemo, updateMemoPosition,
   } = useERDStore();
 
   const [pendingConn, setPendingConn] = useState<Connection | null>(null);
@@ -123,15 +147,21 @@ export default function ERDCanvas() {
     }
   }, []);
 
-  const rfNodes: Node[] = useMemo(() =>
-    entities.map(e => ({
+  const rfNodes: Node[] = useMemo(() => [
+    ...entities.map(e => ({
       id: e.id,
       type: 'entity',
       position: nodePositions[e.id] ?? { x: 100, y: 100 },
       data: { ...e },
     })),
-    [entities, nodePositions]
-  );
+    ...memos.map(m => ({
+      id: m.id,
+      type: 'memo',
+      position: { x: m.x, y: m.y },
+      data: { ...m },
+      style: { width: m.width, height: m.height },
+    })),
+  ], [entities, nodePositions, memos]);
 
   const rfEdges: Edge[] = useMemo(() =>
     relationships.map(r => ({
@@ -155,10 +185,17 @@ export default function ERDCanvas() {
     onNodesChange(changes);
     changes.forEach((change) => {
       if (change.type === 'position' && change.position && !change.dragging) {
-        updateNodePosition(change.id, change.position);
+        if (memos.some(m => m.id === change.id)) {
+          updateMemoPosition(change.id, change.position.x, change.position.y);
+        } else {
+          updateNodePosition(change.id, change.position);
+        }
       }
+      // NOTE: dimensions 변화는 onNodesChange로만 처리 — 스토어 업데이트 금지.
+      // MemoNode.tsx의 NodeResizer.onResizeEnd에서 크기를 저장한다.
+      // dimensions → updateMemoSize → setNodes 루프가 모든 노드를 visibility:hidden으로 리셋함.
     });
-  }, [onNodesChange, updateNodePosition]);
+  }, [onNodesChange, updateNodePosition, updateMemoPosition, memos]);
 
   // 드래그 시작 노드 추적 — 상위(부모)에서 하위(자식)로 드래그하는 순서를 보장
   // (Loose 모드에서 target 핸들로 드래그를 시작하면 RF가 source/target을 뒤집어 전달함)
@@ -178,10 +215,12 @@ export default function ERDCanvas() {
     setPendingConn({ ...connection, source, target });
   }, []);
 
-  // 엔티티 클릭 → 우측 패널에 표시
+  // 노드 클릭 → 메모/엔티티 구분해 우측 패널에 표시
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    selectEntity(node.id);
-  }, [selectEntity]);
+    if (node.type === 'memo') selectMemo(node.id);
+    else selectEntity(node.id);
+  }, [selectEntity, selectMemo]);
+
 
   // 관계선 클릭 → 우측 패널에서 좌/우 절반 편집
   const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
@@ -207,7 +246,7 @@ export default function ERDCanvas() {
         onConnectStart={onConnectStart}
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
-        onPaneClick={() => { selectEntity(null); selectEdge(null); }}
+        onPaneClick={() => { selectEntity(null); selectEdge(null); selectMemo(null); }}
         connectionMode={ConnectionMode.Loose}
         fitView
         fitViewOptions={{ padding: 0.3 }}
@@ -216,6 +255,7 @@ export default function ERDCanvas() {
         style={{ width: '100%', height: '100%', background: '#121212' }}
         proOptions={{ hideAttribution: true }}
       >
+        <PaneDoubleClickHandler />
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
@@ -233,7 +273,7 @@ export default function ERDCanvas() {
         />
       </ReactFlow>
 
-      {entities.length === 0 && (
+      {entities.length === 0 && memos.length === 0 && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="material-symbols-outlined text-[48px] text-outline-variant mb-4">schema</span>
           <p className="text-sm text-on-surface-variant m-0">
