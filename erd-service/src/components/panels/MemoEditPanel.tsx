@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { MEMO_COLORS } from '../../types/erd';
 import { confirmDialog } from '../../store/dialogStore';
@@ -6,7 +6,16 @@ import { confirmDialog } from '../../store/dialogStore';
 export default function MemoEditPanel() {
   const { memos, selectedMemoId, selectMemo, updateMemo, deleteMemo } = useERDStore();
   const memo = memos.find(m => m.id === selectedMemoId);
+
+  const [localText, setLocalText] = useState(memo?.text ?? '');
   const composingRef = useRef(false);
+
+  // 선택 메모 변경 또는 외부 텍스트 변경 시 동기화 (조합 중이면 건너뜀)
+  const memoId = memo?.id;
+  const memoText = memo?.text;
+  useEffect(() => {
+    if (!composingRef.current) setLocalText(memoText ?? '');
+  }, [memoId, memoText]);
 
   return (
     <aside
@@ -64,10 +73,19 @@ export default function MemoEditPanel() {
             <textarea
               className="w-full bg-surface-container rounded-lg border border-outline-variant px-3 py-2 text-sm text-on-surface resize-none outline-none focus:border-primary transition-colors"
               style={{ minHeight: 160 }}
-              value={memo.text}
-              onChange={e => { if (!composingRef.current) updateMemo(memo.id, { text: e.target.value }); }}
+              value={localText}
+              onChange={e => {
+                const text = e.target.value;
+                setLocalText(text);
+                if (!composingRef.current) updateMemo(memo.id, { text });
+              }}
               onCompositionStart={() => { composingRef.current = true; }}
-              onCompositionEnd={e => { composingRef.current = false; updateMemo(memo.id, { text: (e.target as HTMLTextAreaElement).value }); }}
+              onCompositionEnd={e => {
+                composingRef.current = false;
+                const text = (e.target as HTMLTextAreaElement).value;
+                setLocalText(text);
+                updateMemo(memo.id, { text });
+              }}
               placeholder="메모 내용을 입력하세요..."
             />
           </div>

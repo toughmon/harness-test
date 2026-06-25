@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { NodeProps, NodeResizer } from '@xyflow/react';
 import { useERDStore } from '../../store/erdStore';
 import { Memo, MEMO_COLORS } from '../../types/erd';
@@ -7,7 +7,15 @@ export default function MemoNode({ data }: NodeProps) {
   const memo = data as unknown as Memo;
   const { updateMemo, deleteMemo, selectMemo, selectedMemoId, updateMemoSize } = useERDStore();
   const isSelected = selectedMemoId === memo.id;
+
+  // 로컬 표시용 텍스트 — 스토어보다 먼저 화면에 반영해 IME 조합과 충돌 방지
+  const [localText, setLocalText] = useState(memo.text);
   const composingRef = useRef(false);
+
+  // 패널 등 외부에서 memo.text가 바뀌면 동기화 (조합 중이면 건너뜀)
+  useEffect(() => {
+    if (!composingRef.current) setLocalText(memo.text);
+  }, [memo.text]);
 
   return (
     <div
@@ -35,7 +43,6 @@ export default function MemoNode({ data }: NodeProps) {
           sticky_note_2
         </span>
         <div className="flex items-center gap-0.5">
-          {/* 색상 변경 점들 */}
           {MEMO_COLORS.map(c => (
             <button
               key={c}
@@ -63,10 +70,19 @@ export default function MemoNode({ data }: NodeProps) {
       <textarea
         className="nodrag nopan flex-1 bg-transparent resize-none outline-none border-none p-2 text-[13px] leading-relaxed placeholder:text-gray-400"
         style={{ color: '#1e293b', fontFamily: 'inherit' }}
-        value={memo.text}
-        onChange={e => { if (!composingRef.current) updateMemo(memo.id, { text: e.target.value }); }}
+        value={localText}
+        onChange={e => {
+          const text = e.target.value;
+          setLocalText(text); // 항상 즉시 표시 업데이트
+          if (!composingRef.current) updateMemo(memo.id, { text }); // 조합 중 스토어 쓰기 차단
+        }}
         onCompositionStart={() => { composingRef.current = true; }}
-        onCompositionEnd={e => { composingRef.current = false; updateMemo(memo.id, { text: (e.target as HTMLTextAreaElement).value }); }}
+        onCompositionEnd={e => {
+          composingRef.current = false;
+          const text = (e.target as HTMLTextAreaElement).value;
+          setLocalText(text);
+          updateMemo(memo.id, { text });
+        }}
         onClick={() => selectMemo(memo.id)}
         placeholder="메모를 입력하세요..."
       />
