@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { MEMO_COLORS } from '../../types/erd';
 import { confirmDialog } from '../../store/dialogStore';
@@ -5,6 +6,7 @@ import { confirmDialog } from '../../store/dialogStore';
 export default function MemoEditPanel() {
   const { memos, selectedMemoId, selectMemo, updateMemo, deleteMemo } = useERDStore();
   const memo = memos.find(m => m.id === selectedMemoId);
+  const composingRef = useRef(false);
 
   return (
     <aside
@@ -63,7 +65,9 @@ export default function MemoEditPanel() {
               className="w-full bg-surface-container rounded-lg border border-outline-variant px-3 py-2 text-sm text-on-surface resize-none outline-none focus:border-primary transition-colors"
               style={{ minHeight: 160 }}
               value={memo.text}
-              onChange={e => updateMemo(memo.id, { text: e.target.value })}
+              onChange={e => { if (!composingRef.current) updateMemo(memo.id, { text: e.target.value }); }}
+              onCompositionStart={() => { composingRef.current = true; }}
+              onCompositionEnd={e => { composingRef.current = false; updateMemo(memo.id, { text: (e.target as HTMLTextAreaElement).value }); }}
               placeholder="메모 내용을 입력하세요..."
             />
           </div>

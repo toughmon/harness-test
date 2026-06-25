@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { NodeProps, NodeResizer } from '@xyflow/react';
 import { useERDStore } from '../../store/erdStore';
 import { Memo, MEMO_COLORS } from '../../types/erd';
@@ -6,6 +7,7 @@ export default function MemoNode({ data }: NodeProps) {
   const memo = data as unknown as Memo;
   const { updateMemo, deleteMemo, selectMemo, selectedMemoId, updateMemoSize } = useERDStore();
   const isSelected = selectedMemoId === memo.id;
+  const composingRef = useRef(false);
 
   return (
     <div
@@ -62,7 +64,9 @@ export default function MemoNode({ data }: NodeProps) {
         className="nodrag nopan flex-1 bg-transparent resize-none outline-none border-none p-2 text-[13px] leading-relaxed placeholder:text-gray-400"
         style={{ color: '#1e293b', fontFamily: 'inherit' }}
         value={memo.text}
-        onChange={e => updateMemo(memo.id, { text: e.target.value })}
+        onChange={e => { if (!composingRef.current) updateMemo(memo.id, { text: e.target.value }); }}
+        onCompositionStart={() => { composingRef.current = true; }}
+        onCompositionEnd={e => { composingRef.current = false; updateMemo(memo.id, { text: (e.target as HTMLTextAreaElement).value }); }}
         onClick={() => selectMemo(memo.id)}
         placeholder="메모를 입력하세요..."
       />
