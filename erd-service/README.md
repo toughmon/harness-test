@@ -155,13 +155,21 @@ npm ci && npm run build && npm start
 
 ### 배포 (Ubuntu + pm2)
 
+> ⚠ **반드시 `DATABASE_URL`(영속 PostgreSQL)을 설정할 것.** 미설정 시 pg-mem 인메모리로 떠서
+> `pm2 restart`/재배포 때마다 **계정·MCP 토큰·저장된 다이어그램이 전부 삭제**된다(= MCP가 `failed`로
+> 뜨고 토큰을 매번 새로 발급해야 하는 원인). 서버는 `.env`를 **프로덕션에서도 로드**하며,
+> `NODE_ENV=production`인데 영속 DB가 없으면 **기동을 거부**한다(의도적 허용은 `ALLOW_PGMEM=1`).
+> 현재 어떤 DB로 떠 있는지는 `curl localhost:8080/api/health` → `{"ok":true,"db":"pg"}`로 확인.
+
 ```bash
 cd /tough/app/harness-test/erd-service
 git pull
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci   # 의존성 변경 시 (tsx·sdk·zod 포함)
 npm run build
+# 최초 1회: .env에 DATABASE_URL=postgresql://... 와 JWT_SECRET 설정 (.env.example 참고)
 pm2 restart erd --update-env                # 최초: pm2 start server/index.js --name erd && pm2 save
-pm2 logs erd --lines 20                     # "Server listening" 로그 확인
+pm2 logs erd --lines 20                     # "영속 DB 연결됨 (kind=pg)" / "Server listening" 확인
+curl -s localhost:8080/api/health           # {"ok":true,"db":"pg"} — pg-mem이면 즉시 조치
 ```
 
 ## MCP 연동 (Claude Code)
