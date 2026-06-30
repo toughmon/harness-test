@@ -1,14 +1,16 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useCallback } from 'react';
 import {
   EdgeProps,
+  EdgeLabelRenderer,
   getSmoothStepPath,
   Position,
   useNodes,
+  useReactFlow,
 } from '@xyflow/react';
-import { Relationship } from '../../types/erd';
+import { Relationship, EndpointAnchor } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
 import { deriveSides } from '../../core/relationshipSides';
-import { computeEdgeEndpoints, Rect } from '../../utils/edgeConnection';
+import { computeEdgeEndpoints, anchorToPoint, pointToAnchor, Rect } from '../../utils/edgeConnection';
 
 const EDGE_COLOR = '#7d7c8c';
 const EDGE_SELECTED = '#a78bfa';   // 선택 시 더 선명한 보라
@@ -126,7 +128,8 @@ function RelationshipEdge({
   selected,
 }: EdgeProps) {
   const rel = data as unknown as Relationship;
-  const { relationships } = useERDStore();
+  const { relationships, selectedEdgeId, updateRelationshipAnchor } = useERDStore();
+  const { screenToFlowPosition } = useReactFlow();
 
   // 노드 위치/크기를 직접 읽어 연결점을 동적으로 계산
   // — 같은 면에 여러 관계가 붙으면 연결점을 분산시켜 선이 겹치지 않게 한다
@@ -149,13 +152,60 @@ function RelationshipEdge({
     [id, relationships, rects],
   );
 
-  // 계산 불가 시(노드 측정 전 등) React Flow가 넘겨준 기본 좌표로 폴백
-  const sX = geo?.sourceX ?? sourceX;
-  const sY = geo?.sourceY ?? sourceY;
-  const tX = geo?.targetX ?? targetX;
-  const tY = geo?.targetY ?? targetY;
-  const sPos = geo?.sourcePosition ?? sourcePosition;
-  const tPos = geo?.targetPosition ?? targetPosition;
+  const srcRect = rel ? rects[rel.sourceId] : undefined;
+  const tgtRect = rel ? rects[rel.targetId] : undefined;
+
+  // 드래그 중 라이브 프리뷰 — 스토어에 쓰지 않고 로컬에서 끝점만 미리 옮겨 그린다.
+  const [preview, setPreview] = useState<{ end: 'source' | 'target'; anchor: EndpointAnchor } | null>(null);
+
+  // 끝점 핸들 pointerdown → window 리스너로 드래그. up 시 1회만 스토어 커밋(undo 1건).
+  const startDrag = useCallback((end: 'source' | 'target') => (e: React.PointerEvent) => {
+    if (!rel) return;
+    const rect = end === 'source' ? rects[rel.sourceId] : rects[rel.targetId];
+    if (!rect) return;   // 끝점은 항상 자기 엔티티 rect에 구속 → 같은 엔티티 유지
+    e.stopPropagation();
+    e.preventDefault();
+    const start = { x: e.clientX, y: e.clientY };
+    let moved = false;
+    const onMove = (ev: PointerEvent) => {
+      if (Math.abs(ev.clientX - start.x) + Math.abs(ev.clientY - start.y) > 3) moved = true;
+      const flow = screenToFlowPosition({ x: ev.clientX, y: ev.clientY });
+      setPreview({ end, anchor: pointToAnchor(rect, flow) });
+    };
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      setPreview(null);
+      if (moved) {
+        const flow = screenToFlowPosition({ x: ev.clientX, y: ev.clientY });
+        updateRelationshipAnchor(id, end, pointToAnchor(rect, flow));
+      }
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }, [rel, rects, screenToFlowPosition, updateRelationshipAnchor, id]);
+
+  // 핸들 더블클릭 → 앵커 제거(자동 위치로 복귀)
+  const resetAnchor = useCallback((end: 'source' | 'target') => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateRelationshipAnchor(id, end, null);
+  }, [updateRelationshipAnchor, id]);
+
+  // 계산 불가 시(노드 측정 전 등) React Flow가 넘겨준 기본 좌표로 폴백.
+  // 드래그 중인 끝은 프리뷰 앵커로 덮어쓴다.
+  let sX = geo?.sourceX ?? sourceX;
+  let sY = geo?.sourceY ?? sourceY;
+  let tX = geo?.targetX ?? targetX;
+  let tY = geo?.targetY ?? targetY;
+  let sPos = geo?.sourcePosition ?? sourcePosition;
+  let tPos = geo?.targetPosition ?? targetPosition;
+  if (preview?.end === 'source' && srcRect) {
+    const p = anchorToPoint(srcRect, preview.anchor);
+    sX = p.x; sY = p.y; sPos = p.position;
+  } else if (preview?.end === 'target' && tgtRect) {
+    const p = anchorToPoint(tgtRect, preview.anchor);
+    tX = p.x; tY = p.y; tPos = p.position;
+  }
 
   const isSelfLoop = rel?.sourceId === rel?.targetId;
   const edgePath = isSelfLoop
@@ -177,8 +227,12 @@ function RelationshipEdge({
   const childSolid = !sides.childOptional;      // 자식(우) 절반 실선 여부
   const bothSolid = parentSolid && childSolid;
   const bothDashed = !parentSolid && !childSolid;
-  const color = selected ? EDGE_SELECTED : EDGE_COLOR;
-  const sw = selected ? 2.5 : 1.5;   // 선택 시 선 굵기 강조
+  // 앱은 선택을 자체 스토어(selectedEdgeId)로 구동하므로 RF의 selected와 OR로 함께 본다
+  const isSelected = selected || selectedEdgeId === id;
+  const color = isSelected ? EDGE_SELECTED : EDGE_COLOR;
+  const sw = isSelected ? 2.5 : 1.5;   // 선택 시 선 굵기 강조
+  // 선택된 비(非)자기참조 관계에만 끝점 드래그 핸들 표시
+  const showHandles = isSelected && !isSelfLoop && !!srcRect && !!tgtRect;
 
   return (
     <>
@@ -257,6 +311,38 @@ function RelationshipEdge({
           isIdentifying={isIdentifying}
           color={color}
         />
+      )}
+
+      {/* 끝점 드래그 핸들 — HTML 오버레이(EdgeLabelRenderer)라 포인터 이벤트가 안정적 */}
+      {showHandles && (
+        <EdgeLabelRenderer>
+          {[
+            { end: 'source' as const, x: sX, y: sY },
+            { end: 'target' as const, x: tX, y: tY },
+          ].map(h => (
+            <div
+              key={h.end}
+              className="nodrag nopan edge-anchor-handle"
+              data-testid={`edge-anchor-${h.end}`}
+              data-end={h.end}
+              title="드래그: 부착 위치 이동 · 더블클릭: 자동 위치로 복귀"
+              onPointerDown={startDrag(h.end)}
+              onDoubleClick={resetAnchor(h.end)}
+              style={{
+                position: 'absolute',
+                transform: `translate(-50%, -50%) translate(${h.x}px, ${h.y}px)`,
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                background: preview?.end === h.end ? EDGE_SELECTED : '#fff',
+                border: `2px solid ${EDGE_SELECTED}`,
+                cursor: 'grab',
+                pointerEvents: 'all',
+                zIndex: 10,
+              }}
+            />
+          ))}
+        </EdgeLabelRenderer>
       )}
     </>
   );

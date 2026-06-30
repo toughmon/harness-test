@@ -1,5 +1,5 @@
 import { Position } from '@xyflow/react';
-import { Relationship } from '../types/erd';
+import { Relationship, EndpointAnchor, AnchorSide } from '../types/erd';
 
 // 노드의 캔버스상 사각형 (위치 + 측정된 크기)
 export interface Rect {
@@ -29,6 +29,53 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(Math.max(v, min), max);
 }
 
+const SIDE_TO_POSITION: Record<AnchorSide, Position> = {
+  top: Position.Top,
+  bottom: Position.Bottom,
+  left: Position.Left,
+  right: Position.Right,
+};
+
+// 수동 앵커(면 + 오프셋) → 캔버스 좌표 + 연결 면.
+// attachPoint와 동일한 면별 좌표 공식을 쓰되 오프셋은 정규화 비율(0~1)로 받는다.
+export function anchorToPoint(rect: Rect, anchor: EndpointAnchor): { x: number; y: number; position: Position } {
+  const off = clamp(anchor.offset, 0, 1);
+  const position = SIDE_TO_POSITION[anchor.side];
+  switch (anchor.side) {
+    case 'left':   return { x: rect.x,          y: rect.y + rect.h * off, position };
+    case 'right':  return { x: rect.x + rect.w, y: rect.y + rect.h * off, position };
+    case 'top':    return { x: rect.x + rect.w * off, y: rect.y,          position };
+    case 'bottom': return { x: rect.x + rect.w * off, y: rect.y + rect.h, position };
+  }
+}
+
+// 캔버스 좌표 p를 rect의 가장 가까운 면에 스냅 → 앵커(면 + 정규화 오프셋).
+// 오프셋은 모서리에서 EDGE_PADDING만큼 떨어지도록 클램프한다.
+export function pointToAnchor(rect: Rect, p: { x: number; y: number }): EndpointAnchor {
+  const dl = Math.abs(p.x - rect.x);
+  const dr = Math.abs(p.x - (rect.x + rect.w));
+  const dt = Math.abs(p.y - rect.y);
+  const db = Math.abs(p.y - (rect.y + rect.h));
+  const min = Math.min(dl, dr, dt, db);
+  let side: AnchorSide;
+  let raw: number;
+  if (min === dl) { side = 'left';   raw = rect.h ? (p.y - rect.y) / rect.h : 0.5; }
+  else if (min === dr) { side = 'right';  raw = rect.h ? (p.y - rect.y) / rect.h : 0.5; }
+  else if (min === dt) { side = 'top';    raw = rect.w ? (p.x - rect.x) / rect.w : 0.5; }
+  else { side = 'bottom'; raw = rect.w ? (p.x - rect.x) / rect.w : 0.5; }
+  const len = side === 'left' || side === 'right' ? rect.h : rect.w;
+  const pad = len > 0 ? EDGE_PADDING / len : 0;
+  return { side, offset: clamp(raw, pad, 1 - pad) };
+}
+
+// 관계의 nodeId쪽 끝이 수동 앵커인지 — 슬롯 분산에서 제외할지 판단
+function endAnchored(r: Relationship, nodeId: string): boolean {
+  return (
+    (nodeId === r.sourceId && !!r.sourceAnchor) ||
+    (nodeId === r.targetId && !!r.targetAnchor)
+  );
+}
+
 // 두 노드의 상대 위치로 연결할 면을 결정 — 서로 가까운 면끼리 마주보도록
 function sideOf(from: Rect, to: Rect): Position {
   const f = center(from);
@@ -53,12 +100,14 @@ function attachPoint(
   const rect = rects[nodeId];
   const horizontal = side === Position.Left || side === Position.Right;
 
-  // 이 노드의 같은 면에 붙는 모든 관계 수집
+  // 이 노드의 같은 면에 붙는 모든 관계 수집 — 단, 이 노드 쪽 끝이 수동 앵커로 고정된
+  // 관계는 슬롯 분산 대상에서 제외(고정점으로 자동 선이 흘러들지 않게).
   const siblings = relationships.filter(r => {
     const otherId =
       r.sourceId === nodeId ? r.targetId :
       r.targetId === nodeId ? r.sourceId : null;
     if (!otherId) return false;
+    if (endAnchored(r, nodeId)) return false;
     const other = rects[otherId];
     return !!other && sideOf(rect, other) === side;
   });
@@ -119,14 +168,24 @@ export function computeEdgeEndpoints(
     };
   }
 
-  const sourcePosition = sideOf(srcRect, tgtRect);
-  const targetPosition = sideOf(tgtRect, srcRect);
-
-  const s = attachPoint(rel.sourceId, sourcePosition, relId, relationships, rects);
-  const t = attachPoint(rel.targetId, targetPosition, relId, relationships, rects);
+  // 끝마다 독립 처리 — 수동 앵커가 있으면 자동 계산(sideOf+attachPoint)을 우회한다.
+  const s = rel.sourceAnchor
+    ? anchorToPoint(srcRect, rel.sourceAnchor)
+    : (() => {
+        const position = sideOf(srcRect, tgtRect);
+        const p = attachPoint(rel.sourceId, position, relId, relationships, rects);
+        return { x: p.x, y: p.y, position };
+      })();
+  const t = rel.targetAnchor
+    ? anchorToPoint(tgtRect, rel.targetAnchor)
+    : (() => {
+        const position = sideOf(tgtRect, srcRect);
+        const p = attachPoint(rel.targetId, position, relId, relationships, rects);
+        return { x: p.x, y: p.y, position };
+      })();
 
   return {
-    sourceX: s.x, sourceY: s.y, sourcePosition,
-    targetX: t.x, targetY: t.y, targetPosition,
+    sourceX: s.x, sourceY: s.y, sourcePosition: s.position,
+    targetX: t.x, targetY: t.y, targetPosition: t.position,
   };
 }

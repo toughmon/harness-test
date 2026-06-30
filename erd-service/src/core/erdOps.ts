@@ -1,4 +1,4 @@
-import { Column, ColumnType, Entity, Memo, MEMO_COLORS, Relationship, RelationshipType } from '../types/erd';
+import { Column, ColumnType, Entity, Memo, MEMO_COLORS, Relationship, RelationshipType, EndpointAnchor } from '../types/erd';
 import {
   RelationshipSides,
   sidesFromType,
@@ -387,6 +387,31 @@ export function updateRelationshipSides(
       relationships: doc.relationships.map(r => (r.id === id ? updatedRel : r)),
     },
     changed: true,
+  };
+}
+
+// 관계선 끝점 수동 부착 위치 설정 — anchor가 null이면 해당 끝의 앵커를 제거(자동 복귀).
+// 순수 기하 변경이라 FK/컬럼 부수효과는 없다(updateRelationshipSides와 대비).
+export function updateRelationshipAnchor(
+  doc: ErdDoc,
+  id: string,
+  end: 'source' | 'target',
+  anchor: EndpointAnchor | null,
+): ErdDoc {
+  return {
+    ...doc,
+    relationships: doc.relationships.map(r => {
+      if (r.id !== id) return r;
+      const next: Relationship = { ...r };
+      if (end === 'source') {
+        if (anchor) next.sourceAnchor = anchor;
+        else delete next.sourceAnchor;
+      } else {
+        if (anchor) next.targetAnchor = anchor;
+        else delete next.targetAnchor;
+      }
+      return next;
+    }),
   };
 }
 

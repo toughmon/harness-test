@@ -64,6 +64,14 @@ export const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
   ONE_TO_ONE_OPTIONAL: '1:1 비식별 (점선 + 점선)',
 };
 
+// 관계선 끝점의 수동 부착 위치 — 엔티티 테두리의 한 면 + 그 면을 따라가는 정규화 오프셋(0~1).
+// 절대좌표가 아닌 상대값이라 엔티티 이동·크기 변경에도 부착 위치가 따라간다.
+export type AnchorSide = 'top' | 'bottom' | 'left' | 'right';
+export interface EndpointAnchor {
+  side: AnchorSide;
+  offset: number;   // 0~1, 해당 면의 시작(좌/상)에서의 비율
+}
+
 export interface Relationship {
   id: string;
   sourceId: string;
@@ -76,6 +84,9 @@ export interface Relationship {
   childOptional?: boolean;             // 자식(우) 절반 점선 = 선택 참여(FK NULL 허용)
   childCardinality?: 'one' | 'many';   // 자식쪽 카디널리티 (까마귀발 유무)
   identifying?: boolean;               // FK가 자식 PK에 포함(식별 관계)
+  // ── 끝점 수동 부착 위치 — 없으면 자동(sideOf+슬롯 분산). 더블클릭으로 제거(자동 복귀) ──
+  sourceAnchor?: EndpointAnchor;       // 부모(source) 끝점 수동 위치
+  targetAnchor?: EndpointAnchor;       // 자식(target) 끝점 수동 위치
 }
 
 export interface Memo {

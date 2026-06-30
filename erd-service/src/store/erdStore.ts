@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Entity, Column, Memo, Relationship, RelationshipType, Subtype } from '../types/erd';
+import { Entity, Column, Memo, Relationship, RelationshipType, Subtype, EndpointAnchor } from '../types/erd';
 import * as erdOps from '../core/erdOps';
 import { genId, DEFAULT_COLUMN, type NodePosition, type ErdDoc } from '../core/erdOps';
 import type { RelationshipSides } from '../core/relationshipSides';
@@ -73,6 +73,7 @@ interface ERDStore {
   addRelationship: (sourceId: string, targetId: string, type: RelationshipType) => void;
   updateRelationshipType: (id: string, type: RelationshipType) => void;
   updateRelationshipSides: (id: string, partial: Partial<RelationshipSides>) => void;
+  updateRelationshipAnchor: (id: string, end: 'source' | 'target', anchor: EndpointAnchor | null) => void;
   deleteRelationship: (id: string) => void;
 
   updateNodePosition: (id: string, pos: NodePosition) => void;
@@ -356,6 +357,14 @@ export const useERDStore = create<ERDStore>((set, get) => {
       if (!s.entities.find(e => e.id === rel.sourceId)) return;
       pushHistory(`relSides:${id}`);
       set(st => erdOps.updateRelationshipSides(docOf(st), id, partial).doc);
+    },
+
+    // 관계선 끝점 수동 부착 위치 (드래그 종료 시 1회 커밋, undo 지원). anchor=null이면 자동 복귀.
+    updateRelationshipAnchor: (id, end, anchor) => {
+      const s = get();
+      if (!s.relationships.find(r => r.id === id)) return;
+      pushHistory(`relAnchor:${id}:${end}`);
+      set(st => erdOps.updateRelationshipAnchor(docOf(st), id, end, anchor));
     },
 
     deleteRelationship: (id) => {
