@@ -74,9 +74,10 @@ try {
   check('모달 폭 약 1/3 축소(≈66vw)', modalW <= vw * 0.7 && modalW >= vw * 0.62, `${modalW}px / vw ${vw}`);
 
   const btnCount = await previewBtns.count();
-  check('8개 타입 버튼 모두 미리보기 SVG 포함', btnCount === 8, `${btnCount}개`);
+  // 1:1 실선+실선, 1:1 점선+점선 2종은 선택 메뉴에서 제외 → 6종
+  check('6개 타입 버튼 모두 미리보기 SVG 포함', btnCount === 6, `${btnCount}개`);
 
-  // 라벨 순서(= RELATIONSHIP_LABELS 정의 순서)와 기대 라인 수
+  // 라벨 순서(= RELATIONSHIP_LABELS 정의 순서, 단 1:1 SOLID·OPTIONAL 제외)와 기대 라인 수
   // 선분(solid 1·opt 1·half 2)+까마귀발(1:M 3·1:1 0)+식별막대(식별 1) — 부모쪽 세로 막대 없음
   const expected = [
     { label: '1:M 식별자 상속 (점선 + 실선)', lines: 6, dashed: true },
@@ -84,9 +85,7 @@ try {
     { label: '1:M 비식별 (점선 + 실선)', lines: 5, dashed: true },
     { label: '1:M 비식별 (점선 + 점선)', lines: 4, dashed: true },  // OPTIONAL: 전체 점선
     { label: '1:1 식별자 상속 (점선 + 실선)', lines: 3, dashed: true },
-    { label: '1:1 식별자 상속 (실선 + 실선)', lines: 2, dashed: false }, // 1:1 SOLID: 전체 실선
     { label: '1:1 비식별 (점선 + 실선)', lines: 2, dashed: true },
-    { label: '1:1 비식별 (점선 + 점선)', lines: 1, dashed: true },  // 1:1 OPTIONAL: 전체 점선
   ];
 
   for (let i = 0; i < expected.length; i++) {

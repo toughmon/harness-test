@@ -8,7 +8,11 @@ interface Props {
 }
 
 export default function RelTypeModal({ onSelect, onCancel, title = '관계 종류 선택', current }: Props) {
-  const types = Object.entries(RELATIONSHIP_LABELS) as [RelationshipType, string][];
+  // 말이 안 되는 조합(1:1 실선+실선, 1:1 점선+점선)은 선택 메뉴에서 제외.
+  // enum·렌더링·설명은 기존 저장 다이어그램 호환을 위해 그대로 유지한다.
+  const HIDDEN_TYPES: RelationshipType[] = ['ONE_TO_ONE_IDENTIFYING_SOLID', 'ONE_TO_ONE_OPTIONAL'];
+  const types = (Object.entries(RELATIONSHIP_LABELS) as [RelationshipType, string][])
+    .filter(([type]) => !HIDDEN_TYPES.includes(type));
 
   return (
     <div
