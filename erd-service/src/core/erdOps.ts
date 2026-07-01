@@ -109,12 +109,21 @@ export function buildFKColumns(
   }));
 }
 
-// 새 엔티티의 기본 위치 — 가로로 나란히 배치 (4열 그리드, 260×200px 간격)
+// 새 엔티티의 기본 위치 — 기존 엔티티들이 모여있는 영역(바운딩박스) 좌상단을 기준으로
+// 4열 그리드(260×200px 간격)를 이어서 배치. 고정 원점(80,80)을 쓰면 엔티티들을 캔버스의
+// 다른 위치로 옮겨둔 뒤 추가할 때 새 엔티티가 기존 모델링과 무관한 곳에 생성되던 문제가 있었음.
 export function nextEntityPosition(doc: ErdDoc): NodePosition {
   const count = doc.entities.length + 1;
   const col = (count - 1) % 4;
   const row = Math.floor((count - 1) / 4);
-  return { x: 80 + col * 260, y: 80 + row * 200 };
+
+  const positions = doc.entities
+    .map(e => doc.nodePositions[e.id])
+    .filter((p): p is NodePosition => !!p);
+  const originX = positions.length ? Math.min(...positions.map(p => p.x)) : 80;
+  const originY = positions.length ? Math.min(...positions.map(p => p.y)) : 80;
+
+  return { x: originX + col * 260, y: originY + row * 200 };
 }
 
 function defaultIdColumn(): Column {
