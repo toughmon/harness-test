@@ -1,4 +1,4 @@
-# EasyERD (erd-service)
+# EasyRD (erd-service)
 
 온라인 ERD(Entity-Relationship Diagram) 작성 서비스.
 브라우저에서 엔티티·관계를 시각적으로 편집하고, 로그인하면 다이어그램을 사용자별로 DB에 저장할 수 있다.
@@ -218,7 +218,7 @@ Claude Code ──stdio──> erd-service/mcp ──https(JWT 쿠키)──> /a
 | verify_fk_namedup | FK명이 하위 컬럼과 충돌 시 교체 처리 (식별/비식별 상속) |
 | verify_column_drag | 컬럼 드래그 순서 변경 (5항목) |
 | verify_logical | 논리명/물리명 병기·FK 논리명 자동 조합 |
-| verify_design | EasyERD 레이아웃·관계·FK |
+| verify_design | EasyRD 레이아웃·관계·FK |
 | verify_sidebar_cleanup / verify_gnb_cleanup | 사이드바·GNB 정리 회귀 |
 | verify_erd / verify_barker / verify_fanout | (구버전 — 디자인 개편 이전 UI 기준, 동작 불가) |
 | mcp/verify_mcp | MCP 서버 — stdio 도구 호출→저장 blob FK 검증→브라우저 렌더 (24항목, `mcp/`에서 실행) |

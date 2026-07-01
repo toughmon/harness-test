@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EasyERD · Claude 프롬프트 가이드</title>
+  <title>EasyRD · Claude 프롬프트 가이드</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -184,7 +184,7 @@
 <body>
 <div class="layout">
   <nav class="toc">
-    <div class="brand">EasyERD</div>
+    <div class="brand">EasyRD</div>
     <div class="sub">Claude 프롬프트 가이드</div>
     <div class="section-label">기본 조작</div>
     <a href="#entity">엔티티 생성</a>
@@ -210,7 +210,7 @@
     <div class="note">
       먼저 <strong>MCP 연결이 완료</strong>되어 있어야 합니다.
       연결 방법은 <a href="/mcp-guide.html" style="color:var(--primary)">MCP 연결 가이드</a>를 참고하세요.
-      연결 후 Claude Code에서 "easyerd MCP가 연결됐어?" 라고 확인해보세요.
+      연결 후 Claude Code에서 "easyrd MCP가 연결됐어?" 라고 확인해보세요.
     </div>
 
     <!-- ─────────────── 엔티티 생성 ─────────────── -->
@@ -379,7 +379,7 @@
       </div>
 
       <div class="note">
-        <strong>N:M 관계 표현법:</strong> EasyERD는 N:M을 직접 지원하지 않습니다.
+        <strong>N:M 관계 표현법:</strong> EasyRD는 N:M을 직접 지원하지 않습니다.
         중간 엔티티(PostTag, OrderItem 등)를 만들고 각각 1:N으로 연결하세요.
         Claude에게 "Post와 Tag를 N:M으로 연결해줘"라고 하면 중간 테이블을 자동으로 만들어줍니다.
       </div>
@@ -406,7 +406,7 @@
     <!-- ─────────────── 시나리오: 재귀 ─────────────── -->
     <section id="scenario-recurse">
       <h2>시나리오 — 재귀 / 계층 구조</h2>
-      <p>EasyERD는 <strong>자기 자신에게 관계선을 연결하는 재귀 관계</strong>를 지원합니다.</p>
+      <p>EasyRD는 <strong>자기 자신에게 관계선을 연결하는 재귀 관계</strong>를 지원합니다.</p>
 
       <h3>단순 재귀 (상위-하위)</h3>
       <div class="prompt-block">"Category 엔티티를 만들고 자기 자신과 1:N 비식별 재귀 관계 설정해줘 — 상위 카테고리-하위 카테고리 계층 구조"</div>
@@ -489,7 +489,7 @@
     </section>
 
     <footer>
-      EasyERD · Claude 프롬프트 가이드 · MCP로 자연어 ERD 설계
+      EasyRD · Claude 프롬프트 가이드 · MCP로 자연어 ERD 설계
     </footer>
   </main>
 </div>
