@@ -13,9 +13,12 @@ import { useAuthStore } from './store/authStore';
 import { useDiagramStore } from './store/diagramStore';
 import { useMcpStore } from './store/mcpStore';
 import { useThemeStore } from './store/themeStore';
+import { confirmDialog } from './store/dialogStore';
 
 function App() {
-  const { undo, redo } = useERDStore();
+  const { undo, redo, deleteEntity } = useERDStore();
+  const entities = useERDStore(s => s.entities);
+  const selectedEntityId = useERDStore(s => s.selectedEntityId);
   const selectedEdgeId = useERDStore(s => s.selectedEdgeId);
   const selectedMemoId = useERDStore(s => s.selectedMemoId);
   const { modalOpen, init, status } = useAuthStore();
@@ -39,7 +42,7 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // 전역 Undo/Redo 단축키 — 입력 필드 포커스 중에는 브라우저 기본 동작 유지
+  // 전역 Undo/Redo + 엔티티 삭제 단축키 — 입력 필드 포커스 중에는 브라우저 기본 동작 유지
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -47,19 +50,32 @@ function App() {
         return;
       }
       const mod = e.ctrlKey || e.metaKey;
-      if (!mod) return;
-      const key = e.key.toLowerCase();
-      if (key === 'z' && !e.shiftKey) {
+      if (mod) {
+        const key = e.key.toLowerCase();
+        if (key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+        }
+        return;
+      }
+      if (e.key === 'Delete' && selectedEntityId) {
         e.preventDefault();
-        undo();
-      } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
-        e.preventDefault();
-        redo();
+        const entity = entities.find(en => en.id === selectedEntityId);
+        if (!entity) return;
+        confirmDialog({
+          title: '엔티티 삭제',
+          message: `"${entity.name}" 엔티티를 삭제할까요?\n연결된 관계선도 함께 삭제됩니다.`,
+          confirmText: '삭제',
+          danger: true,
+        }).then(ok => { if (ok) deleteEntity(entity.id); });
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [undo, redo]);
+  }, [undo, redo, selectedEntityId, entities, deleteEntity]);
 
   return (
     <div className="flex flex-col w-screen h-screen overflow-hidden bg-background text-on-surface font-sans">

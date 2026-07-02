@@ -248,6 +248,7 @@ export default function ERDCanvas() {
         onEdgeClick={onEdgeClick}
         onPaneClick={() => { selectEntity(null); selectEdge(null); selectMemo(null); }}
         connectionMode={ConnectionMode.Loose}
+        deleteKeyCode={null}   // 기본 Backspace 삭제는 스토어를 거치지 않고 로컬 노드만 지워 데이터와 어긋남 — App.tsx의 Delete 키 핸들러가 대신 처리
         fitView
         fitViewOptions={{ padding: 0.3 }}
         minZoom={0.2}
