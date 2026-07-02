@@ -16,7 +16,7 @@ import { useThemeStore } from './store/themeStore';
 import { confirmDialog } from './store/dialogStore';
 
 function App() {
-  const { undo, redo, deleteEntity, deleteRelationship } = useERDStore();
+  const { undo, redo, deleteEntity, deleteRelationship, deleteMemo, selectMemo } = useERDStore();
   const entities = useERDStore(s => s.entities);
   const relationships = useERDStore(s => s.relationships);
   const selectedEntityId = useERDStore(s => s.selectedEntityId);
@@ -84,11 +84,20 @@ function App() {
           confirmText: '삭제',
           danger: true,
         }).then(ok => { if (ok) deleteRelationship(rel.id); });
+      } else if (e.key === 'Delete' && selectedMemoId) {
+        e.preventDefault();
+        const id = selectedMemoId;
+        confirmDialog({
+          title: '메모 삭제',
+          message: '이 메모를 삭제할까요?',
+          confirmText: '삭제',
+          danger: true,
+        }).then(ok => { if (ok) { deleteMemo(id); selectMemo(null); } });
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [undo, redo, selectedEntityId, entities, deleteEntity, selectedEdgeId, relationships, deleteRelationship]);
+  }, [undo, redo, selectedEntityId, entities, deleteEntity, selectedEdgeId, relationships, deleteRelationship, selectedMemoId, deleteMemo, selectMemo]);
 
   return (
     <div className="flex flex-col w-screen h-screen overflow-hidden bg-background text-on-surface font-sans">
