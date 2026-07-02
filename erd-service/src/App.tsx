@@ -16,8 +16,9 @@ import { useThemeStore } from './store/themeStore';
 import { confirmDialog } from './store/dialogStore';
 
 function App() {
-  const { undo, redo, deleteEntity } = useERDStore();
+  const { undo, redo, deleteEntity, deleteRelationship } = useERDStore();
   const entities = useERDStore(s => s.entities);
+  const relationships = useERDStore(s => s.relationships);
   const selectedEntityId = useERDStore(s => s.selectedEntityId);
   const selectedEdgeId = useERDStore(s => s.selectedEdgeId);
   const selectedMemoId = useERDStore(s => s.selectedMemoId);
@@ -71,11 +72,23 @@ function App() {
           confirmText: '삭제',
           danger: true,
         }).then(ok => { if (ok) deleteEntity(entity.id); });
+      } else if (e.key === 'Delete' && selectedEdgeId) {
+        e.preventDefault();
+        const rel = relationships.find(r => r.id === selectedEdgeId);
+        if (!rel) return;
+        const parent = entities.find(en => en.id === rel.sourceId);
+        const child = entities.find(en => en.id === rel.targetId);
+        confirmDialog({
+          title: '관계 삭제',
+          message: `"${parent?.name ?? '?'} → ${child?.name ?? '?'}" 관계를 삭제할까요?\n자동 생성된 FK 컬럼도 함께 제거됩니다.`,
+          confirmText: '삭제',
+          danger: true,
+        }).then(ok => { if (ok) deleteRelationship(rel.id); });
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [undo, redo, selectedEntityId, entities, deleteEntity]);
+  }, [undo, redo, selectedEntityId, entities, deleteEntity, selectedEdgeId, relationships, deleteRelationship]);
 
   return (
     <div className="flex flex-col w-screen h-screen overflow-hidden bg-background text-on-surface font-sans">

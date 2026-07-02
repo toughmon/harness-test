@@ -267,7 +267,7 @@
           <li><strong>부모 쪽 / 자식 쪽 참여</strong> — 각 절반을 <strong>실선(필수)</strong> 또는 <strong>점선(선택)</strong>으로. 두 절반의 조합으로 실선+실선·점선+점선·실선+점선·점선+실선이 모두 가능합니다.</li>
           <li><strong>카디널리티</strong> — 자식 쪽을 <strong>1(단일)</strong> 또는 <strong>다(까마귀발)</strong>로 전환합니다.</li>
           <li><strong>식별 관계</strong> — 켜면 자식 FK가 PK에 포함되고 식별 막대가 표시됩니다. <em>자식 쪽이 점선(선택)이면 식별 FK가 NULL을 허용할 수 없어 식별 관계로 지정할 수 없습니다(체크 자동 해제·비활성).</em></li>
-          <li><strong>관계 삭제</strong> — 패널 하단의 <strong>관계 삭제</strong> 버튼으로 제거합니다(자동 생성된 FK 컬럼도 함께 정리).</li>
+          <li><strong>관계 삭제</strong> — 패널 하단의 <strong>관계 삭제</strong> 버튼을 누르거나, 관계선을 선택한 상태에서 <strong><code>Delete</code></strong> 키를 눌러 제거합니다(자동 생성된 FK 컬럼도 함께 정리).</li>
         </ul>
         <div class="note">변경은 즉시 반영되며 <code>Ctrl+Z</code>로 되돌릴 수 있습니다. 패널 상단에는 현재 설정의 선 모양 미리보기가 표시됩니다.</div>
 
@@ -382,7 +382,7 @@
           <tr><th>키</th><th>기능</th></tr>
           <tr><td><code>Ctrl + Z</code></td><td>실행 취소</td></tr>
           <tr><td><code>Ctrl + Y</code> / <code>Ctrl + Shift + Z</code></td><td>다시 실행</td></tr>
-          <tr><td><code>Delete</code></td><td>선택한 엔티티 삭제 (확인 후)</td></tr>
+          <tr><td><code>Delete</code></td><td>선택한 엔티티 또는 관계선 삭제 (확인 후)</td></tr>
           <tr><td><code>Esc</code></td><td>전체화면 종료 / 열린 창 닫기</td></tr>
         </table>
         <div class="note">입력란에 포커스가 있을 때는 실행취소 단축키 대신 브라우저 기본 동작이 적용됩니다. 연속된 텍스트 입력은 하나의 실행취소 단위로 묶입니다.</div>
