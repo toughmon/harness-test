@@ -24,6 +24,7 @@ export interface ErdDoc {
 }
 
 export interface AddMemoOptions {
+  id?: string;   // 협업 시 피어 간 동일 id 재현용(미지정 시 새로 생성)
   x?: number;
   y?: number;
   text?: string;
@@ -33,7 +34,7 @@ export interface AddMemoOptions {
 }
 
 export function addMemo(doc: ErdDoc, opts: AddMemoOptions = {}): { doc: ErdDoc; memoId: string } {
-  const id = genId();
+  const id = opts.id ?? genId();
   const newMemo: Memo = {
     id,
     text: opts.text ?? '',
@@ -93,9 +94,10 @@ export function buildFKColumns(
   sourceId: string,
   flags: { isPK: boolean; isNN: boolean },
   namePrefix = '',  // 자기 참조 시 'parent_' 등으로 PK명 충돌 방지
+  ids?: string[],   // 협업 시 피어 간 동일 FK 컬럼 id 재현용(PK 컬럼 순서로 정렬)
 ): Column[] {
-  return sourceEntity.columns.filter(c => c.isPK).map(pk => ({
-    id: genId(),
+  return sourceEntity.columns.filter(c => c.isPK).map((pk, i) => ({
+    id: ids?.[i] ?? genId(),
     name: namePrefix + pk.name,
     logicalName: pk.logicalName ?? '',
     type: pk.type as ColumnType,
@@ -140,6 +142,7 @@ function defaultIdColumn(): Column {
 }
 
 export interface AddEntityOptions {
+  id?: string;               // 협업 시 피어 간 동일 id 재현용(미지정 시 새로 생성)
   name?: string;
   logicalName?: string;
   description?: string;
@@ -150,7 +153,7 @@ export interface AddEntityOptions {
 }
 
 export function addEntity(doc: ErdDoc, opts: AddEntityOptions = {}): { doc: ErdDoc; entityId: string } {
-  const id = genId();
+  const id = opts.id ?? genId();
   const count = doc.entities.length + 1;
   const withDefaultId = opts.withDefaultId ?? true;
   const columns = opts.columns ?? (withDefaultId ? [defaultIdColumn()] : []);
@@ -201,9 +204,9 @@ export function deleteEntity(doc: ErdDoc, id: string): ErdDoc {
 export function addColumn(
   doc: ErdDoc,
   entityId: string,
-  col: Partial<Omit<Column, 'id'>> = {}
+  col: Partial<Column> = {}   // col.id 지정 시 협업 피어 간 동일 id 재현
 ): { doc: ErdDoc; columnId: string } {
-  const newCol: Column = { ...DEFAULT_COLUMN, name: 'column', ...col, id: genId() };
+  const newCol: Column = { ...DEFAULT_COLUMN, name: 'column', ...col, id: col.id ?? genId() };
   return {
     doc: {
       ...doc,
@@ -260,7 +263,8 @@ export function addRelationship(
   sourceId: string,
   targetId: string,
   type: RelationshipType,
-  sidesOverride?: Partial<RelationshipSides>
+  sidesOverride?: Partial<RelationshipSides>,
+  ids?: { relationshipId?: string; fkColumnIds?: string[] },  // 협업 시 피어 간 동일 id 재현
 ): { doc: ErdDoc; relationshipId: string | null; fkColumnsAdded: Column[] } {
   const sourceEntity = doc.entities.find(e => e.id === sourceId);
   const targetEntity = doc.entities.find(e => e.id === targetId);
@@ -271,9 +275,9 @@ export function addRelationship(
   const sides: RelationshipSides = { ...sidesFromType(type), ...sidesOverride };
   // 자기 참조(재귀): FK명이 PK명과 동일해 충돌하므로 'parent_' 접두사로 회피
   const isSelfRef = sourceId === targetId;
-  const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsForSides(sides), isSelfRef ? 'parent_' : '');
+  const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsForSides(sides), isSelfRef ? 'parent_' : '', ids?.fkColumnIds);
   const fkNames = new Set(newFKColumns.map(c => c.name));
-  const relationshipId = genId();
+  const relationshipId = ids?.relationshipId ?? genId();
   const newRel: Relationship = {
     id: relationshipId,
     sourceId,

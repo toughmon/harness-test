@@ -3,11 +3,14 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
+import fastifyWebsocket from '@fastify/websocket';
 import path from 'node:path';
 import { createDb, initSchema } from './db.js';
 import authRoutes from './auth-routes.js';
 import diagramRoutes from './diagram-routes.js';
 import mcpTokenRoutes from './mcp-token-routes.js';
+import shareRoutes from './share-routes.js';
+import collabRoutes from './collab-routes.js';
 import { hashToken, TOKEN_PREFIX } from './mcp-token-util.js';
 import { tsImport } from 'tsx/esm/api';
 
@@ -91,6 +94,8 @@ app.decorate('authenticateAny', async (req, reply) => {
 await app.register(authRoutes, { prefix: '/api/auth' });
 await app.register(diagramRoutes, { prefix: '/api/diagrams' });
 await app.register(mcpTokenRoutes, { prefix: '/api/mcp-tokens' });
+// 공유 링크 — 발급/조회/폐기(/api/diagrams/:id/shares) + 공개 읽기(/api/shared/:token)
+await app.register(shareRoutes);
 
 // 헬스체크 — 현재 DB 종류 노출(운영 중 pg/pg-mem 즉시 확인). 인증 불요.
 app.get('/api/health', async () => ({ ok: true, db: db.kind }));
@@ -100,6 +105,10 @@ attachMcpHttp(app, {
   selfOrigin: `http://127.0.0.1:${PORT}`,
   mintJwt: (user) => app.jwt.sign({ id: user.id, username: user.username }, { expiresIn: '10m' }),
 });
+
+// 실시간 협업 WebSocket (/ws/diagram/:id) — 정적 서빙/SPA fallback보다 먼저 등록해 업그레이드가 삼켜지지 않게
+await app.register(fastifyWebsocket);
+await app.register(collabRoutes);
 
 // 정적 서빙
 await app.register(fastifyStatic, {

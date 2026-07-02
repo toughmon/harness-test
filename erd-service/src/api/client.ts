@@ -32,6 +32,31 @@ export interface McpTokenIssued {
   token: string;
 }
 
+export type ShareRole = 'viewer' | 'editor';
+
+export interface Share {
+  id: number;
+  role: ShareRole;
+  label: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+
+// 발급 응답 — token 원문은 이 응답에서만 1회 노출
+export interface ShareIssued {
+  id: number;
+  role: ShareRole;
+  label: string | null;
+  created_at: string;
+  token: string;
+}
+
+// 공유 링크로 연 다이어그램 — role은 이 링크의 권한('viewer'|'editor'), 소유자가 자기 링크를 열면 'owner'
+export interface SharedDiagram extends Diagram {
+  role: ShareRole | 'owner';
+}
+
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -83,4 +108,13 @@ export const api = {
     request<McpTokenIssued>('/api/mcp-tokens', { method: 'POST', body: JSON.stringify({ label }) }),
   deleteMcpToken: (id: number) =>
     request<{ ok: boolean }>(`/api/mcp-tokens/${id}`, { method: 'DELETE' }),
+
+  // 다이어그램 공유 링크
+  listShares: (diagramId: number) => request<Share[]>(`/api/diagrams/${diagramId}/shares`),
+  createShare: (diagramId: number, role: ShareRole, label?: string) =>
+    request<ShareIssued>(`/api/diagrams/${diagramId}/shares`, { method: 'POST', body: JSON.stringify({ role, label }) }),
+  revokeShare: (diagramId: number, shareId: number) =>
+    request<{ ok: boolean }>(`/api/diagrams/${diagramId}/shares/${shareId}`, { method: 'DELETE' }),
+  // 공유 토큰으로 다이어그램 조회 (링크 소지자용)
+  getSharedDiagram: (token: string) => request<SharedDiagram>(`/api/shared/${encodeURIComponent(token)}`),
 };

@@ -2,11 +2,18 @@ import { create } from 'zustand';
 import { Entity, Column, Memo, Relationship, RelationshipType, Subtype, EndpointAnchor } from '../types/erd';
 import * as erdOps from '../core/erdOps';
 import { genId, DEFAULT_COLUMN, type NodePosition, type ErdDoc } from '../core/erdOps';
+import { applyOp, type OpName } from '../core/opDispatch';
 import type { RelationshipSides } from '../core/relationshipSides';
 
-// 변형 로직은 ../core/erdOps(순수 함수, MCP 서버와 공유)에 있고, 여기서는 히스토리·
+// 변형 로직은 ../core/erdOps(순수 함수, MCP 서버·협업 릴레이와 공유)에 있고, 여기서는 히스토리·
 // 선택 상태·dirty 추적 같은 UI 관심사만 감싼다. erdOps.fn(docOf(s), ...)을 호출해 결과
 // 문서를 set으로 머지한다. 서브타입/위치/undo·redo/loadData는 UI 전용이라 인라인 유지.
+
+// ── 실시간 협업: 로컬 변형을 op로 내보내는 에미터(collabStore가 등록). 순환 import를 피하려
+//    erdStore는 collabStore를 import하지 않고, 등록된 콜백만 호출한다. applyRemote는 내보내지 않는다.
+export type OpEmitter = (op: OpName, args: unknown[]) => void;
+let opEmitter: OpEmitter | null = null;
+export const setOpEmitter = (fn: OpEmitter | null) => { opEmitter = fn; };
 
 // Undo/Redo용 문서 상태 스냅샷 (선택 상태는 제외)
 interface Snapshot {
@@ -37,6 +44,12 @@ interface ERDStore {
   selectedEdgeId: string | null;
   selectedMemoId: string | null;
   pendingConnection: { sourceId: string; sourceHandle: string } | null;
+
+  // 협업 읽기 전용 모드 — 공유 뷰어일 때 true. 모든 로컬 변형/undo를 막는다(방어).
+  readOnly: boolean;
+  setReadOnly: (v: boolean) => void;
+  // 원격 op를 히스토리 없이 적용 (collabStore가 수신 프레임에 대해 호출)
+  applyRemote: (op: OpName, args: unknown[]) => void;
 
   past: Snapshot[];
   future: Snapshot[];
@@ -80,13 +93,22 @@ interface ERDStore {
   setAllPositions: (positions: Record<string, NodePosition>) => void;
   setPendingConnection: (val: ERDStore['pendingConnection']) => void;
 
-  loadData: (entities: Entity[], relationships: Relationship[], positions: Record<string, NodePosition>, memos?: Memo[]) => void;
+  loadData: (
+    entities: Entity[],
+    relationships: Relationship[],
+    positions: Record<string, NodePosition>,
+    memos?: Memo[],
+    opts?: { silent?: boolean },
+  ) => void;
 }
 
 export const useERDStore = create<ERDStore>((set, get) => {
   // ---- Undo/Redo 내부 상태 ----
   let lastActionKey = '';
   let lastActionTime = 0;
+
+  // 로컬 변형을 협업 룸으로 내보낸다(등록된 에미터가 연결/편집권한을 판단). applyRemote에서는 호출 안 함.
+  const emit = (op: OpName, args: unknown[]) => { opEmitter?.(op, args); };
 
   const takeSnapshot = (): Snapshot => {
     const s = get();
@@ -123,10 +145,19 @@ export const useERDStore = create<ERDStore>((set, get) => {
     selectedMemoId: null,
     pendingConnection: null,
 
+    readOnly: false,
+    setReadOnly: (v) => set({ readOnly: v }),
+
+    // 원격 op 적용 — 히스토리·선택 변경 없음, dirty 유발은 collabStore가 제어(applyingRemote)
+    applyRemote: (op, args) => {
+      set(s => applyOp(docOf(s), { op, args: args as unknown[] }));
+    },
+
     past: [],
     future: [],
 
     undo: () => {
+      if (get().readOnly) return;
       const s = get();
       const prev = s.past[s.past.length - 1];
       if (!prev) return;
@@ -139,6 +170,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     redo: () => {
+      if (get().readOnly) return;
       const s = get();
       const next = s.future[0];
       if (!next) return;
@@ -151,19 +183,25 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     addEntity: () => {
+      if (get().readOnly) return;
+      const id = genId();
       pushHistory('addEntity');
       set(s => {
-        const { doc, entityId } = erdOps.addEntity(docOf(s));
-        return { ...doc, selectedEntityId: entityId };
+        const { doc } = erdOps.addEntity(docOf(s), { id });
+        return { ...doc, selectedEntityId: id };
       });
+      emit('addEntity', [{ id }]);
     },
 
     updateEntity: (id, updates) => {
+      if (get().readOnly) return;
       pushHistory(`updateEntity:${id}:${Object.keys(updates).join(',')}`);
       set(s => erdOps.updateEntity(docOf(s), id, updates));
+      emit('updateEntity', [id, updates]);
     },
 
     deleteEntity: (id) => {
+      if (get().readOnly) return;
       pushHistory('deleteEntity');
       set(s => {
         const doc = erdOps.deleteEntity(docOf(s), id);
@@ -174,6 +212,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
           selectedEdgeId: doc.relationships.some(r => r.id === s.selectedEdgeId) ? s.selectedEdgeId : null,
         };
       });
+      emit('deleteEntity', [id]);
     },
 
     // 엔티티/엣지/메모 선택은 상호 배타
@@ -182,58 +221,80 @@ export const useERDStore = create<ERDStore>((set, get) => {
     selectMemo: (id) => set({ selectedMemoId: id, selectedEntityId: null, selectedEdgeId: null }),
 
     addMemo: (pos) => {
+      if (get().readOnly) return;
+      const id = genId();
+      const opts = { id, ...(pos ?? { x: 200, y: 200 }) };
       pushHistory('addMemo');
       set(s => {
-        const { doc, memoId } = erdOps.addMemo(docOf(s), pos ?? { x: 200, y: 200 });
-        return { ...doc, selectedMemoId: memoId, selectedEntityId: null, selectedEdgeId: null };
+        const { doc } = erdOps.addMemo(docOf(s), opts);
+        return { ...doc, selectedMemoId: id, selectedEntityId: null, selectedEdgeId: null };
       });
+      emit('addMemo', [opts]);
     },
 
     updateMemo: (id, updates) => {
+      if (get().readOnly) return;
       pushHistory(`updateMemo:${id}:${Object.keys(updates).join(',')}`);
       set(s => erdOps.updateMemo(docOf(s), id, updates));
+      emit('updateMemo', [id, updates]);
     },
 
     deleteMemo: (id) => {
+      if (get().readOnly) return;
       pushHistory('deleteMemo');
       set(s => ({
         ...erdOps.deleteMemo(docOf(s), id),
         selectedMemoId: s.selectedMemoId === id ? null : s.selectedMemoId,
       }));
+      emit('deleteMemo', [id]);
     },
 
     updateMemoPosition: (id, x, y) => {
+      if (get().readOnly) return;
       pushHistory(`moveMemo:${id}`);
       set(s => erdOps.updateMemo(docOf(s), id, { x, y }));
+      emit('updateMemo', [id, { x, y }]);
     },
 
     updateMemoSize: (id, w, h) => {
+      if (get().readOnly) return;
       pushHistory(`resizeMemo:${id}`);
       set(s => erdOps.updateMemo(docOf(s), id, { width: w, height: h }));
+      emit('updateMemo', [id, { width: w, height: h }]);
     },
 
     addColumn: (entityId) => {
+      if (get().readOnly) return;
+      const id = genId();
       pushHistory('addColumn');
-      set(s => erdOps.addColumn(docOf(s), entityId).doc);
+      set(s => erdOps.addColumn(docOf(s), entityId, { id }).doc);
+      emit('addColumn', [entityId, { id }]);
     },
 
     updateColumn: (entityId, columnId, updates) => {
+      if (get().readOnly) return;
       pushHistory(`updateColumn:${columnId}:${Object.keys(updates).join(',')}`);
       set(s => erdOps.updateColumn(docOf(s), entityId, columnId, updates));
+      emit('updateColumn', [entityId, columnId, updates]);
     },
 
     deleteColumn: (entityId, columnId) => {
+      if (get().readOnly) return;
       pushHistory('deleteColumn');
       set(s => erdOps.deleteColumn(docOf(s), entityId, columnId));
+      emit('deleteColumn', [entityId, columnId]);
     },
 
     moveColumn: (entityId, fromIdx, toIdx) => {
+      if (get().readOnly) return;
       pushHistory('moveColumn');
       set(s => erdOps.moveColumn(docOf(s), entityId, fromIdx, toIdx));
+      emit('moveColumn', [entityId, fromIdx, toIdx]);
     },
 
-    // ── 배타적 서브타입(SubSet) — UI 전용, 인라인 유지 ──
+    // ── 배타적 서브타입(SubSet) — UI 전용, 인라인 유지. op 어휘 밖이라 협업 시 스냅샷 백스톱으로 전파 ──
     addSubtype: (entityId) => {
+      if (get().readOnly) return;
       pushHistory('addSubtype');
       set(s => ({
         entities: s.entities.map(e => {
@@ -258,6 +319,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     removeSubtype: (entityId, subtypeId) => {
+      if (get().readOnly) return;
       pushHistory('removeSubtype');
       set(s => ({
         entities: s.entities.map(e =>
@@ -269,6 +331,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     updateSubtype: (entityId, subtypeId, updates) => {
+      if (get().readOnly) return;
       pushHistory(`updateSubtype:${subtypeId}:${Object.keys(updates).join(',')}`);
       set(s => ({
         entities: s.entities.map(e =>
@@ -280,6 +343,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     updateSubsetMeta: (entityId, updates) => {
+      if (get().readOnly) return;
       pushHistory(`subsetMeta:${entityId}:${Object.keys(updates).join(',')}`);
       set(s => ({
         entities: s.entities.map(e => e.id === entityId ? { ...e, ...updates } : e),
@@ -287,6 +351,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     addSubtypeColumn: (entityId, subtypeId) => {
+      if (get().readOnly) return;
       pushHistory('addSubtypeColumn');
       const newCol: Column = { ...DEFAULT_COLUMN, id: genId(), name: 'column' };
       set(s => ({
@@ -299,6 +364,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     updateSubtypeColumn: (entityId, subtypeId, columnId, updates) => {
+      if (get().readOnly) return;
       pushHistory(`updateSubtypeColumn:${columnId}:${Object.keys(updates).join(',')}`);
       set(s => ({
         entities: s.entities.map(e =>
@@ -317,6 +383,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     deleteSubtypeColumn: (entityId, subtypeId, columnId) => {
+      if (get().readOnly) return;
       pushHistory('deleteSubtypeColumn');
       set(s => ({
         entities: s.entities.map(e =>
@@ -333,41 +400,55 @@ export const useERDStore = create<ERDStore>((set, get) => {
     },
 
     addRelationship: (sourceId, targetId, type) => {
+      if (get().readOnly) return;
       const { entities } = get();
       // 엔티티가 모두 존재할 때만 히스토리를 남긴다 (erdOps도 동일하게 no-op 처리)
-      if (!entities.find(e => e.id === targetId) || !entities.find(e => e.id === sourceId)) return;
+      const source = entities.find(e => e.id === sourceId);
+      if (!source || !entities.find(e => e.id === targetId)) return;
+      // 협업 피어 간 동일 id 재현을 위해 관계 id·FK 컬럼 id를 미리 만들어 op에 싣는다
+      const relationshipId = genId();
+      const fkColumnIds = source.columns.filter(c => c.isPK).map(() => genId());
+      const ids = { relationshipId, fkColumnIds };
       pushHistory('addRelationship');
-      set(s => erdOps.addRelationship(docOf(s), sourceId, targetId, type).doc);
+      set(s => erdOps.addRelationship(docOf(s), sourceId, targetId, type, undefined, ids).doc);
+      emit('addRelationship', [sourceId, targetId, type, undefined, ids]);
     },
 
     updateRelationshipType: (id, newType) => {
+      if (get().readOnly) return;
       const s = get();
       const rel = s.relationships.find(r => r.id === id);
       if (!rel || rel.type === newType) return;
       if (!s.entities.find(e => e.id === rel.sourceId)) return;
       pushHistory(`relType:${id}`);
       set(st => erdOps.updateRelationshipType(docOf(st), id, newType).doc);
+      emit('updateRelationshipType', [id, newType]);
     },
 
     // 관계선 좌/우 절반 속성 부분 갱신 (FK 플래그 동반 갱신, undo 지원)
     updateRelationshipSides: (id, partial) => {
+      if (get().readOnly) return;
       const s = get();
       const rel = s.relationships.find(r => r.id === id);
       if (!rel) return;
       if (!s.entities.find(e => e.id === rel.sourceId)) return;
       pushHistory(`relSides:${id}`);
       set(st => erdOps.updateRelationshipSides(docOf(st), id, partial).doc);
+      emit('updateRelationshipSides', [id, partial]);
     },
 
     // 관계선 끝점 수동 부착 위치 (드래그 종료 시 1회 커밋, undo 지원). anchor=null이면 자동 복귀.
     updateRelationshipAnchor: (id, end, anchor) => {
+      if (get().readOnly) return;
       const s = get();
       if (!s.relationships.find(r => r.id === id)) return;
       pushHistory(`relAnchor:${id}:${end}`);
       set(st => erdOps.updateRelationshipAnchor(docOf(st), id, end, anchor));
+      emit('updateRelationshipAnchor', [id, end, anchor]);
     },
 
     deleteRelationship: (id) => {
+      if (get().readOnly) return;
       const s = get();
       if (!s.relationships.find(r => r.id === id)) return;
       pushHistory('deleteRelationship');
@@ -375,23 +456,27 @@ export const useERDStore = create<ERDStore>((set, get) => {
         ...erdOps.deleteRelationship(docOf(st), id).doc,
         selectedEdgeId: st.selectedEdgeId === id ? null : st.selectedEdgeId,
       }));
+      emit('deleteRelationship', [id]);
     },
 
     updateNodePosition: (id, pos) => {
+      if (get().readOnly) return;
       pushHistory(`movePos:${id}`);
       set(s => ({ nodePositions: { ...s.nodePositions, [id]: pos } }));
+      emit('setNodePosition', [id, pos]);
     },
 
-    // 자동 정렬 등 전체 위치 일괄 변경 (히스토리 1회)
+    // 자동 정렬 등 전체 위치 일괄 변경 (히스토리 1회). op 어휘 밖이라 협업 시 스냅샷 백스톱으로 전파.
     setAllPositions: (positions) => {
+      if (get().readOnly) return;
       pushHistory('autoLayout');
       set({ nodePositions: positions });
     },
 
     setPendingConnection: (val) => set({ pendingConnection: val }),
 
-    loadData: (entities, relationships, positions, memos = []) => {
-      pushHistory('loadData');
+    loadData: (entities, relationships, positions, memos = [], opts) => {
+      if (!opts?.silent) pushHistory('loadData');
       set({ entities, relationships, nodePositions: positions, memos, selectedEntityId: null, selectedEdgeId: null, selectedMemoId: null });
     },
   };

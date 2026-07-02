@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api, DiagramMeta } from '../api/client';
 import { useERDStore } from './erdStore';
+import { useCollabStore } from './collabStore';
 import { toERDData, fromERDData } from '../utils/erdData';
 import { alertDialog, confirmDialog, promptDialog } from './dialogStore';
 
@@ -64,6 +65,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   open: async (id) => {
     if (!(await get().confirmDiscard())) return;
+    // 다른 다이어그램/공유 세션을 열고 있었다면 협업 연결을 끊는다(readOnly도 해제됨)
+    useCollabStore.getState().disconnect();
     const diagram = await api.getDiagram(id);
     const { entities, relationships, positions, memos } = fromERDData(diagram.data);
     suppressDirty = true;
@@ -123,6 +126,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   // 빈 캔버스에서 새로 시작 — 저장은 DB 저장 버튼에서 이름 입력으로
   startNew: async () => {
     if (!(await get().confirmDiscard())) return;
+    useCollabStore.getState().disconnect();
     suppressDirty = true;
     useERDStore.getState().loadData([], [], {}, []);
     suppressDirty = false;
@@ -160,6 +164,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   reset: () => {
+    useCollabStore.getState().disconnect();
     saveLastId(null);
     set({ list: [], currentId: null, dirty: false, saving: false });
   },

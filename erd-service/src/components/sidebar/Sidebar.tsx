@@ -9,6 +9,7 @@ import { useMcpStore } from '../../store/mcpStore';
 // 접기 기능: 캔버스를 넓게 보기 위해 좌측 패널을 얇은 레일로 접을 수 있음
 export default function Sidebar() {
   const { entities, memos, selectedEntityId, selectEntity, addEntity, addMemo } = useERDStore();
+  const readOnly = useERDStore(s => s.readOnly);
   const { status } = useAuthStore();
   const { list, currentId, open, startNew, rename, remove } = useDiagramStore();
   const openMcp = useMcpStore(s => s.openModal);
@@ -32,23 +33,27 @@ export default function Sidebar() {
         >
           <span className="material-symbols-outlined text-[20px]">left_panel_open</span>
         </button>
-        <div className="w-6 border-t border-outline-variant my-1" />
-        <button
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-on-primary bg-primary hover:bg-inverse-primary hover:text-white transition-colors cursor-pointer active:scale-[0.95]"
-          onClick={addEntity}
-          title="Add Entity"
-          aria-label="Add Entity"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-        </button>
-        <button
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant bg-surface-variant hover:bg-surface hover:text-on-surface transition-colors cursor-pointer active:scale-[0.95]"
-          onClick={() => addMemo()}
-          title="Add Memo"
-          aria-label="Add Memo"
-        >
-          <span className="material-symbols-outlined text-[20px]">note_add</span>
-        </button>
+        {!readOnly && (
+          <>
+            <div className="w-6 border-t border-outline-variant my-1" />
+            <button
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-on-primary bg-primary hover:bg-inverse-primary hover:text-white transition-colors cursor-pointer active:scale-[0.95]"
+              onClick={addEntity}
+              title="Add Entity"
+              aria-label="Add Entity"
+            >
+              <span className="material-symbols-outlined text-[20px]">add</span>
+            </button>
+            <button
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant bg-surface-variant hover:bg-surface hover:text-on-surface transition-colors cursor-pointer active:scale-[0.95]"
+              onClick={() => addMemo()}
+              title="Add Memo"
+              aria-label="Add Memo"
+            >
+              <span className="material-symbols-outlined text-[20px]">note_add</span>
+            </button>
+          </>
+        )}
       </aside>
     );
   }
@@ -76,22 +81,24 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Add Entity / Add Memo */}
-      <div className="p-4 flex flex-col gap-2">
-        <button
-          className="w-full bg-primary text-on-primary py-2 rounded-lg text-sm font-semibold hover:bg-inverse-primary hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-          onClick={addEntity}
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span> Add Entity
-        </button>
-        <button
-          data-testid="add-memo-btn"
-          className="w-full bg-surface-variant text-on-surface-variant py-2 rounded-lg text-sm font-semibold hover:bg-surface hover:text-on-surface transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-          onClick={() => addMemo()}
-        >
-          <span className="material-symbols-outlined text-[18px]">note_add</span> Add Memo
-        </button>
-      </div>
+      {/* Add Entity / Add Memo — 공유 뷰어(읽기 전용)에서는 숨김 */}
+      {!readOnly && (
+        <div className="p-4 flex flex-col gap-2">
+          <button
+            className="w-full bg-primary text-on-primary py-2 rounded-lg text-sm font-semibold hover:bg-inverse-primary hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+            onClick={addEntity}
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span> Add Entity
+          </button>
+          <button
+            data-testid="add-memo-btn"
+            className="w-full bg-surface-variant text-on-surface-variant py-2 rounded-lg text-sm font-semibold hover:bg-surface hover:text-on-surface transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+            onClick={() => addMemo()}
+          >
+            <span className="material-symbols-outlined text-[18px]">note_add</span> Add Memo
+          </button>
+        </div>
+      )}
 
       {/* 내 다이어그램 (로그인 시에만) + Entity list */}
       <nav className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2 flex flex-col gap-1">
