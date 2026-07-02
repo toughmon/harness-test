@@ -33,7 +33,7 @@ try {
   }
 
   // 3. 유지 대상
-  check('브랜드(EasyRD) 유지', await header.locator('text=EasyRD').count() === 1);
+  check('브랜드(YourERD) 유지', await header.locator('text=YourERD').count() === 1);
   check('Undo 버튼 유지', await header.locator('button[aria-label="Undo"]').count() === 1);
   check('Redo 버튼 유지', await header.locator('button[aria-label="Redo"]').count() === 1);
   check('Save 버튼 유지', await header.locator('button:has-text("Save")').count() === 1);

@@ -41,7 +41,7 @@ export default function Toolbar() {
   return (
     <header className="flex justify-between items-center h-12 px-8 w-full z-50 shrink-0 bg-surface border-b border-outline-variant">
       <div className="flex items-center gap-4">
-        <div className="text-[22px] leading-8 tracking-tight font-black text-primary">EasyRD</div>
+        <div className="text-[22px] leading-8 tracking-tight font-black text-primary">YourERD</div>
         {currentName && (
           <div className="hidden md:flex items-center gap-1.5 text-xs text-on-surface-variant font-mono" data-testid="current-diagram">
             <span className="material-symbols-outlined text-[16px]">cloud</span>

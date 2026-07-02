@@ -46,7 +46,7 @@ try {
   check('가이드 제목 렌더', (await page.locator('h1').innerText()).includes('MCP 연결 가이드'));
   const body = await page.locator('body').innerText();
   check('4단계 안내 포함', ['의존성 설치', '서비스 계정', '.mcp.json', '재시작'].every(s => body.includes(s)));
-  check('배포 주소 예시 포함', body.includes('toughdev.cafe24.com:8080'));
+  check('배포 주소 예시 포함', body.includes('yourerd.com'));
   check('도구 목록(add_relationship) 포함', body.includes('add_relationship'));
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_mcp_guide.png', fullPage: true });
 

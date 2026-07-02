@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EasyRD · MCP 연결 가이드</title>
+  <title>YourERD · MCP 연결 가이드</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -132,7 +132,7 @@
 <body>
   <div class="layout">
     <nav class="toc">
-      <div class="brand">EasyRD</div>
+      <div class="brand">YourERD</div>
       <div class="sub">MCP 연결 가이드</div>
       <a href="#intro">개요</a>
       <a href="#step1">1. 로그인 &amp; 토큰 발급</a>
@@ -148,20 +148,20 @@
 
     <main>
       <h1>MCP 연결 가이드 <span class="badge">Claude Code</span></h1>
-      <p class="lead">Claude Code에서 자연어로 이 EasyRD 서비스의 다이어그램을 만들고 편집하도록 MCP 서버를 연결하는 방법입니다.</p>
+      <p class="lead">Claude Code에서 자연어로 이 YourERD 서비스의 다이어그램을 만들고 편집하도록 MCP 서버를 연결하는 방법입니다.</p>
 
       <section id="intro">
         <h2>개요</h2>
-        <p><strong>MCP(Model Context Protocol)</strong>는 Claude Code 같은 AI 클라이언트가 외부 도구를 호출하도록 연결하는 표준입니다. EasyRD는 서버에 <strong>원격 MCP 엔드포인트(<code>/mcp</code>)</strong>를 직접 제공하므로, 연결하면 다음처럼 말할 수 있습니다:</p>
+        <p><strong>MCP(Model Context Protocol)</strong>는 Claude Code 같은 AI 클라이언트가 외부 도구를 호출하도록 연결하는 표준입니다. YourERD는 서버에 <strong>원격 MCP 엔드포인트(<code>/mcp</code>)</strong>를 직접 제공하므로, 연결하면 다음처럼 말할 수 있습니다:</p>
         <div class="note">"user 엔티티 만들고 PK는 seq(사용자고유번호) integer, name(이름) varchar(100)으로 추가해줘" → 엔티티·컬럼·관계가 자동으로 생성되고 서버에 저장됩니다.</div>
         <p>예전처럼 저장소를 클론하거나 Node를 설치하거나 <code>.mcp.json</code>을 손으로 편집하거나 Claude Code를 재시작할 필요가 <strong>없습니다.</strong> 웹에서 발급한 <strong>개인 토큰</strong>이 박힌 명령 한 줄을 붙여넣으면 끝입니다.</p>
-        <pre><code>Claude Code ──HTTP(개인 토큰)──▶ EasyRD 서버 /mcp  (별도 프로세스·레포 불필요)</code></pre>
+        <pre><code>Claude Code ──HTTP(개인 토큰)──▶ YourERD 서버 /mcp  (별도 프로세스·레포 불필요)</code></pre>
       </section>
 
       <section id="step1">
         <h2><span class="step">1</span>로그인 &amp; 토큰 발급</h2>
         <ul>
-          <li>EasyRD에 <strong>로그인</strong>합니다(없으면 우측 상단 아바타 → 회원가입). 본인 계정의 다이어그램만 MCP에서 보이고 편집됩니다.</li>
+          <li>YourERD에 <strong>로그인</strong>합니다(없으면 우측 상단 아바타 → 회원가입). 본인 계정의 다이어그램만 MCP에서 보이고 편집됩니다.</li>
           <li>좌측 사이드바 하단 <strong>“MCP 연결”</strong> 메뉴를 엽니다.</li>
           <li><strong>“토큰 발급”</strong>을 누르면 개인 액세스 토큰(PAT)이 만들어지고, 토큰이 채워진 연결 명령이 표시됩니다.</li>
         </ul>
@@ -172,7 +172,7 @@
         <h2><span class="step">2</span>명령 한 줄 붙여넣기</h2>
         <p>모달의 <strong>복사</strong> 버튼으로 명령을 복사해 터미널에 붙여넣습니다. (아래는 형태 예시 — 실제로는 발급된 토큰이 채워져 있습니다.)</p>
         <pre><code>claude mcp add --scope user --transport http \
-  erd http://toughdev.cafe24.com:8080/mcp \
+  erd https://yourerd.com/mcp \
   --header "Authorization: Bearer &lt;발급한_토큰&gt;"</code></pre>
         <p style="font-size:13px;color:var(--on-surface-variant)"><code>--header</code>는 반드시 <strong>맨 뒤</strong>에 옵니다(가변인자라 앞에 두면 이름·주소를 삼켜 오류).</p>
         <p>또는 <code>.mcp.json</code>에 직접 추가해도 됩니다(모달의 “또는 .mcp.json에 직접 추가” 펼치기).</p>
@@ -180,7 +180,7 @@
   "mcpServers": {
     "erd": {
       "type": "http",
-      "url": "http://toughdev.cafe24.com:8080/mcp",
+      "url": "https://yourerd.com/mcp",
       "headers": { "Authorization": "Bearer &lt;발급한_토큰&gt;" }
     }
   }
@@ -242,7 +242,7 @@
       "command": "npx",
       "args": ["-y", "tsx", "erd-service/mcp/src/index.ts"],
       "env": {
-        "ERD_BASE_URL": "http://toughdev.cafe24.com:8080",
+        "ERD_BASE_URL": "https://yourerd.com",
         "ERD_USERNAME": "내아이디-mcp",
         "ERD_PASSWORD": "내비밀번호"
       }
@@ -277,7 +277,7 @@
       </section>
 
       <footer>
-        EasyRD · MCP 연결 가이드 — 이 페이지는 EasyRD 서버에서 <code>/mcp-guide.html</code>로 제공됩니다.
+        YourERD · MCP 연결 가이드 — 이 페이지는 YourERD 서버에서 <code>/mcp-guide.html</code>로 제공됩니다.
       </footer>
     </main>
   </div>

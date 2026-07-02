@@ -1,4 +1,4 @@
-# EasyRD (erd-service)
+# YourERD (erd-service)
 
 온라인 ERD(Entity-Relationship Diagram) 작성 서비스.
 브라우저에서 엔티티·관계를 시각적으로 편집하고, 로그인하면 다이어그램을 사용자별로 DB에 저장할 수 있다.
@@ -143,11 +143,11 @@ diagrams (id SERIAL PK, user_id INT FK→users ON DELETE CASCADE,
 ## 실행
 
 ```bash
-# 개발 (터미널 2개)
-npm run dev          # Vite :5173 (API는 :8080으로 프록시)
-npm start            # Fastify :8080
+# 개발 (터미널 2개) — DATABASE_URL 없이 pg-mem으로 띄우려면 ALLOW_PGMEM=1 필수(없으면 기동 거부)
+npm run dev                    # Vite :5173 (API는 :8080으로 프록시)
+ALLOW_PGMEM=1 npm start        # Fastify :8080
 
-# 프로덕션
+# 프로덕션 (DATABASE_URL 설정 시 ALLOW_PGMEM 불필요)
 npm ci && npm run build && npm start
 ```
 
@@ -158,7 +158,8 @@ npm ci && npm run build && npm start
 > ⚠ **반드시 `DATABASE_URL`(영속 PostgreSQL)을 설정할 것.** 미설정 시 pg-mem 인메모리로 떠서
 > `pm2 restart`/재배포 때마다 **계정·MCP 토큰·저장된 다이어그램이 전부 삭제**된다(= MCP가 `failed`로
 > 뜨고 토큰을 매번 새로 발급해야 하는 원인). 서버는 `.env`를 **프로덕션에서도 로드**하며,
-> `NODE_ENV=production`인데 영속 DB가 없으면 **기동을 거부**한다(의도적 허용은 `ALLOW_PGMEM=1`).
+> **영속 DB가 없으면 항상 기동을 거부**한다(`NODE_ENV` 설정 여부와 무관 — pm2가 `NODE_ENV=production`을
+> 세팅해주지 않으면 예전 가드는 조용히 무력화됐다; 의도적 pg-mem 허용은 `ALLOW_PGMEM=1`).
 > 현재 어떤 DB로 떠 있는지는 `curl localhost:8080/api/health` → `{"ok":true,"db":"pg"}`로 확인.
 
 ```bash
@@ -171,6 +172,8 @@ pm2 restart erd --update-env                # 최초: pm2 start server/index.js 
 pm2 logs erd --lines 20                     # "영속 DB 연결됨 (kind=pg)" / "Server listening" 확인
 curl -s localhost:8080/api/health           # {"ok":true,"db":"pg"} — pg-mem이면 즉시 조치
 ```
+
+앱은 8080 포트에만 리스닝하므로, 도메인 연결(브라우저에서 `http(s)://<도메인>`으로 접속) 및 HTTPS 설정에는 nginx 리버스 프록시 + certbot이 추가로 필요하다. 절차는 **[`DEPLOY_SSL.md`](DEPLOY_SSL.md)** 참고.
 
 ## MCP 연동 (Claude Code)
 
@@ -218,7 +221,7 @@ Claude Code ──stdio──> erd-service/mcp ──https(JWT 쿠키)──> /a
 | verify_fk_namedup | FK명이 하위 컬럼과 충돌 시 교체 처리 (식별/비식별 상속) |
 | verify_column_drag | 컬럼 드래그 순서 변경 (5항목) |
 | verify_logical | 논리명/물리명 병기·FK 논리명 자동 조합 |
-| verify_design | EasyRD 레이아웃·관계·FK |
+| verify_design | YourERD 레이아웃·관계·FK |
 | verify_sidebar_cleanup / verify_gnb_cleanup | 사이드바·GNB 정리 회귀 |
 | verify_erd / verify_barker / verify_fanout | (구버전 — 디자인 개편 이전 UI 기준, 동작 불가) |
 | mcp/verify_mcp | MCP 서버 — stdio 도구 호출→저장 blob FK 검증→브라우저 렌더 (24항목, `mcp/`에서 실행) |

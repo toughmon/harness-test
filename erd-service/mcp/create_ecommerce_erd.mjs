@@ -5,7 +5,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
-const BASE_URL   = 'http://toughdev.cafe24.com:8080';
+const BASE_URL   = process.env.ERD_BASE_URL ?? 'https://yourerd.com';
 const USERNAME   = 'mcp-bot';
 const PASSWORD   = 'QDf0iiusN-BpcYWk';
 
