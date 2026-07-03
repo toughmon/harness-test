@@ -207,14 +207,20 @@ export default function ERDCanvas() {
   }, []);
 
   const onConnect = useCallback((connection: Connection) => {
-    let { source, target } = connection;
-    // 드래그 시작 노드 = 상위(부모) = source가 되도록 정규화
+    let { source, target, sourceHandle, targetHandle } = connection;
+    // 드래그 시작 노드 = 상위(부모) = source가 되도록 정규화 (handle도 함께 뒤집어야
+    // 서브타입 핸들 id가 어느 side 것인지 어긋나지 않는다)
     if (dragStartNodeId.current && source !== dragStartNodeId.current) {
       [source, target] = [target, source];
+      [sourceHandle, targetHandle] = [targetHandle, sourceHandle];
     }
     if (!source || !target) return;
-    setPendingConn({ ...connection, source, target });
+    setPendingConn({ ...connection, source, target, sourceHandle, targetHandle });
   }, []);
+
+  // "sub:{subtypeId}" 형식의 handle id에서 서브타입 id 추출 (일반 엔티티 핸들이면 undefined)
+  const subtypeIdFromHandle = (handleId?: string | null): string | undefined =>
+    handleId?.startsWith('sub:') ? handleId.slice('sub:'.length) : undefined;
 
   // 노드 클릭 → 메모/엔티티 구분해 우측 패널에 표시
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -230,7 +236,10 @@ export default function ERDCanvas() {
 
   const handleRelTypeSelect = (type: RelationshipType) => {
     if (!pendingConn?.source || !pendingConn?.target) return;
-    addRelationship(pendingConn.source, pendingConn.target, type);
+    const sourceSubtypeId = subtypeIdFromHandle(pendingConn.sourceHandle);
+    const targetSubtypeId = subtypeIdFromHandle(pendingConn.targetHandle);
+    const scope = sourceSubtypeId || targetSubtypeId ? { sourceSubtypeId, targetSubtypeId } : undefined;
+    addRelationship(pendingConn.source, pendingConn.target, type, scope);
     setPendingConn(null);
   };
 

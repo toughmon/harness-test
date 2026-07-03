@@ -83,10 +83,16 @@ interface ERDStore {
   updateSubtypeColumn: (entityId: string, subtypeId: string, columnId: string, updates: Partial<Column>) => void;
   deleteSubtypeColumn: (entityId: string, subtypeId: string, columnId: string) => void;
 
-  addRelationship: (sourceId: string, targetId: string, type: RelationshipType) => void;
+  addRelationship: (
+    sourceId: string,
+    targetId: string,
+    type: RelationshipType,
+    scope?: { sourceSubtypeId?: string; targetSubtypeId?: string },
+  ) => void;
   updateRelationshipType: (id: string, type: RelationshipType) => void;
   updateRelationshipSides: (id: string, partial: Partial<RelationshipSides>) => void;
   updateRelationshipAnchor: (id: string, end: 'source' | 'target', anchor: EndpointAnchor | null) => void;
+  updateRelationshipSubtypeScope: (id: string, side: 'source' | 'target', subtypeId: string | null) => void;
   deleteRelationship: (id: string) => void;
 
   updateNodePosition: (id: string, pos: NodePosition) => void;
@@ -321,13 +327,18 @@ export const useERDStore = create<ERDStore>((set, get) => {
     removeSubtype: (entityId, subtypeId) => {
       if (get().readOnly) return;
       pushHistory('removeSubtype');
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === entityId
-            ? { ...e, subtypes: (e.subtypes ?? []).filter(st => st.id !== subtypeId) }
-            : e
-        ),
-      }));
+      set(s => {
+        // 이 서브타입을 스코프로 참조하는 관계/FK 먼저 정리(erdOps.deleteEntity와 대칭되는 캐스케이드)
+        const cascaded = erdOps.removeSubtypeCascade(docOf(s), entityId, subtypeId);
+        return {
+          ...cascaded,
+          entities: cascaded.entities.map(e =>
+            e.id === entityId
+              ? { ...e, subtypes: (e.subtypes ?? []).filter(st => st.id !== subtypeId) }
+              : e
+          ),
+        };
+      });
     },
 
     updateSubtype: (entityId, subtypeId, updates) => {
@@ -399,7 +410,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
       }));
     },
 
-    addRelationship: (sourceId, targetId, type) => {
+    addRelationship: (sourceId, targetId, type, scope) => {
       if (get().readOnly) return;
       const { entities } = get();
       // 엔티티가 모두 존재할 때만 히스토리를 남긴다 (erdOps도 동일하게 no-op 처리)
@@ -410,8 +421,8 @@ export const useERDStore = create<ERDStore>((set, get) => {
       const fkColumnIds = source.columns.filter(c => c.isPK).map(() => genId());
       const ids = { relationshipId, fkColumnIds };
       pushHistory('addRelationship');
-      set(s => erdOps.addRelationship(docOf(s), sourceId, targetId, type, undefined, ids).doc);
-      emit('addRelationship', [sourceId, targetId, type, undefined, ids]);
+      set(s => erdOps.addRelationship(docOf(s), sourceId, targetId, type, undefined, ids, scope).doc);
+      emit('addRelationship', [sourceId, targetId, type, undefined, ids, scope]);
     },
 
     updateRelationshipType: (id, newType) => {
@@ -445,6 +456,16 @@ export const useERDStore = create<ERDStore>((set, get) => {
       pushHistory(`relAnchor:${id}:${end}`);
       set(st => erdOps.updateRelationshipAnchor(docOf(st), id, end, anchor));
       emit('updateRelationshipAnchor', [id, end, anchor]);
+    },
+
+    // 관계의 부모/자식 side를 특정 서브타입으로 스코프 지정(subtypeId=null이면 엔티티 전체로 해제)
+    updateRelationshipSubtypeScope: (id, side, subtypeId) => {
+      if (get().readOnly) return;
+      const s = get();
+      if (!s.relationships.find(r => r.id === id)) return;
+      pushHistory(`relSubtypeScope:${id}:${side}`);
+      set(st => erdOps.updateRelationshipSubtypeScope(docOf(st), id, side, subtypeId).doc);
+      emit('updateRelationshipSubtypeScope', [id, side, subtypeId]);
     },
 
     deleteRelationship: (id) => {

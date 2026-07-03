@@ -21,6 +21,7 @@ export type OpName =
   | 'updateRelationshipType'
   | 'updateRelationshipSides'
   | 'updateRelationshipAnchor'
+  | 'updateRelationshipSubtypeScope'
   | 'deleteRelationship'
   | 'addMemo'
   | 'updateMemo'
@@ -41,10 +42,11 @@ export function applyOp(doc: ErdDoc, { op, args }: Op): ErdDoc {
     case 'updateColumn': return erdOps.updateColumn(doc, args[0], args[1], args[2]);
     case 'deleteColumn': return erdOps.deleteColumn(doc, args[0], args[1]);
     case 'moveColumn': return erdOps.moveColumn(doc, args[0], args[1], args[2]);
-    case 'addRelationship': return erdOps.addRelationship(doc, args[0], args[1], args[2], args[3], args[4]).doc;
+    case 'addRelationship': return erdOps.addRelationship(doc, args[0], args[1], args[2], args[3], args[4], args[5]).doc;
     case 'updateRelationshipType': return erdOps.updateRelationshipType(doc, args[0], args[1]).doc;
     case 'updateRelationshipSides': return erdOps.updateRelationshipSides(doc, args[0], args[1]).doc;
     case 'updateRelationshipAnchor': return erdOps.updateRelationshipAnchor(doc, args[0], args[1], args[2]);
+    case 'updateRelationshipSubtypeScope': return erdOps.updateRelationshipSubtypeScope(doc, args[0], args[1], args[2]).doc;
     case 'deleteRelationship': return erdOps.deleteRelationship(doc, args[0]).doc;
     case 'addMemo': return erdOps.addMemo(doc, args[0]).doc;
     case 'updateMemo': return erdOps.updateMemo(doc, args[0], args[1]);

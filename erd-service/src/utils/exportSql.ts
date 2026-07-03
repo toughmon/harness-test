@@ -34,9 +34,9 @@ function columnLine(col: Column): string {
 // - 구분자(판별자) 컬럼명 = SubSet 이름. 완전(complete)이면 NOT NULL.
 // - 컬럼명이 슈퍼타입/다른 서브타입과 충돌하면 _서브타입명 접미사로 회피.
 // - exclusive면 "구분자 값에 해당하지 않는 서브타입 컬럼은 NULL" CHECK 생성, 불완전이면 구분자 NULL(슈퍼타입만) 케이스 허용.
-function buildSubtypeDDL(entity: Entity): { columnLines: string[]; checkLines: string[] } {
+function buildSubtypeDDL(entity: Entity): { columnLines: string[]; checkLines: string[]; fkColumns: { column: Column; name: string }[] } {
   const subtypes = entity.subtypes ?? [];
-  if (subtypes.length === 0) return { columnLines: [], checkLines: [] };
+  if (subtypes.length === 0) return { columnLines: [], checkLines: [], fkColumns: [] };
 
   const discName = entity.subsetName?.trim() || 'SubSet';
   const complete = entity.subtypeComplete ?? false;
@@ -53,6 +53,7 @@ function buildSubtypeDDL(entity: Entity): { columnLines: string[]; checkLines: s
 
   // 서브타입 고유 컬럼 (충돌 회피 후 nullable로 평탄화)
   const renamed: { subtype: Subtype; cols: string[] }[] = [];
+  const fkColumns: { column: Column; name: string }[] = [];
   for (const st of subtypes) {
     const cols: string[] = [];
     for (const c of st.columns) {
@@ -62,6 +63,7 @@ function buildSubtypeDDL(entity: Entity): { columnLines: string[]; checkLines: s
       const cmt = [st.name, c.logicalName?.trim()].filter(Boolean).join(': ');
       columnLines.push(`  ${[q(name), mysqlType(c), 'NULL', `COMMENT ${comment(cmt)}`].join(' ')}`);
       cols.push(name);
+      if (c.isFK) fkColumns.push({ column: c, name });
     }
     renamed.push({ subtype: st, cols });
   }
@@ -86,7 +88,7 @@ function buildSubtypeDDL(entity: Entity): { columnLines: string[]; checkLines: s
     }
   }
 
-  return { columnLines, checkLines };
+  return { columnLines, checkLines, fkColumns };
 }
 
 // 부모 우선 정렬 (Kahn) — FK 참조 기준, 순환은 원래 순서대로 뒤에 붙임
@@ -95,8 +97,9 @@ function sortParentsFirst(entities: Entity[]): Entity[] {
   const inDeg = new Map(entities.map(e => [e.id, 0]));
   const children = new Map<string, string[]>(entities.map(e => [e.id, []]));
   for (const e of entities) {
+    const allCols = [...e.columns, ...(e.subtypes?.flatMap(st => st.columns) ?? [])];
     const parents = new Set(
-      e.columns.filter(c => c.isFK && c.refEntityId && ids.has(c.refEntityId) && c.refEntityId !== e.id)
+      allCols.filter(c => c.isFK && c.refEntityId && ids.has(c.refEntityId) && c.refEntityId !== e.id)
         .map(c => c.refEntityId!)
     );
     for (const p of parents) {
@@ -140,14 +143,20 @@ export function generateMySQLDDL(entities: Entity[]): string {
     // 서브타입 배타성/도메인 CHECK 제약
     lines.push(...sub.checkLines);
 
-    // FK 제약 — 같은 부모를 참조하는 컬럼끼리 복합 제약으로 묶음
-    const fkGroups = new Map<string, Column[]>();
-    for (const c of entity.columns) {
+    // FK 제약 — 같은 부모를 참조하는 컬럼끼리 복합 제약으로 묶음(서브타입 소유 FK도 포함 —
+    // buildSubtypeDDL이 컬럼명 충돌 회피로 재명명했을 수 있어 그 최종 이름을 그대로 쓴다)
+    const fkCandidates: { column: Column; name: string }[] = [
+      ...entity.columns.map(c => ({ column: c, name: c.name })),
+      ...sub.fkColumns,
+    ];
+    const fkGroups = new Map<string, { column: Column; name: string }[]>();
+    for (const cand of fkCandidates) {
+      const c = cand.column;
       if (!c.isFK || !c.refEntityId || !byId.has(c.refEntityId)) continue;
       const parent = byId.get(c.refEntityId)!;
       if (!parent.columns.some(pc => pc.id === c.refColumnId)) continue; // 참조 컬럼 소실 시 제약 생략
       const group = fkGroups.get(c.refEntityId) ?? [];
-      group.push(c);
+      group.push(cand);
       fkGroups.set(c.refEntityId, group);
     }
     for (const [refId, cols] of fkGroups) {
@@ -155,9 +164,9 @@ export function generateMySQLDDL(entities: Entity[]): string {
       let name = `fk_${entity.name}_${parent.name}`;
       for (let i = 2; usedFkNames.has(name); i++) name = `fk_${entity.name}_${parent.name}_${i}`;
       usedFkNames.add(name);
-      const refCols = cols.map(c => parent.columns.find(pc => pc.id === c.refColumnId)!);
+      const refCols = cols.map(cand => parent.columns.find(pc => pc.id === cand.column.refColumnId)!);
       lines.push(
-        `  CONSTRAINT ${q(name)} FOREIGN KEY (${cols.map(c => q(c.name)).join(', ')})` +
+        `  CONSTRAINT ${q(name)} FOREIGN KEY (${cols.map(cand => q(cand.name)).join(', ')})` +
         ` REFERENCES ${q(parent.name)} (${refCols.map(c => q(c.name)).join(', ')})`
       );
     }

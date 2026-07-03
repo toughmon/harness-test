@@ -87,6 +87,9 @@ export interface Relationship {
   // ── 끝점 수동 부착 위치 — 없으면 자동(sideOf+슬롯 분산). 더블클릭으로 제거(자동 복귀) ──
   sourceAnchor?: EndpointAnchor;       // 부모(source) 끝점 수동 위치
   targetAnchor?: EndpointAnchor;       // 자식(target) 끝점 수동 위치
+  // ── 서브타입 스코프 — 이 관계가 특정 서브타입 전용임을 표시. optional이라 기존 저장 파일과 호환 ──
+  sourceSubtypeId?: string;  // 부모가 특정 서브타입일 때(라벨 표시용 — 서브타입은 PK가 없어 FK 생성엔 영향 없음)
+  targetSubtypeId?: string;  // 자식이 특정 서브타입 전용일 때 — 자동 FK 컬럼이 그 서브타입의 columns에 위치
 }
 
 export interface Memo {
