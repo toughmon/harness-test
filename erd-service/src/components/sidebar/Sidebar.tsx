@@ -11,7 +11,7 @@ export default function Sidebar() {
   const { entities, memos, selectedEntityId, selectEntity, addEntity, addMemo } = useERDStore();
   const readOnly = useERDStore(s => s.readOnly);
   const { status } = useAuthStore();
-  const { list, currentId, open, startNew, rename, remove } = useDiagramStore();
+  const { list, currentId, open, startNew, rename, duplicate, remove } = useDiagramStore();
   const openMcp = useMcpStore(s => s.openModal);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -137,6 +137,14 @@ export default function Sidebar() {
                       aria-label={`Rename ${d.name}`}
                     >
                       edit
+                    </button>
+                    <button
+                      className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-primary cursor-pointer shrink-0"
+                      onClick={e => { e.stopPropagation(); duplicate(d.id); }}
+                      title="복제"
+                      aria-label={`Duplicate ${d.name}`}
+                    >
+                      content_copy
                     </button>
                     <button
                       className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-red-400 cursor-pointer shrink-0"

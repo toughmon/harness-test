@@ -33,6 +33,7 @@ interface DiagramState {
   startNew: () => Promise<void>;
   rename: (id: number) => Promise<void>;
   remove: (id: number) => Promise<void>;
+  duplicate: (id: number) => Promise<void>;
   confirmDiscard: () => Promise<boolean>;
   reset: () => void;
   restoreLastOpened: () => Promise<void>;
@@ -144,6 +145,23 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     if (!name) return;
     await api.renameDiagram(id, name);
     await get().fetchList();
+  },
+
+  duplicate: async (id) => {
+    const current = get().list.find(d => d.id === id);
+    const name = await promptDialog({
+      title: '다이어그램 복제',
+      message: '복제본의 이름을 입력하세요',
+      defaultValue: current ? `${current.name} 사본` : '복제본',
+    });
+    if (!name) return;
+    try {
+      const diagram = await api.getDiagram(id);
+      await api.createDiagram(name, diagram.data);
+      await get().fetchList();
+    } catch (err) {
+      alertDialog(`복제에 실패했습니다.\n${(err as Error).message}`, '복제 실패');
+    }
   },
 
   remove: async (id) => {
