@@ -43,6 +43,11 @@ interface ERDStore {
   selectedEntityId: string | null;
   selectedEdgeId: string | null;
   selectedMemoId: string | null;
+  // 드래그 박스(러버밴드)로 여러 엔티티/메모를 한 번에 선택했을 때의 id 목록.
+  // 단일 선택 시에도 항상 갱신되어(길이 0 또는 1) selectedEntityId/selectedMemoId와 일관됨.
+  selectedEntityIds: string[];
+  selectedMemoIds: string[];
+  setSelection: (entityIds: string[], memoIds: string[]) => void;
   pendingConnection: { sourceId: string; sourceHandle: string } | null;
 
   // 협업 읽기 전용 모드 — 공유 뷰어일 때 true. 모든 로컬 변형/undo를 막는다(방어).
@@ -66,7 +71,6 @@ interface ERDStore {
   addMemo: (pos?: { x: number; y: number }) => void;
   updateMemo: (id: string, updates: Partial<Omit<Memo, 'id'>>) => void;
   deleteMemo: (id: string) => void;
-  updateMemoPosition: (id: string, x: number, y: number) => void;
   updateMemoSize: (id: string, w: number, h: number) => void;
 
   addColumn: (entityId: string) => void;
@@ -95,8 +99,14 @@ interface ERDStore {
   updateRelationshipSubtypeScope: (id: string, side: 'source' | 'target', subtypeId: string | null) => void;
   deleteRelationship: (id: string) => void;
 
-  updateNodePosition: (id: string, pos: NodePosition) => void;
+  // 엔티티/메모 위치 일괄 이동(그룹 드래그) — 여러 개를 한 번에 옮겨도 Undo 1회로 전체 복원됨
+  moveNodes: (
+    entityMoves: { id: string; pos: NodePosition }[],
+    memoMoves: { id: string; x: number; y: number }[],
+  ) => void;
   setAllPositions: (positions: Record<string, NodePosition>) => void;
+  // 다중 선택된 엔티티/메모 일괄 삭제(Undo 1회로 전체 복원됨)
+  deleteMany: (entityIds: string[], memoIds: string[]) => void;
   setPendingConnection: (val: ERDStore['pendingConnection']) => void;
 
   loadData: (
@@ -149,6 +159,8 @@ export const useERDStore = create<ERDStore>((set, get) => {
     selectedEntityId: null,
     selectedEdgeId: null,
     selectedMemoId: null,
+    selectedEntityIds: [],
+    selectedMemoIds: [],
     pendingConnection: null,
 
     readOnly: false,
@@ -216,15 +228,27 @@ export const useERDStore = create<ERDStore>((set, get) => {
           selectedEntityId: s.selectedEntityId === id ? null : s.selectedEntityId,
           // 삭제로 사라진 관계를 선택 중이었다면 엣지 선택 해제
           selectedEdgeId: doc.relationships.some(r => r.id === s.selectedEdgeId) ? s.selectedEdgeId : null,
+          selectedEntityIds: s.selectedEntityIds.filter(eid => eid !== id),
         };
       });
       emit('deleteEntity', [id]);
     },
 
-    // 엔티티/엣지/메모 선택은 상호 배타
-    selectEntity: (id) => set({ selectedEntityId: id, selectedEdgeId: null, selectedMemoId: null }),
-    selectEdge: (id) => set({ selectedEdgeId: id, selectedEntityId: null, selectedMemoId: null }),
-    selectMemo: (id) => set({ selectedMemoId: id, selectedEntityId: null, selectedEdgeId: null }),
+    // 엔티티/엣지/메모 선택은 상호 배타. 다중 선택 목록도 함께 초기화(단일 선택으로 전환).
+    selectEntity: (id) => set({ selectedEntityId: id, selectedEdgeId: null, selectedMemoId: null, selectedEntityIds: [], selectedMemoIds: [] }),
+    selectEdge: (id) => set({ selectedEdgeId: id, selectedEntityId: null, selectedMemoId: null, selectedEntityIds: [], selectedMemoIds: [] }),
+    selectMemo: (id) => set({ selectedMemoId: id, selectedEntityId: null, selectedEdgeId: null, selectedEntityIds: [], selectedMemoIds: [] }),
+
+    // 러버밴드 박스 선택(또는 Ctrl/Shift 클릭)으로 React Flow가 선택한 엔티티/메모 id 목록을 반영.
+    // 정확히 1개면 기존 단일 선택 id도 함께 갱신해 상세 편집 패널이 그대로 뜨도록 한다.
+    // 엣지 선택(selectedEdgeId)은 onEdgeClick이 별도 관리하므로, 실제로 노드가 선택됐을 때만 해제한다.
+    setSelection: (entityIds, memoIds) => set(s => ({
+      selectedEntityIds: entityIds,
+      selectedMemoIds: memoIds,
+      selectedEntityId: entityIds.length === 1 ? entityIds[0] : null,
+      selectedMemoId: memoIds.length === 1 ? memoIds[0] : null,
+      selectedEdgeId: (entityIds.length + memoIds.length) > 0 ? null : s.selectedEdgeId,
+    })),
 
     addMemo: (pos) => {
       if (get().readOnly) return;
@@ -251,15 +275,9 @@ export const useERDStore = create<ERDStore>((set, get) => {
       set(s => ({
         ...erdOps.deleteMemo(docOf(s), id),
         selectedMemoId: s.selectedMemoId === id ? null : s.selectedMemoId,
+        selectedMemoIds: s.selectedMemoIds.filter(mid => mid !== id),
       }));
       emit('deleteMemo', [id]);
-    },
-
-    updateMemoPosition: (id, x, y) => {
-      if (get().readOnly) return;
-      pushHistory(`moveMemo:${id}`);
-      set(s => erdOps.updateMemo(docOf(s), id, { x, y }));
-      emit('updateMemo', [id, { x, y }]);
     },
 
     updateMemoSize: (id, w, h) => {
@@ -480,11 +498,26 @@ export const useERDStore = create<ERDStore>((set, get) => {
       emit('deleteRelationship', [id]);
     },
 
-    updateNodePosition: (id, pos) => {
+    // 단일 노드든 러버밴드로 묶인 그룹이든, 한 번의 드래그로 함께 이동한 엔티티/메모를
+    // 전부 여기로 모아 히스토리 1회만 남긴다(그룹 이동을 Undo 한 번으로 되돌리기 위함).
+    moveNodes: (entityMoves, memoMoves) => {
       if (get().readOnly) return;
-      pushHistory(`movePos:${id}`);
-      set(s => ({ nodePositions: { ...s.nodePositions, [id]: pos } }));
-      emit('setNodePosition', [id, pos]);
+      if (entityMoves.length === 0 && memoMoves.length === 0) return;
+      const key = `moveNodes:${[...entityMoves.map(m => m.id), ...memoMoves.map(m => m.id)].sort().join(',')}`;
+      pushHistory(key);
+      set(s => ({
+        nodePositions: entityMoves.length
+          ? { ...s.nodePositions, ...Object.fromEntries(entityMoves.map(m => [m.id, m.pos])) }
+          : s.nodePositions,
+        memos: memoMoves.length
+          ? s.memos.map(m => {
+              const mv = memoMoves.find(x => x.id === m.id);
+              return mv ? { ...m, x: mv.x, y: mv.y } : m;
+            })
+          : s.memos,
+      }));
+      entityMoves.forEach(({ id, pos }) => emit('setNodePosition', [id, pos]));
+      memoMoves.forEach(({ id, x, y }) => emit('updateMemo', [id, { x, y }]));
     },
 
     // 자동 정렬 등 전체 위치 일괄 변경 (히스토리 1회). op 어휘 밖이라 협업 시 스냅샷 백스톱으로 전파.
@@ -494,11 +527,33 @@ export const useERDStore = create<ERDStore>((set, get) => {
       set({ nodePositions: positions });
     },
 
+    // 다중 선택 일괄 삭제 — deleteEntity/deleteMemo를 한 번의 히스토리 스냅샷 안에서 순차 적용
+    deleteMany: (entityIds, memoIds) => {
+      if (get().readOnly) return;
+      if (entityIds.length === 0 && memoIds.length === 0) return;
+      pushHistory('deleteMany');
+      set(s => {
+        let doc = docOf(s);
+        entityIds.forEach(id => { doc = erdOps.deleteEntity(doc, id); });
+        memoIds.forEach(id => { doc = erdOps.deleteMemo(doc, id); });
+        return {
+          ...doc,
+          selectedEntityId: s.selectedEntityId && entityIds.includes(s.selectedEntityId) ? null : s.selectedEntityId,
+          selectedMemoId: s.selectedMemoId && memoIds.includes(s.selectedMemoId) ? null : s.selectedMemoId,
+          selectedEdgeId: doc.relationships.some(r => r.id === s.selectedEdgeId) ? s.selectedEdgeId : null,
+          selectedEntityIds: [],
+          selectedMemoIds: [],
+        };
+      });
+      entityIds.forEach(id => emit('deleteEntity', [id]));
+      memoIds.forEach(id => emit('deleteMemo', [id]));
+    },
+
     setPendingConnection: (val) => set({ pendingConnection: val }),
 
     loadData: (entities, relationships, positions, memos = [], opts) => {
       if (!opts?.silent) pushHistory('loadData');
-      set({ entities, relationships, nodePositions: positions, memos, selectedEntityId: null, selectedEdgeId: null, selectedMemoId: null });
+      set({ entities, relationships, nodePositions: positions, memos, selectedEntityId: null, selectedEdgeId: null, selectedMemoId: null, selectedEntityIds: [], selectedMemoIds: [] });
     },
   };
 });

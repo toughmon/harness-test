@@ -5,8 +5,12 @@ import { Memo, MEMO_COLORS } from '../../types/erd';
 
 export default function MemoNode({ data }: NodeProps) {
   const memo = data as unknown as Memo;
-  const { updateMemo, deleteMemo, selectMemo, selectedMemoId, updateMemoSize } = useERDStore();
+  const { updateMemo, deleteMemo, selectMemo, selectedMemoId, selectedEntityIds, selectedMemoIds, updateMemoSize } = useERDStore();
   const isSelected = selectedMemoId === memo.id;
+  // 러버밴드로 여러 개(엔티티 포함)를 선택한 상태에서 그중 이 메모를 단순 클릭(드래그 아님)한
+  // 경우까지 selectMemo가 단일 선택으로 좁혀버리면, React Flow 내부 선택은 그대로 유지된 채
+  // 우리 쪽 다중 선택 상태만 깨져 패널·Delete 동작이 어긋난다. 이미 그룹의 일부라면 건드리지 않는다.
+  const isPartOfMultiSelection = selectedMemoIds.includes(memo.id) && selectedEntityIds.length + selectedMemoIds.length > 1;
   const taRef = useRef<HTMLTextAreaElement>(null);
   const focusedRef = useRef(false);
 
@@ -25,7 +29,7 @@ export default function MemoNode({ data }: NodeProps) {
       style={{ background: memo.color, minWidth: 120, minHeight: 80 }}
       data-testid="memo-node"
       data-memo-id={memo.id}
-      onClick={(e) => { e.stopPropagation(); selectMemo(memo.id); }}
+      onClick={(e) => { e.stopPropagation(); if (!isPartOfMultiSelection) selectMemo(memo.id); }}
     >
       <NodeResizer
         isVisible={isSelected}

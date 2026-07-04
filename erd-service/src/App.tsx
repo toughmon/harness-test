@@ -5,6 +5,7 @@ import ERDCanvas from './components/canvas/ERDCanvas';
 import EntityEditPanel from './components/panels/EntityEditPanel';
 import RelationshipEditPanel from './components/panels/RelationshipEditPanel';
 import MemoEditPanel from './components/panels/MemoEditPanel';
+import MultiSelectPanel from './components/panels/MultiSelectPanel';
 import AuthModal from './components/auth/AuthModal';
 import DialogModal from './components/common/DialogModal';
 import McpConnectModal from './components/mcp/McpConnectModal';
@@ -26,12 +27,15 @@ function parseShareToken(): string | null {
 }
 
 function App() {
-  const { undo, redo, deleteEntity, deleteRelationship, deleteMemo, selectMemo } = useERDStore();
+  const { undo, redo, deleteEntity, deleteRelationship, deleteMemo, deleteMany, selectMemo } = useERDStore();
   const entities = useERDStore(s => s.entities);
   const relationships = useERDStore(s => s.relationships);
   const selectedEntityId = useERDStore(s => s.selectedEntityId);
   const selectedEdgeId = useERDStore(s => s.selectedEdgeId);
   const selectedMemoId = useERDStore(s => s.selectedMemoId);
+  const selectedEntityIds = useERDStore(s => s.selectedEntityIds);
+  const selectedMemoIds = useERDStore(s => s.selectedMemoIds);
+  const isMultiSelect = selectedEntityIds.length + selectedMemoIds.length > 1;
   const { modalOpen, init, status } = useAuthStore();
   const readOnly = useERDStore(s => s.readOnly);
   const autoSave = useDiagramStore(s => s.autoSave);
@@ -87,7 +91,16 @@ function App() {
         }
         return;
       }
-      if (e.key === 'Delete' && selectedEntityId) {
+      if (e.key === 'Delete' && isMultiSelect) {
+        e.preventDefault();
+        const n = selectedEntityIds.length + selectedMemoIds.length;
+        confirmDialog({
+          title: '일괄 삭제',
+          message: `선택한 ${n}개 항목을 삭제할까요?\n엔티티에 연결된 관계선과 자동 생성 FK 컬럼도 함께 제거됩니다.`,
+          confirmText: '삭제',
+          danger: true,
+        }).then(ok => { if (ok) deleteMany(selectedEntityIds, selectedMemoIds); });
+      } else if (e.key === 'Delete' && selectedEntityId) {
         e.preventDefault();
         const entity = entities.find(en => en.id === selectedEntityId);
         if (!entity) return;
@@ -122,7 +135,7 @@ function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [undo, redo, selectedEntityId, entities, deleteEntity, selectedEdgeId, relationships, deleteRelationship, selectedMemoId, deleteMemo, selectMemo, readOnly]);
+  }, [undo, redo, selectedEntityId, entities, deleteEntity, selectedEdgeId, relationships, deleteRelationship, selectedMemoId, deleteMemo, selectMemo, readOnly, isMultiSelect, selectedEntityIds, selectedMemoIds, deleteMany]);
 
   return (
     <div className="flex flex-col w-screen h-screen overflow-hidden bg-background text-on-surface font-sans">
@@ -130,7 +143,7 @@ function App() {
       <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />
         <ERDCanvas />
-        {selectedEdgeId ? <RelationshipEditPanel /> : selectedMemoId ? <MemoEditPanel /> : <EntityEditPanel />}
+        {isMultiSelect ? <MultiSelectPanel /> : selectedEdgeId ? <RelationshipEditPanel /> : selectedMemoId ? <MemoEditPanel /> : <EntityEditPanel />}
       </div>
       {modalOpen && <AuthModal />}
       {mcpModalOpen && <McpConnectModal />}

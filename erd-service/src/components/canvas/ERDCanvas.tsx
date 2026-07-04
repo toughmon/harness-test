@@ -13,11 +13,13 @@ import {
   Node,
   Edge,
   NodeChange,
+  OnSelectionChangeParams,
   BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useERDStore } from '../../store/erdStore';
 import { RelationshipType } from '../../types/erd';
+import type { NodePosition } from '../../core/erdOps';
 import EntityNode from '../nodes/EntityNode';
 import MemoNode from '../nodes/MemoNode';
 import RelationshipEdge from '../edges/RelationshipEdge';
@@ -123,8 +125,8 @@ function PaneDoubleClickHandler() {
 export default function ERDCanvas() {
   const {
     entities, relationships, nodePositions, memos,
-    selectEntity, selectEdge, selectMemo, addRelationship, updateNodePosition,
-    addMemo, updateMemoPosition,
+    selectEntity, selectEdge, selectMemo, addRelationship, moveNodes,
+    addMemo, setSelection,
   } = useERDStore();
   const readOnly = useERDStore(s => s.readOnly);
 
@@ -178,25 +180,49 @@ export default function ERDCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState(rfNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
 
-  // Sync store → React Flow
-  useEffect(() => { setNodes(rfNodes); }, [rfNodes, setNodes]);
+  // Sync store → React Flow. 러버밴드 박스 선택은 React Flow 내부 selected 플래그만 바꾸고
+  // 스토어(entities/nodePositions/memos)는 건드리지 않지만, 위치 이동 등으로 rfNodes가
+  // 재계산될 때 이 selected를 이어받지 않으면(순수 재생성이라) 방금 선택한 것이 사라져 보인다 —
+  // 기존 selected 값을 유지해 병합한다.
+  useEffect(() => {
+    setNodes(current => rfNodes.map(n => {
+      const prev = current.find(c => c.id === n.id);
+      return prev?.selected ? { ...n, selected: true } : n;
+    }));
+  }, [rfNodes, setNodes]);
   useEffect(() => { setEdges(rfEdges); }, [rfEdges, setEdges]);
 
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
     onNodesChange(changes);
+    // 드래그 종료 시점의 position 변경을 전부 모아 한 번에 커밋 — 여러 개(러버밴드로 묶인 그룹)를
+    // 동시에 옮겨도 Undo 한 번으로 전체가 복원되도록 스토어에도 그룹 그대로 전달한다.
+    const entityMoves: { id: string; pos: NodePosition }[] = [];
+    const memoMoves: { id: string; x: number; y: number }[] = [];
     changes.forEach((change) => {
       if (change.type === 'position' && change.position && !change.dragging) {
         if (memos.some(m => m.id === change.id)) {
-          updateMemoPosition(change.id, change.position.x, change.position.y);
+          memoMoves.push({ id: change.id, x: change.position.x, y: change.position.y });
         } else {
-          updateNodePosition(change.id, change.position);
+          entityMoves.push({ id: change.id, pos: change.position });
         }
       }
       // NOTE: dimensions 변화는 onNodesChange로만 처리 — 스토어 업데이트 금지.
       // MemoNode.tsx의 NodeResizer.onResizeEnd에서 크기를 저장한다.
       // dimensions → updateMemoSize → setNodes 루프가 모든 노드를 visibility:hidden으로 리셋함.
     });
-  }, [onNodesChange, updateNodePosition, updateMemoPosition, memos]);
+    if (entityMoves.length > 0 || memoMoves.length > 0) {
+      moveNodes(entityMoves, memoMoves);
+    }
+  }, [onNodesChange, moveNodes, memos]);
+
+  // 러버밴드 박스 선택/Ctrl·Shift 클릭 등 React Flow의 선택 변경을 스토어에 반영
+  // (우측 패널의 다중 선택 표시·Delete 키 일괄 삭제·그룹 이동 후 선택 유지에 사용)
+  const handleSelectionChange = useCallback(({ nodes: selNodes }: OnSelectionChangeParams) => {
+    setSelection(
+      selNodes.filter(n => n.type === 'entity').map(n => n.id),
+      selNodes.filter(n => n.type === 'memo').map(n => n.id),
+    );
+  }, [setSelection]);
 
   // 드래그 시작 노드 추적 — 상위(부모)에서 하위(자식)로 드래그하는 순서를 보장
   // (Loose 모드에서 target 핸들로 드래그를 시작하면 RF가 source/target을 뒤집어 전달함)
@@ -256,7 +282,8 @@ export default function ERDCanvas() {
         onConnectStart={onConnectStart}
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
-        onPaneClick={() => { selectEntity(null); selectEdge(null); selectMemo(null); }}
+        onSelectionChange={handleSelectionChange}
+        onPaneClick={() => { selectEntity(null); selectEdge(null); selectMemo(null); setSelection([], []); }}
         connectionMode={ConnectionMode.Loose}
         nodesDraggable={!readOnly}
         nodesConnectable={!readOnly}
