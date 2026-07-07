@@ -47,4 +47,20 @@ export async function initSchema(db) {
     )
   `);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_mcp_tokens_user ON mcp_tokens(user_id)`);
+  // 다이어그램 공유 링크 — 원문 토큰은 저장하지 않고 sha256 해시만 보관.
+  // 링크별 고정 역할(viewer/editor), 개별 폐기는 revoked_at(soft delete)로.
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS diagram_shares (
+      id           SERIAL PRIMARY KEY,
+      diagram_id   INTEGER      NOT NULL REFERENCES diagrams(id) ON DELETE CASCADE,
+      token_hash   VARCHAR(64)  NOT NULL UNIQUE,
+      role         VARCHAR(10)  NOT NULL DEFAULT 'viewer',
+      label        VARCHAR(100),
+      created_by   INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at   TIMESTAMP    NOT NULL DEFAULT now(),
+      last_used_at TIMESTAMP,
+      revoked_at   TIMESTAMP
+    )
+  `);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_diagram_shares_diagram ON diagram_shares(diagram_id)`);
 }

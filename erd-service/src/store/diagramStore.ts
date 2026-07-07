@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api, DiagramMeta } from '../api/client';
 import { useERDStore } from './erdStore';
+import { useCollabStore } from './collabStore';
 import { toERDData, fromERDData } from '../utils/erdData';
 import { alertDialog, confirmDialog, promptDialog } from './dialogStore';
 
@@ -32,6 +33,7 @@ interface DiagramState {
   startNew: () => Promise<void>;
   rename: (id: number) => Promise<void>;
   remove: (id: number) => Promise<void>;
+  duplicate: (id: number) => Promise<void>;
   confirmDiscard: () => Promise<boolean>;
   reset: () => void;
   restoreLastOpened: () => Promise<void>;
@@ -64,6 +66,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   open: async (id) => {
     if (!(await get().confirmDiscard())) return;
+    // 다른 다이어그램/공유 세션을 열고 있었다면 협업 연결을 끊는다(readOnly도 해제됨)
+    useCollabStore.getState().disconnect();
     const diagram = await api.getDiagram(id);
     const { entities, relationships, positions, memos } = fromERDData(diagram.data);
     suppressDirty = true;
@@ -123,6 +127,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   // 빈 캔버스에서 새로 시작 — 저장은 DB 저장 버튼에서 이름 입력으로
   startNew: async () => {
     if (!(await get().confirmDiscard())) return;
+    useCollabStore.getState().disconnect();
     suppressDirty = true;
     useERDStore.getState().loadData([], [], {}, []);
     suppressDirty = false;
@@ -140,6 +145,23 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     if (!name) return;
     await api.renameDiagram(id, name);
     await get().fetchList();
+  },
+
+  duplicate: async (id) => {
+    const current = get().list.find(d => d.id === id);
+    const name = await promptDialog({
+      title: '다이어그램 복제',
+      message: '복제본의 이름을 입력하세요',
+      defaultValue: current ? `${current.name} 사본` : '복제본',
+    });
+    if (!name) return;
+    try {
+      const diagram = await api.getDiagram(id);
+      await api.createDiagram(name, diagram.data);
+      await get().fetchList();
+    } catch (err) {
+      alertDialog(`복제에 실패했습니다.\n${(err as Error).message}`, '복제 실패');
+    }
   },
 
   remove: async (id) => {
@@ -160,6 +182,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   reset: () => {
+    useCollabStore.getState().disconnect();
     saveLastId(null);
     set({ list: [], currentId: null, dirty: false, saving: false });
   },

@@ -9,7 +9,7 @@ interface AuthState {
   status: 'loading' | 'authed' | 'anon';
   modalOpen: boolean;
 
-  init: () => Promise<void>;
+  init: (skipRestore?: boolean) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -24,14 +24,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   status: 'loading',
   modalOpen: false,
 
-  init: async () => {
+  init: async (skipRestore) => {
     if (initStarted) return;
     initStarted = true;
     try {
       const user = await api.me();
       set({ user, status: 'authed' });
       await useDiagramStore.getState().fetchList();
-      await useDiagramStore.getState().restoreLastOpened();
+      // 공유 링크로 진입한 경우(skipRestore) 내 마지막 다이어그램 복원을 건너뛴다(공유 다이어그램이 우선).
+      if (!skipRestore) await useDiagramStore.getState().restoreLastOpened();
     } catch {
       set({ user: null, status: 'anon' });
     }

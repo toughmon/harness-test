@@ -24,6 +24,7 @@ export interface ErdDoc {
 }
 
 export interface AddMemoOptions {
+  id?: string;   // 협업 시 피어 간 동일 id 재현용(미지정 시 새로 생성)
   x?: number;
   y?: number;
   text?: string;
@@ -33,7 +34,7 @@ export interface AddMemoOptions {
 }
 
 export function addMemo(doc: ErdDoc, opts: AddMemoOptions = {}): { doc: ErdDoc; memoId: string } {
-  const id = genId();
+  const id = opts.id ?? genId();
   const newMemo: Memo = {
     id,
     text: opts.text ?? '',
@@ -87,15 +88,29 @@ export function fkFlagsFor(type: RelationshipType): { isPK: boolean; isNN: boole
   };
 }
 
+// FK 컬럼이 실제로 위치하는 배열 — subtypeId 없으면 엔티티 최상위 columns, 있으면 그
+// 서브타입의 columns(서브타입이 없어졌으면 안전하게 엔티티 columns로 폴백).
+function fkHost(entity: Entity, subtypeId?: string): Column[] {
+  if (!subtypeId) return entity.columns;
+  return entity.subtypes?.find(st => st.id === subtypeId)?.columns ?? entity.columns;
+}
+
+// fkHost가 가리키는 배열을 교체한 새 Entity를 반환
+function withFkHost(entity: Entity, subtypeId: string | undefined, columns: Column[]): Entity {
+  if (!subtypeId || !entity.subtypes?.some(st => st.id === subtypeId)) return { ...entity, columns };
+  return { ...entity, subtypes: entity.subtypes.map(st => (st.id === subtypeId ? { ...st, columns } : st)) };
+}
+
 // FK 컬럼 생성 (상위 엔티티 PK → 하위 엔티티 FK, 플래그는 관계 타입에 따름)
 export function buildFKColumns(
   sourceEntity: Entity,
   sourceId: string,
   flags: { isPK: boolean; isNN: boolean },
   namePrefix = '',  // 자기 참조 시 'parent_' 등으로 PK명 충돌 방지
+  ids?: string[],   // 협업 시 피어 간 동일 FK 컬럼 id 재현용(PK 컬럼 순서로 정렬)
 ): Column[] {
-  return sourceEntity.columns.filter(c => c.isPK).map(pk => ({
-    id: genId(),
+  return sourceEntity.columns.filter(c => c.isPK).map((pk, i) => ({
+    id: ids?.[i] ?? genId(),
     name: namePrefix + pk.name,
     logicalName: pk.logicalName ?? '',
     type: pk.type as ColumnType,
@@ -140,6 +155,7 @@ function defaultIdColumn(): Column {
 }
 
 export interface AddEntityOptions {
+  id?: string;               // 협업 시 피어 간 동일 id 재현용(미지정 시 새로 생성)
   name?: string;
   logicalName?: string;
   description?: string;
@@ -150,7 +166,7 @@ export interface AddEntityOptions {
 }
 
 export function addEntity(doc: ErdDoc, opts: AddEntityOptions = {}): { doc: ErdDoc; entityId: string } {
-  const id = genId();
+  const id = opts.id ?? genId();
   const count = doc.entities.length + 1;
   const withDefaultId = opts.withDefaultId ?? true;
   const columns = opts.columns ?? (withDefaultId ? [defaultIdColumn()] : []);
@@ -185,6 +201,7 @@ export function updateEntity(
 }
 
 // 엔티티 삭제 + 다른 엔티티에 남은, 삭제 대상을 참조하는 FK 컬럼/관계도 함께 제거
+// (서브타입 columns에 위치한 FK도 함께 스캔 — 관계가 서브타입 스코프일 수 있음)
 export function deleteEntity(doc: ErdDoc, id: string): ErdDoc {
   return {
     ...doc,
@@ -192,7 +209,14 @@ export function deleteEntity(doc: ErdDoc, id: string): ErdDoc {
       .filter(e => e.id !== id)
       .map(e => {
         const columns = e.columns.filter(c => !(c.isFK && c.refEntityId === id));
-        return columns.length === e.columns.length ? e : { ...e, columns };
+        let subtypesChanged = false;
+        const subtypes = e.subtypes?.map(st => {
+          const stColumns = st.columns.filter(c => !(c.isFK && c.refEntityId === id));
+          if (stColumns.length !== st.columns.length) subtypesChanged = true;
+          return stColumns.length === st.columns.length ? st : { ...st, columns: stColumns };
+        });
+        if (columns.length === e.columns.length && !subtypesChanged) return e;
+        return { ...e, columns, ...(subtypesChanged ? { subtypes } : {}) };
       }),
     relationships: doc.relationships.filter(r => r.sourceId !== id && r.targetId !== id),
   };
@@ -201,9 +225,9 @@ export function deleteEntity(doc: ErdDoc, id: string): ErdDoc {
 export function addColumn(
   doc: ErdDoc,
   entityId: string,
-  col: Partial<Omit<Column, 'id'>> = {}
+  col: Partial<Column> = {}   // col.id 지정 시 협업 피어 간 동일 id 재현
 ): { doc: ErdDoc; columnId: string } {
-  const newCol: Column = { ...DEFAULT_COLUMN, name: 'column', ...col, id: genId() };
+  const newCol: Column = { ...DEFAULT_COLUMN, name: 'column', ...col, id: col.id ?? genId() };
   return {
     doc: {
       ...doc,
@@ -260,20 +284,25 @@ export function addRelationship(
   sourceId: string,
   targetId: string,
   type: RelationshipType,
-  sidesOverride?: Partial<RelationshipSides>
+  sidesOverride?: Partial<RelationshipSides>,
+  ids?: { relationshipId?: string; fkColumnIds?: string[] },  // 협업 시 피어 간 동일 id 재현
+  scope?: { sourceSubtypeId?: string; targetSubtypeId?: string },  // 특정 서브타입 전용 관계로 생성
 ): { doc: ErdDoc; relationshipId: string | null; fkColumnsAdded: Column[] } {
   const sourceEntity = doc.entities.find(e => e.id === sourceId);
   const targetEntity = doc.entities.find(e => e.id === targetId);
   if (!sourceEntity || !targetEntity) {
     return { doc, relationshipId: null, fkColumnsAdded: [] };
   }
+  const targetSubtypeId = scope?.targetSubtypeId;
   // 생성 시점에 per-side를 확정해 명시 필드로 저장한다(type은 가장 근접한 enum으로 재계산).
   const sides: RelationshipSides = { ...sidesFromType(type), ...sidesOverride };
+  // 자식이 서브타입 전용이면 식별 관계 불가(서브타입 컬럼은 조건부라 PK가 될 수 없음)
+  if (targetSubtypeId) sides.identifying = false;
   // 자기 참조(재귀): FK명이 PK명과 동일해 충돌하므로 'parent_' 접두사로 회피
   const isSelfRef = sourceId === targetId;
-  const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsForSides(sides), isSelfRef ? 'parent_' : '');
+  const newFKColumns = buildFKColumns(sourceEntity, sourceId, fkFlagsForSides(sides), isSelfRef ? 'parent_' : '', ids?.fkColumnIds);
   const fkNames = new Set(newFKColumns.map(c => c.name));
-  const relationshipId = genId();
+  const relationshipId = ids?.relationshipId ?? genId();
   const newRel: Relationship = {
     id: relationshipId,
     sourceId,
@@ -283,21 +312,21 @@ export function addRelationship(
     childOptional: sides.childOptional,
     childCardinality: sides.childCardinality,
     identifying: sides.identifying,
+    ...(scope?.sourceSubtypeId ? { sourceSubtypeId: scope.sourceSubtypeId } : {}),
+    ...(targetSubtypeId ? { targetSubtypeId } : {}),
   };
   return {
     doc: {
       ...doc,
-      entities: doc.entities.map(e =>
-        e.id === targetId
-          ? {
-              ...e,
-              columns: [
-                ...e.columns.filter(c => !fkNames.has(c.name) || (c.isFK && c.refEntityId !== sourceId)),
-                ...newFKColumns,
-              ],
-            }
-          : e
-      ),
+      entities: doc.entities.map(e => {
+        if (e.id !== targetId) return e;
+        const host = fkHost(e, targetSubtypeId);
+        const merged = [
+          ...host.filter(c => !fkNames.has(c.name) || (c.isFK && c.refEntityId !== sourceId)),
+          ...newFKColumns,
+        ];
+        return withFkHost(e, targetSubtypeId, merged);
+      }),
       relationships: [...doc.relationships, newRel],
     },
     relationshipId,
@@ -318,28 +347,26 @@ export function updateRelationshipType(
   if (!sourceEntity) return { doc, changed: false };
 
   const flags = fkFlagsFor(newType);
+  const targetSubtypeId = rel.targetSubtypeId;
+  // 자식이 서브타입 전용이면 어떤 type을 요청해도 PK 포함(식별)은 불가
+  if (targetSubtypeId) flags.isPK = false;
   const entities = doc.entities.map(e => {
     if (e.id !== rel.targetId) return e;
-    const hasAutoFK = e.columns.some(c => c.isFK && c.refEntityId === rel.sourceId);
+    const host = fkHost(e, targetSubtypeId);
+    const hasAutoFK = host.some(c => c.isFK && c.refEntityId === rel.sourceId);
     if (hasAutoFK) {
       // 기존 FK 플래그만 갱신 — 사용자가 수정한 컬럼명/논리명은 보존
-      return {
-        ...e,
-        columns: e.columns.map(c =>
-          c.isFK && c.refEntityId === rel.sourceId ? { ...c, isPK: flags.isPK, isNN: flags.isNN } : c
-        ),
-      };
+      return withFkHost(e, targetSubtypeId, host.map(c =>
+        c.isFK && c.refEntityId === rel.sourceId ? { ...c, isPK: flags.isPK, isNN: flags.isNN } : c
+      ));
     }
     // FK가 없는 기존 데이터 — 새로 생성 (이름 충돌 컬럼 교체)
     const newCols = buildFKColumns(sourceEntity, rel.sourceId, flags);
     const names = new Set(newCols.map(c => c.name));
-    return {
-      ...e,
-      columns: [
-        ...e.columns.filter(c => !names.has(c.name) || (c.isFK && c.refEntityId !== rel.sourceId)),
-        ...newCols,
-      ],
-    };
+    return withFkHost(e, targetSubtypeId, [
+      ...host.filter(c => !names.has(c.name) || (c.isFK && c.refEntityId !== rel.sourceId)),
+      ...newCols,
+    ]);
   });
 
   return {
@@ -367,26 +394,22 @@ export function updateRelationshipSides(
 
   const updatedRel = applySides(rel, partial);
   const flags = fkFlagsForSides(deriveSides(updatedRel));
+  const targetSubtypeId = rel.targetSubtypeId;
   const entities = doc.entities.map(e => {
     if (e.id !== rel.targetId) return e;
-    const hasAutoFK = e.columns.some(c => c.isFK && c.refEntityId === rel.sourceId);
+    const host = fkHost(e, targetSubtypeId);
+    const hasAutoFK = host.some(c => c.isFK && c.refEntityId === rel.sourceId);
     if (hasAutoFK) {
-      return {
-        ...e,
-        columns: e.columns.map(c =>
-          c.isFK && c.refEntityId === rel.sourceId ? { ...c, isPK: flags.isPK, isNN: flags.isNN } : c
-        ),
-      };
+      return withFkHost(e, targetSubtypeId, host.map(c =>
+        c.isFK && c.refEntityId === rel.sourceId ? { ...c, isPK: flags.isPK, isNN: flags.isNN } : c
+      ));
     }
     const newCols = buildFKColumns(sourceEntity, rel.sourceId, flags);
     const names = new Set(newCols.map(c => c.name));
-    return {
-      ...e,
-      columns: [
-        ...e.columns.filter(c => !names.has(c.name) || (c.isFK && c.refEntityId !== rel.sourceId)),
-        ...newCols,
-      ],
-    };
+    return withFkHost(e, targetSubtypeId, [
+      ...host.filter(c => !names.has(c.name) || (c.isFK && c.refEntityId !== rel.sourceId)),
+      ...newCols,
+    ]);
   });
 
   return {
@@ -395,6 +418,64 @@ export function updateRelationshipSides(
       entities,
       relationships: doc.relationships.map(r => (r.id === id ? updatedRel : r)),
     },
+    changed: true,
+  };
+}
+
+// 관계의 부모/자식 side를 특정 서브타입으로 스코프 지정(subtypeId=null이면 해제 → 엔티티 전체).
+// target 쪽 변경은 기존 auto-FK 컬럼을 이전 host(엔티티 또는 서브타입 columns)에서 제거하고
+// 새 host에 재생성한다(이름/논리명은 이전 컬럼에서 보존). source 쪽은 라벨링용이라 FK 무변경.
+export function updateRelationshipSubtypeScope(
+  doc: ErdDoc,
+  id: string,
+  side: 'source' | 'target',
+  subtypeId: string | null,
+): { doc: ErdDoc; changed: boolean } {
+  const rel = doc.relationships.find(r => r.id === id);
+  if (!rel) return { doc, changed: false };
+
+  if (side === 'source') {
+    const next: Relationship = { ...rel };
+    if (subtypeId) next.sourceSubtypeId = subtypeId;
+    else delete next.sourceSubtypeId;
+    return {
+      doc: { ...doc, relationships: doc.relationships.map(r => (r.id === id ? next : r)) },
+      changed: true,
+    };
+  }
+
+  const sourceEntity = doc.entities.find(e => e.id === rel.sourceId);
+  if (!sourceEntity) return { doc, changed: false };
+  const oldSubtypeId = rel.targetSubtypeId;
+  const newSubtypeId = subtypeId ?? undefined;
+  if (oldSubtypeId === newSubtypeId) return { doc, changed: false };
+
+  const scoped: Relationship = { ...rel, targetSubtypeId: newSubtypeId };
+  if (!newSubtypeId) delete scoped.targetSubtypeId;
+  const nextRel = applySides(scoped, {}); // 불변식(서브타입 전용이면 식별 해제) 재적용 + type 재계산
+  const flags = fkFlagsForSides(deriveSides(nextRel));
+
+  const entities = doc.entities.map(e => {
+    if (e.id !== rel.targetId) return e;
+    const oldHost = fkHost(e, oldSubtypeId);
+    const moving = oldHost.filter(c => c.isFK && c.refEntityId === rel.sourceId);
+    const remainingOld = oldHost.filter(c => !(c.isFK && c.refEntityId === rel.sourceId));
+    const movedCols = moving.length > 0
+      ? moving.map(c => ({ ...c, isPK: flags.isPK, isNN: flags.isNN }))
+      : buildFKColumns(sourceEntity, rel.sourceId, flags);
+
+    const withOldRemoved = withFkHost(e, oldSubtypeId, remainingOld);
+    const newHost = fkHost(withOldRemoved, newSubtypeId);
+    const names = new Set(movedCols.map(c => c.name));
+    const mergedNew = [
+      ...newHost.filter(c => !names.has(c.name) || (c.isFK && c.refEntityId !== rel.sourceId)),
+      ...movedCols,
+    ];
+    return withFkHost(withOldRemoved, newSubtypeId, mergedNew);
+  });
+
+  return {
+    doc: { ...doc, entities, relationships: doc.relationships.map(r => (r.id === id ? nextRel : r)) },
     changed: true,
   };
 }
@@ -424,17 +505,40 @@ export function updateRelationshipAnchor(
   };
 }
 
-// 관계 삭제 — 이 관계로 자동 추가됐던 FK 컬럼도 제거
+// 관계 삭제 — 이 관계로 자동 추가됐던 FK 컬럼도 제거(서브타입 스코프면 그 서브타입 columns에서)
 export function deleteRelationship(doc: ErdDoc, id: string): { doc: ErdDoc; removed: boolean } {
   const rel = doc.relationships.find(r => r.id === id);
   if (!rel) return { doc, removed: false };
-  const entities = doc.entities.map(e =>
-    e.id === rel.targetId
-      ? { ...e, columns: e.columns.filter(c => !(c.isFK && c.refEntityId === rel.sourceId)) }
-      : e
-  );
+  const entities = doc.entities.map(e => {
+    if (e.id !== rel.targetId) return e;
+    const host = fkHost(e, rel.targetSubtypeId);
+    return withFkHost(e, rel.targetSubtypeId, host.filter(c => !(c.isFK && c.refEntityId === rel.sourceId)));
+  });
   return {
     doc: { ...doc, entities, relationships: doc.relationships.filter(r => r.id !== id) },
     removed: true,
   };
+}
+
+// 서브타입 삭제 전 캐스케이드 — 그 서브타입을 target(자식) 스코프로 참조하는 관계는 FK 컬럼이
+// 그 서브타입 안에 있으므로(서브타입과 함께 사라짐) 관계 자체를 삭제하고, source(부모) 스코프로만
+// 참조하던 관계는 FK에 영향이 없으므로 스코프 라벨만 엔티티 전체로 되돌린다.
+export function removeSubtypeCascade(doc: ErdDoc, entityId: string, subtypeId: string): ErdDoc {
+  let next = doc;
+  for (const rel of doc.relationships) {
+    if (rel.targetId === entityId && rel.targetSubtypeId === subtypeId) {
+      next = deleteRelationship(next, rel.id).doc;
+    } else if (rel.sourceId === entityId && rel.sourceSubtypeId === subtypeId) {
+      next = {
+        ...next,
+        relationships: next.relationships.map(r => {
+          if (r.id !== rel.id) return r;
+          const cleared = { ...r };
+          delete cleared.sourceSubtypeId;
+          return cleared;
+        }),
+      };
+    }
+  }
+  return next;
 }

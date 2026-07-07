@@ -13,6 +13,16 @@ const handleStyle: React.CSSProperties = {
   borderRadius: '50%',
 };
 
+// 서브타입 박스 전용 연결점 — 박스가 작아 엔티티 핸들(16px)보다 축소
+const subtypeHandleStyle: React.CSSProperties = {
+  width: 10,
+  height: 10,
+  background: '#8083ff',
+  border: '2px solid #c0c1ff',
+  borderRadius: '50%',
+  right: -6,
+};
+
 function EntityNode({ data }: NodeProps) {
   const entityData = data as unknown as EntityNodeData;
   const { updateEntity, openEntityEditor } = useERDStore();
@@ -206,8 +216,12 @@ function EntityNode({ data }: NodeProps) {
                 <div
                   key={st.id}
                   className="rounded-md border border-dashed border-node-border bg-node-bg min-w-[120px] flex-none"
+                  style={{ position: 'relative' }}
                   data-testid="subtype-box"
                 >
+                  {/* 서브타입 전용 연결점 — 여기서 바로 드래그하면 관계가 이 서브타입 스코프로 생성됨
+                      (ConnectionMode.Loose라 source 하나로 양방향 드래그/드롭 모두 가능) */}
+                  <Handle type="source" position={Position.Right} id={`sub:${st.id}`} style={subtypeHandleStyle} />
                   <div className="bg-node-header px-2 py-1 border-b border-node-border rounded-t-md flex items-baseline gap-1.5">
                     <span className="material-symbols-outlined text-[12px] shrink-0 self-center" style={{ color: entityData.color }}>category</span>
                     <span className="font-mono text-[10px] font-bold text-on-surface whitespace-nowrap">{st.name}</span>

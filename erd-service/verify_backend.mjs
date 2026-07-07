@@ -33,12 +33,17 @@ try {
   check('익명: 엔티티 추가 동작(기존 기능)', await page.locator('.react-flow__node').count() === 1);
 
   // ── 1-1. 엔티티 삭제 → 확인 모달 (취소 시 유지) ──
+  // 삭제 버튼은 편집 모달 헤더 안에 있음 — info 아이콘으로 먼저 열어야 한다.
+  await page.locator('.react-flow__node').first().locator('[data-testid="entity-info-icon"]').click();
+  await page.waitForTimeout(300);
   await page.click('button[title="엔티티 삭제"]');
   await page.waitForTimeout(400);
   check('엔티티 삭제 확인 모달 노출', await page.locator('[data-testid="app-dialog"]').count() === 1);
   await page.click('[data-testid="dialog-cancel"]');
   await page.waitForTimeout(300);
   check('엔티티 삭제 취소 → 노드 유지', await page.locator('.react-flow__node').count() === 1);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
 
   // ── 2. 가입 ──
   await page.click('button[aria-label="User"]');

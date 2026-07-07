@@ -69,8 +69,10 @@ export function fkFlagsForSides(sides: RelationshipSides): { isPK: boolean; isNN
 export function applySides(rel: Relationship, partial: Partial<RelationshipSides>): Relationship {
   const next: RelationshipSides = { ...deriveSides(rel), ...partial };
   // 불변식: 식별 관계는 자식 FK가 PK에 포함(NOT NULL)되므로 자식 선택참여(점선·NULL 허용)와
-  // 양립 불가 → 자식이 점선(childOptional)이면 식별을 강제 해제한다.
-  if (next.childOptional) next.identifying = false;
+  // 양립 불가 → 자식이 점선(childOptional)이면 식별을 강제 해제한다. 자식이 서브타입 전용
+  // (targetSubtypeId)이어도 마찬가지 — 서브타입 컬럼은 그 서브타입일 때만 존재하는 조건부
+  // 컬럼이라 모든 로우에 필수인 PK가 될 수 없다.
+  if (next.childOptional || rel.targetSubtypeId) next.identifying = false;
   return {
     ...rel,
     parentOptional: next.parentOptional,
