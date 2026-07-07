@@ -30,14 +30,17 @@ await initSchema(db);
 app.decorate('db', db);
 
 // 어떤 DB로 떴는지 명확히 표기 — pg-mem은 재시작 시 모든 데이터(계정·MCP 토큰·다이어그램) 소실.
-// 프로덕션에서 영속 DB 없이 떠 있으면 "다음에 쓰면 토큰이 failed" 사고가 재발하므로 기동을 거부한다.
+// 영속 DB 없이 떠 있으면 "다음에 쓰면 토큰이 failed" 사고가 재발하므로 기동을 거부한다.
+// NODE_ENV==='production' 조건은 걸지 않는다 — pm2/배포 스크립트가 NODE_ENV를 세팅해주지 않으면
+// (실제로 그랬음) 가드 자체가 조용히 무력화되어 이 사고가 그대로 재발한다. 로컬/QA에서 pg-mem이
+// 필요하면 ALLOW_PGMEM=1로 명시적으로 허용해야 한다(우연히 켜지는 일은 없어야 함).
 if (db.kind === 'pg-mem') {
   app.log.warn('──────────────────────────────────────────────────────────────');
   app.log.warn('⚠  pg-mem 인메모리 DB로 동작 중 — 재시작하면 계정·MCP 토큰·저장된 다이어그램이 모두 사라집니다.');
   app.log.warn('⚠  영속화하려면 .env(또는 환경변수)에 DATABASE_URL(PostgreSQL)을 설정하세요.');
   app.log.warn('──────────────────────────────────────────────────────────────');
-  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PGMEM !== '1') {
-    app.log.error('프로덕션에서 영속 DB 없이 기동을 거부합니다. DATABASE_URL을 설정하거나, 의도적이라면 ALLOW_PGMEM=1로 허용하세요.');
+  if (process.env.ALLOW_PGMEM !== '1') {
+    app.log.error('영속 DB 없이 기동을 거부합니다. DATABASE_URL을 설정하거나, 의도적이라면(로컬 개발/QA) ALLOW_PGMEM=1로 허용하세요.');
     process.exit(1);
   }
 } else {
