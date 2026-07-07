@@ -1,7 +1,8 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { Entity, ENTITY_COLORS } from '../../types/erd';
+import { Column, Entity, ENTITY_COLORS, Relationship } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
+import { deriveSides, labelForSides } from '../../core/relationshipSides';
 
 type EntityNodeData = Entity;
 
@@ -25,7 +26,7 @@ const subtypeHandleStyle: React.CSSProperties = {
 
 function EntityNode({ data }: NodeProps) {
   const entityData = data as unknown as EntityNodeData;
-  const { updateEntity, openEntityEditor } = useERDStore();
+  const { updateEntity, openEntityEditor, entities, relationships } = useERDStore();
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(entityData.name);
   const [showPalette, setShowPalette] = useState(false);
@@ -262,6 +263,8 @@ function EntityNode({ data }: NodeProps) {
       {showPreview && (
         <EntityHoverPreview
           entity={entityData}
+          entities={entities}
+          relationships={relationships}
           onMouseEnter={openPreview}
           onMouseLeave={scheduleHidePreview}
         />
@@ -270,16 +273,30 @@ function EntityNode({ data }: NodeProps) {
   );
 }
 
-// info 아이콘 호버 시 표시되는 읽기전용 미리보기 — 노드 본문에는 없는 Description·UNIQUE 등을 보여준다.
-// 클릭 없이 훑어볼 용도라 편집 폼과 달리 입력 요소가 전혀 없다.
-function EntityHoverPreview({ entity, onMouseEnter, onMouseLeave }: {
+// FK 컬럼이 실제로 어느 엔티티·컬럼을 참조하는지 — 캔버스 노드에는 링크 아이콘만 있어 대상이 안 보인다.
+function fkTargetLabel(col: Column, entities: Entity[]): string | null {
+  if (!col.isFK || !col.refEntityId) return null;
+  const target = entities.find(e => e.id === col.refEntityId);
+  if (!target) return '⚠ 참조 엔티티 없음';
+  const targetCol = target.columns.find(c => c.id === col.refColumnId);
+  return targetCol ? `${target.name}.${targetCol.name}` : `⚠ ${target.name}.(끊어진 참조)`;
+}
+
+// info 아이콘 호버 시 표시되는 읽기전용 미리보기 — 노드 본문(컬럼/서브타입)에도 이미 보이는 정보는
+// 반복하지 않고, 캔버스만 봐서는 알 수 없는 것만 담는다: 설명, FK가 실제로 가리키는 대상,
+// 이 엔티티와 연결된 관계(부모/자식 · 카디널리티/식별 여부) 목록.
+function EntityHoverPreview({ entity, entities, relationships, onMouseEnter, onMouseLeave }: {
   entity: EntityNodeData;
+  entities: Entity[];
+  relationships: Relationship[];
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) {
+  const related = relationships.filter(r => r.sourceId === entity.id || r.targetId === entity.id);
+
   return (
     <div
-      className="absolute z-[90] top-10 right-0 w-64 max-h-72 overflow-y-auto custom-scrollbar p-3 rounded-lg bg-surface-container border border-outline-variant shadow-xl flex flex-col gap-2"
+      className="absolute z-[90] top-10 right-0 w-72 max-h-80 overflow-y-auto custom-scrollbar p-3 rounded-lg bg-surface-container border border-outline-variant shadow-xl flex flex-col gap-2"
       data-testid="entity-hover-preview"
       onClick={e => e.stopPropagation()}
       onMouseEnter={onMouseEnter}
@@ -299,20 +316,30 @@ function EntityHoverPreview({ entity, onMouseEnter, onMouseLeave }: {
       <div className="w-full h-px bg-outline-variant/50" />
 
       <div className="flex flex-col gap-1">
-        {entity.columns.map(col => (
-          <div key={col.id} className="flex items-center justify-between gap-2 text-[11px]">
-            <div className="flex items-center gap-1 min-w-0">
-              {col.isPK && <span className="material-symbols-outlined text-[12px] text-pk-color shrink-0" title="Primary Key">key</span>}
-              {col.isFK && <span className="material-symbols-outlined text-[12px] text-fk-color shrink-0" title="Foreign Key">link</span>}
-              <span className="font-mono text-on-surface whitespace-nowrap truncate">{col.name}</span>
-              {col.isNN && <span className="text-pk-color shrink-0">*</span>}
-              {col.isUnique && <span className="font-sans text-[9px] px-1 rounded bg-surface-variant text-on-surface-variant shrink-0">UQ</span>}
+        {entity.columns.map(col => {
+          const fkTarget = fkTargetLabel(col, entities);
+          return (
+            <div key={col.id} className="flex flex-col gap-0.5">
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <div className="flex items-center gap-1 min-w-0">
+                  {col.isPK && <span className="material-symbols-outlined text-[12px] text-pk-color shrink-0" title="Primary Key">key</span>}
+                  {col.isFK && <span className="material-symbols-outlined text-[12px] text-fk-color shrink-0" title="Foreign Key">link</span>}
+                  <span className="font-mono text-on-surface whitespace-nowrap truncate">{col.name}</span>
+                  {col.isNN && <span className="text-pk-color shrink-0">*</span>}
+                  {col.isUnique && <span className="font-sans text-[9px] px-1 rounded bg-surface-variant text-on-surface-variant shrink-0">UQ</span>}
+                </div>
+                <span className="font-mono text-on-surface-variant opacity-70 shrink-0">
+                  {col.type}{col.size ? `(${col.size})` : ''}
+                </span>
+              </div>
+              {fkTarget && (
+                <div className="pl-4 font-mono text-[9px] text-fk-color/80 whitespace-nowrap truncate" data-testid="fk-target">
+                  → {fkTarget}
+                </div>
+              )}
             </div>
-            <span className="font-mono text-on-surface-variant opacity-70 shrink-0">
-              {col.type}{col.size ? `(${col.size})` : ''}
-            </span>
-          </div>
-        ))}
+          );
+        })}
         {entity.columns.length === 0 && (
           <p className="text-[11px] font-mono text-outline italic m-0">컬럼 없음</p>
         )}
@@ -326,6 +353,45 @@ function EntityHoverPreview({ entity, onMouseEnter, onMouseLeave }: {
           </p>
         </>
       )}
+
+      <div className="w-full h-px bg-outline-variant/50" />
+
+      <div className="flex flex-col gap-1" data-testid="entity-relations-summary">
+        <span className="font-sans text-[10px] font-bold text-on-surface-variant">
+          관계 {related.length > 0 ? `(${related.length})` : ''}
+        </span>
+        {related.map(rel => {
+          const iAmSource = rel.sourceId === entity.id;
+          const other = entities.find(e => e.id === (iAmSource ? rel.targetId : rel.sourceId));
+          const role = iAmSource ? '자식' : '부모';
+          const mySubtypeId = iAmSource ? rel.sourceSubtypeId : rel.targetSubtypeId;
+          const scopeName = mySubtypeId ? entity.subtypes?.find(st => st.id === mySubtypeId)?.name : undefined;
+          return (
+            <div key={rel.id} className="flex items-center justify-between gap-2 text-[11px]">
+              <div className="flex items-center gap-1 min-w-0">
+                <span className={`font-sans text-[9px] px-1 rounded shrink-0 ${iAmSource ? 'bg-fk-color/20 text-fk-color' : 'bg-pk-color/20 text-pk-color'}`}>
+                  {role}
+                </span>
+                <span className="font-mono text-on-surface whitespace-nowrap truncate">
+                  {other?.name ?? '?'}
+                </span>
+                {other?.logicalName && (
+                  <span className="font-sans text-[10px] text-on-surface-variant whitespace-nowrap truncate">{other.logicalName}</span>
+                )}
+                {scopeName && (
+                  <span className="font-sans text-[9px] px-1 rounded bg-surface-variant text-on-surface-variant shrink-0">{scopeName}</span>
+                )}
+              </div>
+              <span className="font-sans text-[9px] text-on-surface-variant opacity-70 shrink-0 whitespace-nowrap">
+                {labelForSides(deriveSides(rel))}
+              </span>
+            </div>
+          );
+        })}
+        {related.length === 0 && (
+          <p className="text-[11px] font-mono text-outline italic m-0">연결된 관계 없음</p>
+        )}
+      </div>
     </div>
   );
 }
