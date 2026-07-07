@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Entity, ENTITY_COLORS } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
@@ -15,10 +15,18 @@ const handleStyle: React.CSSProperties = {
 
 function EntityNode({ data }: NodeProps) {
   const entityData = data as unknown as EntityNodeData;
-  const { updateEntity } = useERDStore();
+  const { updateEntity, openEntityEditor } = useERDStore();
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(entityData.name);
   const [showPalette, setShowPalette] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // 아이콘과 팝오버 사이 작은 간격을 마우스가 지나갈 때 깜빡이지 않도록 약간의 유예를 둔다
+  const hideTimerRef = useRef<number | null>(null);
+  useEffect(() => () => { if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current); }, []);
+  const cancelHide = () => { if (hideTimerRef.current) { window.clearTimeout(hideTimerRef.current); hideTimerRef.current = null; } };
+  const openPreview = () => { cancelHide(); setShowPreview(true); };
+  const scheduleHidePreview = () => { cancelHide(); hideTimerRef.current = window.setTimeout(() => setShowPreview(false), 150); };
 
   const pkCols = entityData.columns.filter(c => c.isPK);
   const nonPKCols = entityData.columns.filter(c => !c.isPK);
@@ -83,13 +91,29 @@ function EntityNode({ data }: NodeProps) {
               </span>
             )}
           </div>
-          <button
-            className="text-on-surface-variant hover:text-on-surface shrink-0 cursor-pointer flex items-center"
-            title="색상 변경"
-            onClick={e => { e.stopPropagation(); setShowPalette(v => !v); }}
-          >
-            <span className="material-symbols-outlined text-[16px]">more_horiz</span>
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <div
+              className="flex items-center"
+              onMouseEnter={openPreview}
+              onMouseLeave={scheduleHidePreview}
+            >
+              <button
+                className="text-on-surface-variant hover:text-primary cursor-pointer flex items-center"
+                title="상세 정보 / 편집"
+                data-testid="entity-info-icon"
+                onClick={e => { e.stopPropagation(); cancelHide(); setShowPreview(false); openEntityEditor(entityData.id); }}
+              >
+                <span className="material-symbols-outlined text-[16px]">info</span>
+              </button>
+            </div>
+            <button
+              className="text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center"
+              title="색상 변경"
+              onClick={e => { e.stopPropagation(); setShowPalette(v => !v); }}
+            >
+              <span className="material-symbols-outlined text-[16px]">more_horiz</span>
+            </button>
+          </div>
         </div>
 
         {/* Color Palette */}
@@ -219,6 +243,75 @@ function EntityNode({ data }: NodeProps) {
           </div>
         )}
       </div>
+
+      {/* entity-node는 모서리를 둥글게 하려 overflow-hidden이라 팝오버를 안쪽에 두면 잘림 — 핸들과 같은 이유로 바깥(비클리핑) 래퍼에 렌더 */}
+      {showPreview && (
+        <EntityHoverPreview
+          entity={entityData}
+          onMouseEnter={openPreview}
+          onMouseLeave={scheduleHidePreview}
+        />
+      )}
+    </div>
+  );
+}
+
+// info 아이콘 호버 시 표시되는 읽기전용 미리보기 — 노드 본문에는 없는 Description·UNIQUE 등을 보여준다.
+// 클릭 없이 훑어볼 용도라 편집 폼과 달리 입력 요소가 전혀 없다.
+function EntityHoverPreview({ entity, onMouseEnter, onMouseLeave }: {
+  entity: EntityNodeData;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}) {
+  return (
+    <div
+      className="absolute z-[90] top-10 right-0 w-64 max-h-72 overflow-y-auto custom-scrollbar p-3 rounded-lg bg-surface-container border border-outline-variant shadow-xl flex flex-col gap-2"
+      data-testid="entity-hover-preview"
+      onClick={e => e.stopPropagation()}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <div className="flex items-baseline gap-1.5 min-w-0">
+        <span className="font-mono text-xs font-bold text-on-surface whitespace-nowrap">{entity.name}</span>
+        {entity.logicalName && (
+          <span className="font-sans text-[11px] text-on-surface-variant whitespace-nowrap">{entity.logicalName}</span>
+        )}
+      </div>
+
+      <p className="text-[11px] text-on-surface-variant m-0 whitespace-pre-line">
+        {entity.description || <span className="italic text-outline">설명 없음</span>}
+      </p>
+
+      <div className="w-full h-px bg-outline-variant/50" />
+
+      <div className="flex flex-col gap-1">
+        {entity.columns.map(col => (
+          <div key={col.id} className="flex items-center justify-between gap-2 text-[11px]">
+            <div className="flex items-center gap-1 min-w-0">
+              {col.isPK && <span className="material-symbols-outlined text-[12px] text-pk-color shrink-0" title="Primary Key">key</span>}
+              {col.isFK && <span className="material-symbols-outlined text-[12px] text-fk-color shrink-0" title="Foreign Key">link</span>}
+              <span className="font-mono text-on-surface whitespace-nowrap truncate">{col.name}</span>
+              {col.isNN && <span className="text-pk-color shrink-0">*</span>}
+              {col.isUnique && <span className="font-sans text-[9px] px-1 rounded bg-surface-variant text-on-surface-variant shrink-0">UQ</span>}
+            </div>
+            <span className="font-mono text-on-surface-variant opacity-70 shrink-0">
+              {col.type}{col.size ? `(${col.size})` : ''}
+            </span>
+          </div>
+        ))}
+        {entity.columns.length === 0 && (
+          <p className="text-[11px] font-mono text-outline italic m-0">컬럼 없음</p>
+        )}
+      </div>
+
+      {(entity.subtypes?.length ?? 0) > 0 && (
+        <>
+          <div className="w-full h-px bg-outline-variant/50" />
+          <p className="text-[11px] text-on-surface-variant m-0">
+            {entity.subsetName || 'SubSet'} · {entity.subtypes!.map(st => st.name).join(', ')}
+          </p>
+        </>
+      )}
     </div>
   );
 }

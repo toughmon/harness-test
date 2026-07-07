@@ -96,13 +96,15 @@ try {
 
   // 부모 Entity1의 PK명을 자식 기본 PK(id)와 겹치지 않게 변경 — 이름 충돌 시 자식 PK가
   // FK로 교체되는 동작(verify_fk_namedup에서 검증)과 분리해, 여기선 FK 플래그 전환만 본다.
-  await page.locator('.react-flow__node').nth(0).click();
+  await page.locator('.react-flow__node').nth(0).locator('[data-testid="entity-info-icon"]').click();
   await page.waitForTimeout(300);
-  const setupPanel = page.locator('aside').last();
+  const setupPanel = page.locator('[data-testid="entity-editor-modal"]');
   await setupPanel.locator('.font-mono', { hasText: /^id$/ }).first().click();
   await page.waitForTimeout(300);
   await setupPanel.locator('input[placeholder="물리명"]').first().fill('pid');
   await page.waitForTimeout(300);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
   await page.mouse.click(700, 750);
   await page.waitForTimeout(300);
 
@@ -120,10 +122,13 @@ try {
   await page.click('button[title="자동 정렬"]');
   await page.waitForTimeout(800);
 
-  // 엣지 클릭 → 우측 관계 편집 패널 표시 (선 위 팝업 대신)
+  // 엣지 클릭(선택) → ✎ 아이콘 노출 → 클릭해야 관계 편집 패널 표시
   await clickEdge(0);
   const relPanel = page.locator('[data-testid="rel-panel"]');
-  check('엣지 선택 시 관계 편집 패널 표시', await relPanel.count() === 1);
+  check('엣지 선택 → ✎ 편집 아이콘 노출', await page.locator('[data-testid="edge-edit-icon"]').count() === 1);
+  await page.click('[data-testid="edge-edit-icon"]');
+  await page.waitForTimeout(300);
+  check('✎ 아이콘 클릭 시 관계 편집 패널 표시', await relPanel.count() === 1);
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_edge_toolbar.png' });
 
   // 패널에서 '식별 관계' 토글 ON → 자식 FK가 PK로 승격
@@ -143,6 +148,9 @@ try {
   check('식별 토글 OFF → FK 유지 + PK 해제', fkIcons === 1 && pkIcons === 1);
 
   // ───── 3. 자동 정렬 ─────
+  // 모달이 화면 전체(사이드바 포함)를 덮으므로 Add Entity를 누르려면 먼저 닫아야 한다.
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
   await page.click('button:has-text("Add Entity")');
   await page.waitForTimeout(300);
   await page.click('button:has-text("Add Entity")');

@@ -74,9 +74,10 @@ try {
   check('취소 클릭 → 엔티티 유지', await nodeCount() === 1 && await dialogVisible() === 0);
 
   // ───── 3. 입력 필드에 포커스 중엔 Delete가 삭제 아님(브라우저 기본 동작) ─────
-  await page.locator('.react-flow__node').nth(0).click();
+  // 입력 필드는 편집 모달 안에 있으므로 info 아이콘으로 모달을 먼저 연다.
+  await page.locator('.react-flow__node').nth(0).locator('[data-testid="entity-info-icon"]').click();
   await page.waitForTimeout(300);
-  const panel = page.locator('aside').last();
+  const panel = page.locator('[data-testid="entity-editor-modal"]');
   const nameInput = panel.locator('input').first();
   await nameInput.click();
   await nameInput.press('End');
@@ -84,6 +85,8 @@ try {
   await page.keyboard.press('Delete');
   await page.waitForTimeout(300);
   check('입력 필드 포커스 중 Delete → 엔티티 삭제 안 됨', await dialogVisible() === 0 && await nodeCount() === 1);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
   await page.mouse.click(900, 750);
   await page.waitForTimeout(200);
 

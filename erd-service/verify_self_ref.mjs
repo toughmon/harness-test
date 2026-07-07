@@ -100,11 +100,15 @@ try {
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_self_ref_before_click.png' });
   if (pt) {
     await page.mouse.click(pt.x, pt.y);
-    await page.waitForTimeout(600);
+    await page.waitForTimeout(400);
+    // 선택만으로는 패널이 안 열리고 ✎ 편집 아이콘을 눌러야 열린다(자기참조도 끝점 드래그 핸들만 제외, 아이콘은 노출됨)
+    check('자기 참조 선택 → ✎ 편집 아이콘 노출', await page.locator('[data-testid="edge-edit-icon"]').count() === 1);
+    await page.click('[data-testid="edge-edit-icon"]');
+    await page.waitForTimeout(400);
   }
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_self_ref_after_click.png' });
   const panelVisible = await page.locator('[data-testid="rel-panel"]').count() === 1;
-  check('자기 참조 관계선 클릭 → 우측 관계 속성 패널', panelVisible);
+  check('✎ 아이콘 클릭 → 우측 관계 속성 패널', panelVisible);
 
   // 패널에 부모=자식이 동일 엔티티 표시
   if (panelVisible) {

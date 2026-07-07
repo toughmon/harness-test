@@ -23,13 +23,16 @@ try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
-  // ───── 준비: 엔티티 1개 (자동 선택 → 우측 패널 표시) ─────
+  // ───── 준비: 엔티티 1개 (자동 선택, 편집 모달은 info 아이콘으로 오픈) ─────
   await page.click('button:has-text("Add Entity")');
   await page.waitForTimeout(500);
   check('엔티티 추가 + 자동 선택', await page.locator('.react-flow__node').count() === 1);
 
   // 서브타입 없을 때는 노드에 SubSet 영역이 없어야 함
   check('서브타입 0개 → SubSet 영역 미표시', await subsetRegion().count() === 0);
+
+  await node().locator('[data-testid="entity-info-icon"]').click();
+  await page.waitForTimeout(300);
   check('패널에 Add Subtype 버튼 존재', await page.locator('[data-testid="add-subtype"]').count() === 1);
 
   // ───── 서브타입 2개 추가 ─────
@@ -75,6 +78,9 @@ try {
   check('완전 토글 → 배지 = 배타·완전', (await subsetRegion().innerText()).replace(/\s/g, '').includes('배타·완전'));
 
   // ───── SQL 내보내기 → 구분자 컬럼 + 배타 CHECK ─────
+  // 내보내기 버튼은 캔버스 툴바에 있어 모달을 먼저 닫아야 클릭 가능(모달이 전체 화면을 덮으므로).
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
   const sqlBtn = page.locator('button[title="SQL 내보내기 (MySQL)"]');
   check('SQL 내보내기 버튼 존재', await sqlBtn.count() === 1);
   const dl = page.waitForEvent('download', { timeout: 20000 });
@@ -96,6 +102,9 @@ try {
   check('완전 → 구분자 IS NULL 케이스 없음', !sql.includes('`emp_type` IS NULL'));
 
   // ───── 긴 속성명도 말줄임 없이 전체 노출 (rename은 SQL 충돌검증 이후) ─────
+  // 내보내기 전에 모달을 닫았으므로 편집을 계속하려면 다시 연다.
+  await node().locator('[data-testid="entity-info-icon"]').click();
+  await page.waitForTimeout(300);
   await card(0).getByText('column', { exact: true }).click(); // 컬럼 행 펼치기
   await page.waitForTimeout(200);
   const LONG = 'very_long_subtype_attribute_name_no_truncation';
@@ -123,6 +132,9 @@ try {
     !typeClip.clipped && typeClip.typeText.includes('VARCHAR'),
     JSON.stringify(typeClip));
 
+  // 스크린샷은 실제 노드를 보여줘야 하므로 모달을 닫고 캔버스를 촬영
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(300);
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_subtype_node.png' });
 
   // 전체 노드가 보이도록 Fit View 후 스크린샷 (타입/크기 열까지 시각 확인)

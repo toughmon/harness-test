@@ -13,6 +13,17 @@ const check = (name, pass, detail = '') => {
   console.log(`${pass ? 'PASS' : 'FAIL'}: ${name}${detail ? ' — ' + detail : ''}`);
 };
 
+// 메모 편집 모달은 우클릭 → "편집"으로만 연다(전용 아이콘 없음). 선택만으로는 열리지 않는다.
+async function openMemoPanel(memoLocator) {
+  const box = await memoLocator.boundingBox();
+  await page.evaluate(({ x, y }) => {
+    document.elementFromPoint(x, y)?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+  }, { x: box.x + box.width / 2, y: box.y + 12 });
+  await page.waitForTimeout(300);
+  await page.click('[data-testid="context-menu-edit"]');
+  await page.waitForTimeout(300);
+}
+
 await page.goto(BASE, { waitUntil: 'networkidle' });
 await page.waitForTimeout(600);
 
@@ -26,9 +37,11 @@ await page.waitForTimeout(400);
 const memoNodes = page.locator('[data-testid="memo-node"]');
 check('Add Memo 클릭 후 메모 노드 생성됨', await memoNodes.count() === 1);
 
-// 3. 우측 패널에 memo-edit-panel 표시
+// 3. 선택만으로는 패널이 안 열리고, 우클릭 "편집"으로 MemoEditPanel 모달을 연다
 const memoPanel = page.locator('[data-testid="memo-edit-panel"]');
-check('메모 선택 시 MemoEditPanel 표시', await memoPanel.count() > 0);
+check('메모 선택만으로는 패널 미표시', await memoPanel.count() === 0);
+await openMemoPanel(memoNodes.first());
+check('우클릭 "편집" → MemoEditPanel 표시', await memoPanel.count() > 0);
 
 // 4. 패널에서 텍스트 입력 (blur 시점에 store 반영 — IME 안전을 위해 입력 중 store 미갱신)
 const panelTextarea = memoPanel.locator('textarea');
@@ -61,6 +74,9 @@ if (colorCount >= 2) {
 }
 
 // 8. 캔버스 빈 영역 더블클릭 → 두 번째 메모 생성
+// 모달이 화면 전체를 덮으므로 캔버스에 닿으려면 먼저 닫아야 한다.
+await page.click('[data-testid="editor-modal-close"]');
+await page.waitForTimeout(300);
 // 첫 번째 메모는 fitView 후 화면 y=264 아래에 위치. canvasBox.y + 30으로 메모 위 빈 영역 더블클릭.
 const canvasEl = page.locator('.react-flow__pane').first();
 const canvasBox = await canvasEl.boundingBox();
@@ -88,9 +104,8 @@ if (await closeBtn.count() > 0) {
   check('노드 × 버튼으로 메모 삭제됨', false, '× 버튼 없음');
 }
 
-// 11. 패널 삭제 버튼 — 첫 번째 메모 선택(dispatchEvent) 후 패널에서 삭제
-await memoNodes.first().dispatchEvent('click');
-await page.waitForTimeout(300);
+// 11. 패널 삭제 버튼 — 첫 번째 메모를 우클릭 "편집"으로 열어 패널에서 삭제
+await openMemoPanel(memoNodes.first());
 const panelDeleteBtn = memoPanel.locator('button[title="삭제"]');
 check('패널에 삭제 버튼 존재', await panelDeleteBtn.count() > 0);
 await panelDeleteBtn.click();
@@ -116,11 +131,13 @@ await page.waitForTimeout(200);
 const countBefore = await memoNodes.count();
 check('여러 메모 추가 가능', countBefore >= 2);
 
-// 14. MemoEditPanel이 표시될 때 EntityEditPanel은 미표시
-await memoNodes.first().dispatchEvent('click');
+// 14. MemoEditPanel이 표시될 때 EntityEditPanel은 미표시 (배타 확인)
+await openMemoPanel(memoNodes.first());
+const entityPanel = page.locator('[data-testid="entity-editor-modal"]');
+check('메모 편집 모달 표시 중엔 엔티티 편집 모달 미표시 (배타 확인)',
+  await memoPanel.count() > 0 && await entityPanel.count() === 0);
+await page.click('[data-testid="editor-modal-close"]');
 await page.waitForTimeout(200);
-const entityPanel = page.locator('[data-testid="memo-edit-panel"]');
-check('메모 선택 시 MemoEditPanel 표시 (배타 확인)', await entityPanel.count() > 0);
 
 // 15. 저장/불러오기 호환 — JSON 저장 내려받기 버튼 작동 확인
 // (실제 파일 저장은 다운로드 이벤트로 확인)

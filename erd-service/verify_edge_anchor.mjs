@@ -99,13 +99,15 @@ try {
   await page.click('button[title="Fit View"]');
   await page.waitForTimeout(400);
 
-  await page.locator('.react-flow__node').nth(0).click();
+  await page.locator('.react-flow__node').nth(0).locator('[data-testid="entity-info-icon"]').click();
   await page.waitForTimeout(300);
-  const setupPanel = page.locator('aside').last();
+  const setupPanel = page.locator('[data-testid="entity-editor-modal"]');
   await setupPanel.locator('.font-mono', { hasText: /^id$/ }).first().click();
   await page.waitForTimeout(300);
   await setupPanel.locator('input[placeholder="물리명"]').first().fill('pid');
   await page.waitForTimeout(300);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
   await deselect();
 
   const relOk = await drawRelationship(0, 1, '1:M 비식별 (점선 + 실선)');

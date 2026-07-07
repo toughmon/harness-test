@@ -18,17 +18,19 @@ try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
 
-  // 엔티티 추가 → 자동 선택되어 우측 패널 열림
+  // 엔티티 추가 → 자동 선택됨. 편집 모달은 info 아이콘으로 별도 오픈.
   await page.click('button:has-text("Add Entity")');
   await page.waitForTimeout(400);
+  await page.locator('[data-testid="entity-info-icon"]').click();
+  await page.waitForTimeout(300);
 
-  const panel = page.locator('aside').last();
+  const panel = page.locator('[data-testid="entity-editor-modal"]');
   const rows = panel.locator('div.rounded.p-3');
 
   // 컬럼 2개 추가 (기본명 column) 후 각각 aaa / bbb 로 이름 변경
-  await panel.locator('button:has-text("Add")').click();
+  await panel.locator('[data-testid="add-column"]').click();
   await page.waitForTimeout(300);
-  await panel.locator('button:has-text("Add")').click();
+  await panel.locator('[data-testid="add-column"]').click();
   await page.waitForTimeout(300);
   check('컬럼 3개 (id + 신규 2)', await rows.count() === 3);
 

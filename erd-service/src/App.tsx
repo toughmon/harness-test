@@ -105,8 +105,11 @@ function App() {
       <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />
         <ERDCanvas />
-        {selectedEdgeId ? <RelationshipEditPanel /> : selectedMemoId ? <MemoEditPanel /> : <EntityEditPanel />}
       </div>
+      {/* 편집 모달 — 우측 고정 패널 대신 info/✎ 아이콘·우클릭 편집으로 열림. 각자 editorOpen을 보고 자체 게이팅 */}
+      <EntityEditPanel />
+      <RelationshipEditPanel />
+      <MemoEditPanel />
       {modalOpen && <AuthModal />}
       {mcpModalOpen && <McpConnectModal />}
       <DialogModal />

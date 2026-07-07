@@ -86,9 +86,15 @@ try {
   check('선택 없을 때 Delete → 변화 없음', await dialogVisible() === 0 && await edgeCount() === 1);
 
   // ───── 1. 엣지 선택 후 Delete → 확인 다이얼로그 ─────
+  // 엣지 클릭은 선택(✎ 아이콘 노출)만 하고, 편집 모달은 ✎ 아이콘을 눌러야 열린다.
   await clickEdge(0);
   const relPanel = page.locator('[data-testid="rel-panel"]');
-  check('엣지 클릭 → 관계 편집 패널 표시', await relPanel.count() === 1);
+  check('엣지 클릭 → ✎ 편집 아이콘 노출', await page.locator('[data-testid="edge-edit-icon"]').count() === 1);
+  await page.click('[data-testid="edge-edit-icon"]');
+  await page.waitForTimeout(300);
+  check('✎ 아이콘 클릭 → 관계 편집 패널 표시', await relPanel.count() === 1);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
 
   await page.keyboard.press('Delete');
   await page.waitForTimeout(300);

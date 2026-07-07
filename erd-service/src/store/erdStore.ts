@@ -36,6 +36,7 @@ interface ERDStore {
   selectedEntityId: string | null;
   selectedEdgeId: string | null;
   selectedMemoId: string | null;
+  editorOpen: 'entity' | 'relationship' | 'memo' | null;
   pendingConnection: { sourceId: string; sourceHandle: string } | null;
 
   past: Snapshot[];
@@ -49,6 +50,10 @@ interface ERDStore {
   selectEntity: (id: string | null) => void;
   selectEdge: (id: string | null) => void;
   selectMemo: (id: string | null) => void;
+  openEntityEditor: (id: string) => void;
+  openRelationshipEditor: (id: string) => void;
+  openMemoEditor: (id: string) => void;
+  closeEditor: () => void;
 
   addMemo: (pos?: { x: number; y: number }) => void;
   updateMemo: (id: string, updates: Partial<Omit<Memo, 'id'>>) => void;
@@ -121,6 +126,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     selectedEntityId: null,
     selectedEdgeId: null,
     selectedMemoId: null,
+    editorOpen: null,
     pendingConnection: null,
 
     past: [],
@@ -172,14 +178,26 @@ export const useERDStore = create<ERDStore>((set, get) => {
           selectedEntityId: s.selectedEntityId === id ? null : s.selectedEntityId,
           // 삭제로 사라진 관계를 선택 중이었다면 엣지 선택 해제
           selectedEdgeId: doc.relationships.some(r => r.id === s.selectedEdgeId) ? s.selectedEdgeId : null,
+          // 삭제된 엔티티의 편집 모달이 열려 있었다면 같이 닫는다 (남겨두면 이후 다른 엔티티를 선택할 때 잘못 재오픈됨)
+          editorOpen: (s.editorOpen === 'entity' && s.selectedEntityId === id) ? null : s.editorOpen,
         };
       });
     },
 
-    // 엔티티/엣지/메모 선택은 상호 배타
+    // 엔티티/엣지/메모 "선택"(하이라이트)만 한다 — 편집 모달은 openXEditor로 별도 오픈.
+    // editorOpen은 여기서 건드리지 않는다: 캔버스는 모달이 열려 있으면 클릭이 막히므로 정상 사용
+    // 경로로는 절대 동시에 안 일어나지만, 모달 뒤에 가려진 메모 textarea가 onFocus에서 selectMemo를
+    // 호출하는 경우처럼 클릭이 아닌 경로로 선택이 트리거될 수 있어 — 거기서 모달을 닫아버리면 안 된다.
+    // 삭제로 편집 대상이 사라져 editorOpen이 stale해지는 경우는 각 deleteX 액션에서 정리한다.
     selectEntity: (id) => set({ selectedEntityId: id, selectedEdgeId: null, selectedMemoId: null }),
     selectEdge: (id) => set({ selectedEdgeId: id, selectedEntityId: null, selectedMemoId: null }),
     selectMemo: (id) => set({ selectedMemoId: id, selectedEntityId: null, selectedEdgeId: null }),
+
+    // 편집 모달 트리거 — info 아이콘 클릭 / ✎ 아이콘 클릭 / 우클릭 컨텍스트 메뉴 "편집"에서 호출
+    openEntityEditor: (id) => set({ selectedEntityId: id, selectedEdgeId: null, selectedMemoId: null, editorOpen: 'entity' }),
+    openRelationshipEditor: (id) => set({ selectedEdgeId: id, selectedEntityId: null, selectedMemoId: null, editorOpen: 'relationship' }),
+    openMemoEditor: (id) => set({ selectedMemoId: id, selectedEntityId: null, selectedEdgeId: null, editorOpen: 'memo' }),
+    closeEditor: () => set({ editorOpen: null }),
 
     addMemo: (pos) => {
       pushHistory('addMemo');
@@ -199,6 +217,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
       set(s => ({
         ...erdOps.deleteMemo(docOf(s), id),
         selectedMemoId: s.selectedMemoId === id ? null : s.selectedMemoId,
+        editorOpen: (s.editorOpen === 'memo' && s.selectedMemoId === id) ? null : s.editorOpen,
       }));
     },
 
@@ -374,6 +393,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
       set(st => ({
         ...erdOps.deleteRelationship(docOf(st), id).doc,
         selectedEdgeId: st.selectedEdgeId === id ? null : st.selectedEdgeId,
+        editorOpen: (st.editorOpen === 'relationship' && st.selectedEdgeId === id) ? null : st.editorOpen,
       }));
     },
 

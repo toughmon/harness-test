@@ -53,9 +53,13 @@ try {
   await page.click('button:has-text("Add Entity")');
   await page.waitForTimeout(400);
 
-  // Entity2(나중 추가)가 선택된 상태 — 컬럼 1개 추가 (기본 VARCHAR 255)
-  await page.locator('button').filter({ hasText: /^add Add$/ }).click();
+  // Entity2(나중 추가)가 선택된 상태 — info 아이콘으로 편집 모달을 열고 컬럼 1개 추가 (기본 VARCHAR 255)
+  await page.locator('.react-flow__node').nth(1).locator('[data-testid="entity-info-icon"]').click();
+  await page.waitForTimeout(300);
+  await page.locator('[data-testid="entity-editor-modal"]').locator('[data-testid="add-column"]').click();
   await page.waitForTimeout(400);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
 
   await page.mouse.click(700, 750);
   await page.waitForTimeout(200);
@@ -64,14 +68,14 @@ try {
 
   // 부모 Entity1의 PK명을 구분되는 이름(e1_id)으로 변경 — 실사용 컨벤션(order_id, user_id 처럼).
   // FK는 상위 PK명을 그대로 쓰므로, 부모 PK명을 자식의 기본 id 컬럼과 겹치지 않게 한다.
-  await page.locator('.react-flow__node').nth(0).click();
+  await page.locator('.react-flow__node').nth(0).locator('[data-testid="entity-info-icon"]').click();
   await page.waitForTimeout(300);
-  const panel = page.locator('aside').last();
+  const panel = page.locator('[data-testid="entity-editor-modal"]');
   await panel.locator('.font-mono', { hasText: /^id$/ }).first().click();
   await page.waitForTimeout(300);
   await panel.locator('input[placeholder="물리명"]').first().fill('e1_id');
   await page.waitForTimeout(300);
-  await page.mouse.click(700, 750);
+  await page.click('[data-testid="editor-modal-close"]');
   await page.waitForTimeout(300);
 
   const relOk = await drawRelationship(0, 1, '1:M 식별자 상속 (점선 + 실선)');

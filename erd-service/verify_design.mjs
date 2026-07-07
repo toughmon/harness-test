@@ -53,11 +53,11 @@ try {
   // 초기 화면 (빈 캔버스 + 레이아웃)
   await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_design_empty.png' });
 
-  // 레이아웃 요소 확인
+  // 레이아웃 요소 확인 — Properties는 이제 상시 패널이 아니라 모달이라 초기엔 닫혀 있어야 정상
   const checks = {
     topbarBrand: await page.locator('text=YourERD').count(),
     sidebarAddEntity: await page.locator('button:has-text("Add Entity")').count(),
-    propertiesHeader: await page.locator('h3:has-text("Properties")').count(),
+    propertiesModalClosedInitially: await page.locator('[data-testid="entity-editor-modal"]').count() === 0,
     saveButton: await page.locator('button:has-text("Save")').count(),
   };
   console.log('layout checks:', JSON.stringify(checks));
@@ -79,21 +79,23 @@ try {
   await page.waitForTimeout(600);
 
   // 관계 2개: E1→E2 식별(FK 자동 추가), E1→E3 비식별
-  const ok1 = await drawRelationship(0, 1, '1:M 상속+식별자');
-  const ok2 = await drawRelationship(0, 2, '1:M 비상속+비식별');
+  const ok1 = await drawRelationship(0, 1, '1:M 식별자 상속 (점선 + 실선)');
+  const ok2 = await drawRelationship(0, 2, '1:M 비식별 (점선 + 실선)');
   console.log('relationships:', ok1, ok2);
 
-  // 엔티티 클릭 → Properties 패널 동작 확인
-  await page.locator('.react-flow__node').nth(1).click();
+  // 엔티티의 info 아이콘 클릭 → Properties 편집 모달 동작 확인 (선택만으로는 안 열림)
+  await page.locator('.react-flow__node').nth(1).locator('[data-testid="entity-info-icon"]').click();
   await page.waitForTimeout(500);
-  const tableNameVal = await page.locator('aside input[type="text"]').first().inputValue();
+  const tableNameVal = await page.locator('[data-testid="entity-editor-modal"] input[type="text"]').first().inputValue();
   console.log('properties shows table name:', tableNameVal);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
 
   // FK 자동 추가 확인 (식별 관계 → Entity2에 FK)
   const n2Text = await page.locator('.react-flow__node').nth(1).innerText();
   console.log('Entity2 has FK column:', n2Text.includes('_id'));
 
-  // 줌 툴바 동작 확인
+  // 줌 툴바 동작 확인 (모달이 열려 있으면 캔버스 툴바가 가려지므로 먼저 닫아야 함)
   const zoomBefore = await page.locator('.glass-toolbar span.font-mono').innerText();
   await page.click('button[title="Zoom In"]');
   await page.waitForTimeout(400);

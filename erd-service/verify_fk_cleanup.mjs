@@ -69,6 +69,13 @@ async function clickEdge(idx = 0) {
   await page.waitForTimeout(400);
 }
 
+// 엣지 선택(하이라이트) + ✎ 아이콘 클릭으로 편집 모달까지 연다
+async function openRelPanel(idx = 0) {
+  await clickEdge(idx);
+  await page.click('[data-testid="edge-edit-icon"]');
+  await page.waitForTimeout(300);
+}
+
 try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
@@ -89,8 +96,7 @@ try {
 
   // ── 시나리오 1: 상위 엔티티 삭제 → 하위 FK 제거 ──
   const parent = page.locator('.react-flow__node').first();
-  const pb = await parent.boundingBox();
-  await page.mouse.click(pb.x + pb.width / 2, pb.y + 20); // 헤더 클릭 → 선택
+  await parent.locator('[data-testid="entity-info-icon"]').click(); // info 아이콘 → 편집 모달
   await page.waitForTimeout(400);
   await page.click('button[title="엔티티 삭제"]');
   await page.waitForTimeout(400);
@@ -112,7 +118,7 @@ try {
   // 기본 배치는 노드 간격이 좁아 엣지 중간점이 핸들에 가려짐 → 자동 정렬로 간격 확보
   await page.click('button[title="자동 정렬"]');
   await page.waitForTimeout(800);
-  await clickEdge(0);
+  await openRelPanel(0);
   await page.click('[data-testid="rel-delete"]');
   await page.waitForTimeout(300);
   await page.click('[data-testid="dialog-ok"]');
@@ -126,7 +132,7 @@ try {
   const pkIcons = await page.locator('.react-flow__node').last().locator('[title="Primary Key"]').count();
   // 이름 충돌로 기존 PK가 교체됐으므로 PK 아이콘 0개, FK 아이콘 1개
   check('비식별 관계 → FK 생성 (식별자 미포함)', ok2 && (await childFkIcons()) === 1 && pkIcons === 0);
-  await clickEdge(0);
+  await openRelPanel(0);
   await page.click('[data-testid="rel-delete"]');
   await page.waitForTimeout(300);
   await page.click('[data-testid="dialog-ok"]');

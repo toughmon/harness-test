@@ -128,7 +128,7 @@ function RelationshipEdge({
   selected,
 }: EdgeProps) {
   const rel = data as unknown as Relationship;
-  const { relationships, selectedEdgeId, updateRelationshipAnchor } = useERDStore();
+  const { relationships, selectedEdgeId, updateRelationshipAnchor, openRelationshipEditor } = useERDStore();
   const { screenToFlowPosition } = useReactFlow();
 
   // 노드 위치/크기를 직접 읽어 연결점을 동적으로 계산
@@ -313,10 +313,36 @@ function RelationshipEdge({
         />
       )}
 
-      {/* 끝점 드래그 핸들 — HTML 오버레이(EdgeLabelRenderer)라 포인터 이벤트가 안정적 */}
-      {showHandles && (
+      {/* 관계 편집(✎) 아이콘 — 선택 시 경로 중간점에 항상 표시. 끝점 드래그 핸들은 비자기참조 선택 시에만 (showHandles) */}
+      {isSelected && (
         <EdgeLabelRenderer>
-          {[
+          <div
+            className="nodrag nopan"
+            data-testid="edge-edit-icon"
+            title="관계 편집"
+            onClick={e => { e.stopPropagation(); openRelationshipEditor(id); }}
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${(sX + tX) / 2}px, ${(sY + tY) / 2}px)`,
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: EDGE_SELECTED,
+              color: '#1a1a2e',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              pointerEvents: 'all',
+              zIndex: 20,
+              fontSize: 12,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+            }}
+          >
+            ✎
+          </div>
+
+          {showHandles && [
             { end: 'source' as const, x: sX, y: sY },
             { end: 'target' as const, x: tX, y: tY },
           ].map(h => (

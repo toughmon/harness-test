@@ -53,6 +53,19 @@ async function clickEdge(idx = 0) {
   await page.waitForTimeout(400);
 }
 
+// 엣지 선택(하이라이트) + ✎ 아이콘 클릭으로 편집 모달까지 연다.
+// 이미 선택되어 ✎ 아이콘이 중간점을 덮고 있으면 clickEdge()가 그 아이콘을 다시 클릭해버려
+// (아이콘 자체가 openRelationshipEditor를 호출) 모달이 먼저 열리고 뒤이은 아이콘 클릭이
+// 가려진 아이콘을 기다리다 타임아웃난다 — 이미 떠 있으면 clickEdge를 건너뛴다.
+async function openRelPanel(idx = 0) {
+  const icon = page.locator('[data-testid="edge-edit-icon"]');
+  if (await icon.count() === 0) {
+    await clickEdge(idx);
+  }
+  await page.click('[data-testid="edge-edit-icon"]');
+  await page.waitForTimeout(300);
+}
+
 // 엣지 group 내 보이는 path(투명 hit-area 제외)의 stroke-dasharray 목록
 const edgeDashes = (idx = 0) => page.locator('.react-flow__edge').nth(idx).evaluate(g =>
   [...g.querySelectorAll('path')]
@@ -63,7 +76,8 @@ const edgeDashes = (idx = 0) => page.locator('.react-flow__edge').nth(idx).evalu
 const edgeLines = (idx = 0) => page.locator('.react-flow__edge').nth(idx).evaluate(g => g.querySelectorAll('line').length);
 
 const relPanelCount = () => page.locator('[data-testid="rel-panel"]').count();
-const propsPanelCount = () => page.locator('h3:has-text("Properties")').count();
+// 구버전엔 "Properties" 고정 라벨이었으나, 모달 전환 후 타이틀이 엔티티명으로 바뀌어 testid로 판별
+const propsPanelCount = () => page.locator('[data-testid="entity-editor-modal"]').count();
 const childPk = () => page.locator('.react-flow__node').nth(1).locator('[title="Primary Key"]').count();
 const childFk = () => page.locator('.react-flow__node').nth(1).locator('[title="Foreign Key"]').count();
 
@@ -81,13 +95,15 @@ try {
   await page.click('button[title="Fit View"]');
   await page.waitForTimeout(400);
 
-  await page.locator('.react-flow__node').nth(0).click();
+  await page.locator('.react-flow__node').nth(0).locator('[data-testid="entity-info-icon"]').click();
   await page.waitForTimeout(300);
-  const setupPanel = page.locator('aside').last();
+  const setupPanel = page.locator('[data-testid="entity-editor-modal"]');
   await setupPanel.locator('.font-mono', { hasText: /^id$/ }).first().click();
   await page.waitForTimeout(300);
   await setupPanel.locator('input[placeholder="물리명"]').first().fill('pid');
   await page.waitForTimeout(300);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
   await page.mouse.click(700, 780);
   await page.waitForTimeout(300);
 
@@ -98,17 +114,31 @@ try {
   await page.click('button[title="자동 정렬"]');
   await page.waitForTimeout(800);
 
-  // ── 1. 엣지 선택 → 우측 관계 편집 패널 표시 ──
+  // ── 1. 엣지 선택(하이라이트)만으로는 패널이 안 열리고, ✎ 아이콘을 눌러야 열린다 ──
   await clickEdge(0);
-  check('엣지 클릭 → 관계 편집 패널 표시', await relPanelCount() === 1);
-  check('엣지 선택 시 엔티티 Properties 패널 숨김', await propsPanelCount() === 0);
+  check('엣지 클릭 → ✎ 편집 아이콘 노출(패널은 아직 안 열림)',
+    await page.locator('[data-testid="edge-edit-icon"]').count() === 1 && await relPanelCount() === 0);
+  await page.click('[data-testid="edge-edit-icon"]');
+  await page.waitForTimeout(300);
+  check('✎ 아이콘 클릭 → 관계 편집 패널 표시', await relPanelCount() === 1);
+  check('엣지 편집 패널 표시 중엔 엔티티 Properties 패널 숨김', await propsPanelCount() === 0);
 
-  // ── 2. 엔티티 ↔ 관계 배타 선택 ──
+  // ── 2. 모달은 화면 전체를 덮어 열린 동안 캔버스 클릭 자체가 막힌다 — 먼저 닫아야 다른 요소를 선택할 수 있음.
+  //      닫은 뒤 노드를 클릭하면 선택만 되고 Properties가 자동으로 열리지는 않음(각자 아이콘으로 명시 오픈) ──
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
+  check('모달 닫기 → 관계 패널 사라짐', await relPanelCount() === 0);
   await page.locator('.react-flow__node').nth(0).click();
   await page.waitForTimeout(300);
-  check('노드 클릭 → 관계 패널 사라지고 Properties 표시', await relPanelCount() === 0 && await propsPanelCount() === 1);
-  await clickEdge(0);
-  check('다시 엣지 클릭 → 관계 패널 복귀', await relPanelCount() === 1 && await propsPanelCount() === 0);
+  check('노드 클릭(선택) → Properties 자동 오픈 아님', await propsPanelCount() === 0);
+  await page.locator('.react-flow__node').nth(0).locator('[data-testid="entity-info-icon"]').click();
+  await page.waitForTimeout(300);
+  check('엔티티 info 아이콘 → Properties 모달 표시', await propsPanelCount() === 1);
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
+
+  await openRelPanel(0);
+  check('다시 엣지 편집 → 관계 패널 복귀', await relPanelCount() === 1 && await propsPanelCount() === 0);
 
   // ── 4. 4조합 렌더 (선택 상태 유지하며 토글) ──
   // 시작: parentOptional=true(점선), childOptional=false(실선) = half → 베이스'6 4' + 자식 오버레이'0 50 50 0'
@@ -174,7 +204,9 @@ try {
   await idBox.check();              // 식별 ON (자식 실선이라 가능)
   await page.waitForTimeout(500);
   check('식별 재적용 → PK 2', await childPk() === 2);
-  await page.mouse.click(700, 780);  // 입력 포커스 해제 (Ctrl+Z 동작 위해) — 패널도 닫힘
+  // 입력 포커스 해제(Ctrl+Z 동작 위해) — 모달을 명시적으로 닫는다.
+  // (모달이 화면 중앙 640px 폭이라 700,780 같은 임의 좌표는 배경이 아니라 패널 내부를 클릭할 수 있음 — 실제로 "관계 삭제" 버튼을 오클릭한 회귀가 있었음)
+  await page.click('[data-testid="editor-modal-close"]');
   await page.waitForTimeout(300);
   await page.keyboard.press('Control+z');
   await page.waitForTimeout(500);
@@ -183,14 +215,15 @@ try {
   await page.waitForTimeout(500);
   check('Redo → 식별 재적용(PK 2)', await childPk() === 2);
 
-  // ── 3 & 7. 빈 캔버스 클릭 → 패널 닫힘 / 패널에서 관계 삭제 ──
-  await clickEdge(0);
+  // ── 3 & 7. 빈 캔버스(모달 배경) 클릭 → 패널 닫힘 / 패널에서 관계 삭제 ──
+  // 모달 카드가 화면 중앙 640px 폭이라, 배경임을 보장하려면 카드 바깥의 좌상단 모서리를 클릭한다.
+  await openRelPanel(0);
   check('엣지 재선택 → 패널 표시', await relPanelCount() === 1);
-  await page.mouse.click(700, 780);
+  await page.mouse.click(50, 50);
   await page.waitForTimeout(300);
-  check('빈 캔버스 클릭 → 관계 패널 닫힘', await relPanelCount() === 0);
+  check('빈 캔버스(모달 배경) 클릭 → 관계 패널 닫힘', await relPanelCount() === 0);
 
-  await clickEdge(0);
+  await openRelPanel(0);
   await page.click('[data-testid="rel-delete"]');
   await page.waitForTimeout(300);
   await page.click('[data-testid="dialog-ok"]');

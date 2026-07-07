@@ -22,10 +22,11 @@ import EntityNode from '../nodes/EntityNode';
 import MemoNode from '../nodes/MemoNode';
 import RelationshipEdge from '../edges/RelationshipEdge';
 import RelTypeModal from '../panels/RelTypeModal';
+import ContextMenu from '../common/ContextMenu';
 import { computeAutoLayout } from '../../utils/autoLayout';
 import { exportDiagramPng } from '../../utils/exportImage';
 import { exportDiagramSql } from '../../utils/exportSql';
-import { alertDialog } from '../../store/dialogStore';
+import { alertDialog, confirmDialog } from '../../store/dialogStore';
 
 const nodeTypes = { entity: EntityNode, memo: MemoNode };
 const edgeTypes = { relationship: RelationshipEdge };
@@ -125,9 +126,16 @@ export default function ERDCanvas() {
     entities, relationships, nodePositions, memos,
     selectEntity, selectEdge, selectMemo, addRelationship, updateNodePosition,
     addMemo, updateMemoPosition,
+    deleteEntity, deleteRelationship, deleteMemo,
+    openEntityEditor, openRelationshipEditor, openMemoEditor,
   } = useERDStore();
 
   const [pendingConn, setPendingConn] = useState<Connection | null>(null);
+
+  // 우클릭 컨텍스트 메뉴 — 엔터티/관계선/메모 공통 편집/삭제 진입점
+  const [contextMenu, setContextMenu] = useState<
+    { x: number; y: number; type: 'entity' | 'relationship' | 'memo'; id: string } | null
+  >(null);
 
   // 전체화면 상태
   const canvasRef = useRef<HTMLElement>(null);
@@ -227,6 +235,61 @@ export default function ERDCanvas() {
     selectEdge(edge.id);
   }, [selectEdge]);
 
+  // 우클릭 → 컨텍스트 메뉴(편집/삭제). 메모도 React Flow 노드라 onNodeContextMenu로 함께 잡히므로 type으로 구분.
+  const onNodeContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, type: node.type === 'memo' ? 'memo' : 'entity', id: node.id });
+  }, []);
+
+  const onEdgeContextMenu = useCallback((e: React.MouseEvent, edge: Edge) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, type: 'relationship', id: edge.id });
+  }, []);
+
+  const handleContextMenuEdit = useCallback(() => {
+    if (!contextMenu) return;
+    if (contextMenu.type === 'entity') openEntityEditor(contextMenu.id);
+    else if (contextMenu.type === 'relationship') openRelationshipEditor(contextMenu.id);
+    else openMemoEditor(contextMenu.id);
+  }, [contextMenu, openEntityEditor, openRelationshipEditor, openMemoEditor]);
+
+  // 삭제 확인 메시지는 App.tsx의 Delete 키 핸들러·각 편집 패널의 삭제 버튼과 동일하게 유지
+  const handleContextMenuDelete = useCallback(async () => {
+    if (!contextMenu) return;
+    const { type, id } = contextMenu;
+    if (type === 'entity') {
+      const entity = entities.find(e => e.id === id);
+      if (!entity) return;
+      const ok = await confirmDialog({
+        title: '엔티티 삭제',
+        message: `"${entity.name}" 엔티티를 삭제할까요?\n연결된 관계선도 함께 삭제됩니다.`,
+        confirmText: '삭제',
+        danger: true,
+      });
+      if (ok) deleteEntity(entity.id);
+    } else if (type === 'relationship') {
+      const rel = relationships.find(r => r.id === id);
+      if (!rel) return;
+      const parent = entities.find(e => e.id === rel.sourceId);
+      const child = entities.find(e => e.id === rel.targetId);
+      const ok = await confirmDialog({
+        title: '관계 삭제',
+        message: `"${parent?.name ?? '?'} → ${child?.name ?? '?'}" 관계를 삭제할까요?\n자동 생성된 FK 컬럼도 함께 제거됩니다.`,
+        confirmText: '삭제',
+        danger: true,
+      });
+      if (ok) deleteRelationship(rel.id);
+    } else {
+      const ok = await confirmDialog({
+        title: '메모 삭제',
+        message: '이 메모를 삭제할까요?',
+        confirmText: '삭제',
+        danger: true,
+      });
+      if (ok) { deleteMemo(id); selectMemo(null); }
+    }
+  }, [contextMenu, entities, relationships, deleteEntity, deleteRelationship, deleteMemo, selectMemo]);
+
   const handleRelTypeSelect = (type: RelationshipType) => {
     if (!pendingConn?.source || !pendingConn?.target) return;
     addRelationship(pendingConn.source, pendingConn.target, type);
@@ -246,7 +309,10 @@ export default function ERDCanvas() {
         onConnectStart={onConnectStart}
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
+        onNodeContextMenu={onNodeContextMenu}
+        onEdgeContextMenu={onEdgeContextMenu}
         onPaneClick={() => { selectEntity(null); selectEdge(null); selectMemo(null); }}
+        onPaneContextMenu={(e) => e.preventDefault()}
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}   // 기본 Backspace 삭제는 스토어를 거치지 않고 로컬 노드만 지워 데이터와 어긋남 — App.tsx의 Delete 키 핸들러가 대신 처리
         fitView
@@ -290,6 +356,16 @@ export default function ERDCanvas() {
         <RelTypeModal
           onSelect={handleRelTypeSelect}
           onCancel={() => setPendingConn(null)}
+        />
+      )}
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onEdit={handleContextMenuEdit}
+          onDelete={handleContextMenuDelete}
+          onClose={() => setContextMenu(null)}
         />
       )}
     </main>

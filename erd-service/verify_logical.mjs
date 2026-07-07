@@ -46,10 +46,12 @@ try {
   await page.click('button:has-text("Add Entity")');
   await page.waitForTimeout(400);
 
-  // Entity1 선택 → 물리명/논리명/설명 입력
+  // Entity1 선택(사이드바) → 편집 모달은 캔버스 노드의 info 아이콘으로 오픈 → 물리명/논리명/설명 입력
   await page.locator('aside').first().locator('button', { hasText: 'Entity1' }).click();
   await page.waitForTimeout(400);
-  const panel = page.locator('aside').last();
+  await page.locator('.react-flow__node').nth(0).locator('[data-testid="entity-info-icon"]').click();
+  await page.waitForTimeout(300);
+  const panel = page.locator('[data-testid="entity-editor-modal"]');
   const inputs = panel.locator('input[type="text"]');
   await inputs.nth(0).fill('users');            // 물리명
   await inputs.nth(1).fill('사용자');            // 논리명
@@ -71,7 +73,9 @@ try {
   const sbText = await page.locator('aside').first().innerText();
   console.log('sidebar shows logical:', sbText.includes('사용자'));
 
-  // 빈 곳 클릭 + fit
+  // 모달 닫기 + 빈 곳 클릭 + fit (모달이 열려 있으면 툴바가 가려져 클릭 불가)
+  await page.click('[data-testid="editor-modal-close"]');
+  await page.waitForTimeout(200);
   await page.mouse.click(700, 750);
   await page.waitForTimeout(300);
   await page.click('button[title="Fit View"]');
@@ -88,7 +92,7 @@ try {
   );
 
   // 재선택 시 입력값 유지 확인 (Description 포함)
-  await page.locator('.react-flow__node').nth(0).click();
+  await page.locator('.react-flow__node').nth(0).locator('[data-testid="entity-info-icon"]').click();
   await page.waitForTimeout(400);
   const descVal = await panel.locator('textarea').inputValue();
   const logicalVal = await panel.locator('input[type="text"]').nth(1).inputValue();
