@@ -26,7 +26,14 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('mcpServers', d.get\\('projects', {}\\)\\), indent=2\\)\\)\")",
       "Bash(python *)",
       "mcp__erd__list_diagrams",
-      "mcp__erd__get_diagram"
+      "mcp__erd__get_diagram",
+      "mcp__erd__select_diagram",
+      "WebFetch(domain:claude.ai)",
+      "mcp__erd__add_relationship",
+      "Skill(artifact-design)",
+      "Bash(mkdir *)",
+      "Artifact",
+      "PowerShell(Copy-Item *)"
     ],
     "ask": [
       "Bash(git push:*)"

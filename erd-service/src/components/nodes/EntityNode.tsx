@@ -1,6 +1,6 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { Column, Entity, ENTITY_COLORS, Relationship } from '../../types/erd';
+import { Column, ColumnType, Entity, ENTITY_COLORS, Relationship } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
 import { deriveSides, labelForSides } from '../../core/relationshipSides';
 
@@ -24,11 +24,65 @@ const subtypeHandleStyle: React.CSSProperties = {
   right: -6,
 };
 
+function parseTypeAndSize(rawStr: string): { type: ColumnType; size: string } {
+  const trimmed = rawStr.trim();
+  if (!trimmed) return { type: 'VARCHAR', size: '255' };
+
+  const match = trimmed.match(/^([a-zA-Z0-9_\s]+)(?:\(([^)]*)\))?$/);
+  if (match) {
+    const typeCandidate = match[1].trim().toUpperCase();
+    const size = match[2] ? match[2].trim() : '';
+    return { type: typeCandidate as ColumnType, size };
+  }
+  return { type: trimmed.toUpperCase() as ColumnType, size: '' };
+}
+
+function InlineInput({
+  value,
+  onChange,
+  onSubmit,
+  onCancel,
+  className = '',
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  className?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, []);
+
+  return (
+    <input
+      ref={inputRef}
+      className={`bg-surface-container text-on-surface border border-primary rounded px-1 py-px outline-none ${className}`}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      onBlur={onSubmit}
+      onKeyDown={e => {
+        e.stopPropagation();
+        if (e.key === 'Enter') onSubmit();
+        if (e.key === 'Escape') onCancel();
+      }}
+      onClick={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      onDoubleClick={e => e.stopPropagation()}
+    />
+  );
+}
+
 function EntityNode({ data }: NodeProps) {
   const entityData = data as unknown as EntityNodeData;
-  const { updateEntity, openEntityEditor, entities, relationships } = useERDStore();
-  const [editingName, setEditingName] = useState(false);
-  const [nameVal, setNameVal] = useState(entityData.name);
+  const { updateEntity, updateColumn, updateSubtypeColumn, openEntityEditor, entities, relationships } = useERDStore();
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState('');
   const [showPalette, setShowPalette] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -42,9 +96,159 @@ function EntityNode({ data }: NodeProps) {
   const pkCols = entityData.columns.filter(c => c.isPK);
   const nonPKCols = entityData.columns.filter(c => !c.isPK);
 
-  const handleNameSubmit = () => {
-    updateEntity(entityData.id, { name: nameVal.trim() || entityData.name });
-    setEditingName(false);
+  const startEditing = (key: string, initialVal: string) => {
+    setEditingKey(key);
+    setEditVal(initialVal);
+  };
+
+  const cancelEditing = () => {
+    setEditingKey(null);
+    setEditVal('');
+  };
+
+  const handleFieldSubmit = () => {
+    if (!editingKey) return;
+
+    if (editingKey === 'entity-name') {
+      const val = editVal.trim();
+      if (val && val !== entityData.name) {
+        updateEntity(entityData.id, { name: val });
+      }
+    } else if (editingKey === 'entity-logicalName') {
+      updateEntity(entityData.id, { logicalName: editVal.trim() });
+    } else if (editingKey.startsWith('col-name-')) {
+      const colId = editingKey.replace('col-name-', '');
+      const val = editVal.trim();
+      if (val) {
+        updateColumn(entityData.id, colId, { name: val });
+      }
+    } else if (editingKey.startsWith('col-logicalName-')) {
+      const colId = editingKey.replace('col-logicalName-', '');
+      updateColumn(entityData.id, colId, { logicalName: editVal.trim() });
+    } else if (editingKey.startsWith('col-type-')) {
+      const colId = editingKey.replace('col-type-', '');
+      const { type, size } = parseTypeAndSize(editVal);
+      updateColumn(entityData.id, colId, { type, size });
+    } else if (editingKey.startsWith('subcol-name-')) {
+      const parts = editingKey.split('-');
+      const stId = parts[2];
+      const colId = parts[3];
+      const val = editVal.trim();
+      if (val && updateSubtypeColumn) {
+        updateSubtypeColumn(entityData.id, stId, colId, { name: val });
+      }
+    } else if (editingKey.startsWith('subcol-logicalName-')) {
+      const parts = editingKey.split('-');
+      const stId = parts[2];
+      const colId = parts[3];
+      if (updateSubtypeColumn) {
+        updateSubtypeColumn(entityData.id, stId, colId, { logicalName: editVal.trim() });
+      }
+    } else if (editingKey.startsWith('subcol-type-')) {
+      const parts = editingKey.split('-');
+      const stId = parts[2];
+      const colId = parts[3];
+      const { type, size } = parseTypeAndSize(editVal);
+      if (updateSubtypeColumn) {
+        updateSubtypeColumn(entityData.id, stId, colId, { type, size });
+      }
+    }
+
+    cancelEditing();
+  };
+
+  const renderColumnRow = (col: Column, isPK: boolean) => {
+    const isEditingName = editingKey === `col-name-${col.id}`;
+    const isEditingLogical = editingKey === `col-logicalName-${col.id}`;
+    const isEditingType = editingKey === `col-type-${col.id}`;
+
+    return (
+      <div key={col.id} className="px-3 py-1 flex items-center justify-between gap-2 hover:bg-surface-variant group">
+        <div className={`flex items-center gap-1.5 min-w-0 flex-1 ${!isPK && !col.isFK ? 'pl-5' : ''}`}>
+          {isPK && (
+            <span className="material-symbols-outlined text-[14px] text-pk-color shrink-0" title="Primary Key">key</span>
+          )}
+          {col.isFK && (
+            <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
+          )}
+
+          {isEditingName ? (
+            <InlineInput
+              value={editVal}
+              onChange={setEditVal}
+              onSubmit={handleFieldSubmit}
+              onCancel={cancelEditing}
+              className="font-mono text-[11px] font-bold w-full min-w-[60px]"
+            />
+          ) : (
+            <span
+              className="font-mono text-[11px] font-bold text-on-surface whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
+              title="더블클릭하여 속성명 수정"
+              data-testid="col-name"
+              onDoubleClick={e => {
+                e.stopPropagation();
+                startEditing(`col-name-${col.id}`, col.name);
+              }}
+            >
+              {col.name}
+            </span>
+          )}
+
+          {isEditingLogical ? (
+            <InlineInput
+              value={editVal}
+              onChange={setEditVal}
+              onSubmit={handleFieldSubmit}
+              onCancel={cancelEditing}
+              className="font-sans text-[10px] w-full min-w-[50px]"
+            />
+          ) : (
+            <span
+              className="font-sans text-[10px] text-on-surface-variant whitespace-nowrap shrink-0 cursor-pointer hover:text-primary hover:underline"
+              title="더블클릭하여 한글명 수정"
+              data-testid="col-logical-name"
+              onDoubleClick={e => {
+                e.stopPropagation();
+                startEditing(`col-logicalName-${col.id}`, col.logicalName || '');
+              }}
+            >
+              {col.logicalName ? (
+                col.logicalName
+              ) : (
+                <span className="opacity-0 group-hover:opacity-40 hover:!opacity-100 text-outline text-[9px] italic">
+                  +한글명
+                </span>
+              )}
+            </span>
+          )}
+
+          {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
+        </div>
+
+        {isEditingType ? (
+          <InlineInput
+            value={editVal}
+            onChange={setEditVal}
+            onSubmit={handleFieldSubmit}
+            onCancel={cancelEditing}
+            className="font-mono text-[11px] w-28 text-right"
+          />
+        ) : (
+          <span
+            className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0 cursor-pointer hover:text-primary hover:underline"
+            title="더블클릭하여 데이터타입 수정"
+            data-testid="col-type"
+            onDoubleClick={e => {
+              e.stopPropagation();
+              const typeStr = `${col.type}${col.size ? `(${col.size})` : ''}`;
+              startEditing(`col-type-${col.id}`, typeStr);
+            }}
+          >
+            {col.type}{col.size ? `(${col.size})` : ''}
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -70,7 +274,6 @@ function EntityNode({ data }: NodeProps) {
         <div
           className="bg-node-header px-3 py-2 border-b border-node-border flex justify-between items-center cursor-pointer gap-2"
           style={{ minHeight: 36 }}
-          onDoubleClick={() => { setEditingName(true); setNameVal(entityData.name); }}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span
@@ -79,24 +282,50 @@ function EntityNode({ data }: NodeProps) {
             >
               table_rows
             </span>
-            {editingName ? (
-              <input
-                autoFocus
-                className="font-mono text-xs font-bold text-on-surface bg-transparent outline-none border-b border-on-surface-variant w-full"
-                value={nameVal}
-                onChange={e => setNameVal(e.target.value)}
-                onBlur={handleNameSubmit}
-                onKeyDown={e => { if (e.key === 'Enter') handleNameSubmit(); if (e.key === 'Escape') setEditingName(false); }}
-                onClick={e => e.stopPropagation()}
+
+            {editingKey === 'entity-name' ? (
+              <InlineInput
+                value={editVal}
+                onChange={setEditVal}
+                onSubmit={handleFieldSubmit}
+                onCancel={cancelEditing}
+                className="font-mono text-xs font-bold w-full"
               />
             ) : (
-              <span className="flex items-baseline gap-1.5 select-none">
-                <span className="font-mono text-xs font-bold text-on-surface whitespace-nowrap">
-                  {entityData.name}
-                </span>
-                {entityData.logicalName && (
-                  <span className="font-sans text-[11px] text-on-surface-variant whitespace-nowrap shrink-0">
-                    {entityData.logicalName}
+              <span
+                className="font-mono text-xs font-bold text-on-surface whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
+                title="더블클릭하여 물리명 수정"
+                onDoubleClick={e => {
+                  e.stopPropagation();
+                  startEditing('entity-name', entityData.name);
+                }}
+              >
+                {entityData.name}
+              </span>
+            )}
+
+            {editingKey === 'entity-logicalName' ? (
+              <InlineInput
+                value={editVal}
+                onChange={setEditVal}
+                onSubmit={handleFieldSubmit}
+                onCancel={cancelEditing}
+                className="font-sans text-[11px] w-full"
+              />
+            ) : (
+              <span
+                className="font-sans text-[11px] text-on-surface-variant whitespace-nowrap shrink-0 cursor-pointer hover:text-primary hover:underline"
+                title="더블클릭하여 한글명 수정"
+                onDoubleClick={e => {
+                  e.stopPropagation();
+                  startEditing('entity-logicalName', entityData.logicalName || '');
+                }}
+              >
+                {entityData.logicalName ? (
+                  entityData.logicalName
+                ) : (
+                  <span className="opacity-0 hover:opacity-100 text-outline text-[10px] italic">
+                    +한글명
                   </span>
                 )}
               </span>
@@ -150,46 +379,13 @@ function EntityNode({ data }: NodeProps) {
         {/* PK Columns */}
         {pkCols.length > 0 && (
           <div className="border-b border-node-border py-1">
-            {pkCols.map(col => (
-              <div key={col.id} className="px-3 py-1 flex items-center justify-between gap-2 hover:bg-surface-variant group">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="material-symbols-outlined text-[14px] text-pk-color shrink-0" title="Primary Key">key</span>
-                  {col.isFK && (
-                    <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
-                  )}
-                  <span className="font-mono text-[11px] font-bold text-on-surface whitespace-nowrap">{col.name}</span>
-                  {col.logicalName && (
-                    <span className="font-sans text-[10px] text-on-surface-variant whitespace-nowrap shrink-0">{col.logicalName}</span>
-                  )}
-                  {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
-                </div>
-                <span className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0">
-                  {col.type}{col.size ? `(${col.size})` : ''}
-                </span>
-              </div>
-            ))}
+            {pkCols.map(col => renderColumnRow(col, true))}
           </div>
         )}
 
         {/* Non-PK Columns */}
         <div className="py-1">
-          {nonPKCols.map(col => (
-            <div key={col.id} className="px-3 py-1 flex items-center justify-between gap-2 hover:bg-surface-variant group">
-              <div className={`flex items-center gap-2 min-w-0 ${col.isFK ? '' : 'pl-5'}`}>
-                {col.isFK && (
-                  <span className="material-symbols-outlined text-[14px] text-fk-color shrink-0" title="Foreign Key">link</span>
-                )}
-                <span className="font-mono text-[11px] text-on-surface whitespace-nowrap">{col.name}</span>
-                {col.logicalName && (
-                  <span className="font-sans text-[10px] text-on-surface-variant whitespace-nowrap shrink-0">{col.logicalName}</span>
-                )}
-                {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
-              </div>
-              <span className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0">
-                {col.type}{col.size ? `(${col.size})` : ''}
-              </span>
-            </div>
-          ))}
+          {nonPKCols.map(col => renderColumnRow(col, false))}
 
           {entityData.columns.length === 0 && (
             <div className="px-3 py-1.5 text-[11px] font-mono text-outline italic">
@@ -220,34 +416,147 @@ function EntityNode({ data }: NodeProps) {
                   style={{ position: 'relative' }}
                   data-testid="subtype-box"
                 >
-                  {/* 서브타입 전용 연결점 — 여기서 바로 드래그하면 관계가 이 서브타입 스코프로 생성됨
-                      (ConnectionMode.Loose라 source 하나로 양방향 드래그/드롭 모두 가능) */}
+                  {/* 서브타입 전용 연결점 */}
                   <Handle type="source" position={Position.Right} id={`sub:${st.id}`} style={subtypeHandleStyle} />
                   <div className="bg-node-header px-2 py-1 border-b border-node-border rounded-t-md flex items-baseline gap-1.5">
                     <span className="material-symbols-outlined text-[12px] shrink-0 self-center" style={{ color: entityData.color }}>category</span>
-                    <span className="font-mono text-[10px] font-bold text-on-surface whitespace-nowrap">{st.name}</span>
-                    {st.logicalName && (
-                      <span className="font-sans text-[9px] text-on-surface-variant whitespace-nowrap shrink-0">{st.logicalName}</span>
+
+                    {editingKey === `subtype-name-${st.id}` ? (
+                      <InlineInput
+                        value={editVal}
+                        onChange={setEditVal}
+                        onSubmit={handleFieldSubmit}
+                        onCancel={cancelEditing}
+                        className="font-mono text-[10px] font-bold w-full"
+                      />
+                    ) : (
+                      <span
+                        className="font-mono text-[10px] font-bold text-on-surface whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
+                        title="더블클릭하여 서브타입명 수정"
+                        onDoubleClick={e => {
+                          e.stopPropagation();
+                          startEditing(`subtype-name-${st.id}`, st.name);
+                        }}
+                      >
+                        {st.name}
+                      </span>
+                    )}
+
+                    {editingKey === `subtype-logicalName-${st.id}` ? (
+                      <InlineInput
+                        value={editVal}
+                        onChange={setEditVal}
+                        onSubmit={handleFieldSubmit}
+                        onCancel={cancelEditing}
+                        className="font-sans text-[9px] w-full"
+                      />
+                    ) : (
+                      <span
+                        className="font-sans text-[9px] text-on-surface-variant whitespace-nowrap shrink-0 cursor-pointer hover:text-primary hover:underline"
+                        title="더블클릭하여 한글명 수정"
+                        onDoubleClick={e => {
+                          e.stopPropagation();
+                          startEditing(`subtype-logicalName-${st.id}`, st.logicalName || '');
+                        }}
+                      >
+                        {st.logicalName ? (
+                          st.logicalName
+                        ) : (
+                          <span className="opacity-0 hover:opacity-100 text-outline text-[8px] italic">
+                            +한글명
+                          </span>
+                        )}
+                      </span>
                     )}
                   </div>
                   <div className="py-0.5">
-                    {st.columns.map(col => (
-                      <div key={col.id} className="px-2 py-0.5 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1">
-                          {col.isFK && (
-                            <span className="material-symbols-outlined text-[11px] text-fk-color shrink-0" title="Foreign Key">link</span>
+                    {st.columns.map(col => {
+                      const isEditingSubName = editingKey === `subcol-name-${st.id}-${col.id}`;
+                      const isEditingSubLogical = editingKey === `subcol-logicalName-${st.id}-${col.id}`;
+                      const isEditingSubTypes = editingKey === `subcol-type-${st.id}-${col.id}`;
+
+                      return (
+                        <div key={col.id} className="px-2 py-0.5 flex items-center justify-between gap-2 group hover:bg-surface-variant/50">
+                          <div className="flex items-center gap-1 min-w-0">
+                            {col.isFK && (
+                              <span className="material-symbols-outlined text-[11px] text-fk-color shrink-0" title="Foreign Key">link</span>
+                            )}
+                            {isEditingSubName ? (
+                              <InlineInput
+                                value={editVal}
+                                onChange={setEditVal}
+                                onSubmit={handleFieldSubmit}
+                                onCancel={cancelEditing}
+                                className="font-mono text-[10px] w-full min-w-[40px]"
+                              />
+                            ) : (
+                              <span
+                                className="font-mono text-[10px] text-on-surface whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
+                                data-testid="subtype-col-name"
+                                title="더블클릭하여 속성명 수정"
+                                onDoubleClick={e => {
+                                  e.stopPropagation();
+                                  startEditing(`subcol-name-${st.id}-${col.id}`, col.name);
+                                }}
+                              >
+                                {col.name}
+                              </span>
+                            )}
+
+                            {isEditingSubLogical ? (
+                              <InlineInput
+                                value={editVal}
+                                onChange={setEditVal}
+                                onSubmit={handleFieldSubmit}
+                                onCancel={cancelEditing}
+                                className="font-sans text-[9px] w-full min-w-[40px]"
+                              />
+                            ) : (
+                              <span
+                                className="font-sans text-[9px] text-on-surface-variant whitespace-nowrap shrink-0 cursor-pointer hover:text-primary hover:underline"
+                                title="더블클릭하여 한글명 수정"
+                                onDoubleClick={e => {
+                                  e.stopPropagation();
+                                  startEditing(`subcol-logicalName-${st.id}-${col.id}`, col.logicalName || '');
+                                }}
+                              >
+                                {col.logicalName ? (
+                                  col.logicalName
+                                ) : (
+                                  <span className="opacity-0 group-hover:opacity-40 hover:!opacity-100 text-outline text-[8px] italic">
+                                    +한글명
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                            {col.isNN && <span className="text-pk-color text-[10px] shrink-0">*</span>}
+                          </div>
+
+                          {isEditingSubTypes ? (
+                            <InlineInput
+                              value={editVal}
+                              onChange={setEditVal}
+                              onSubmit={handleFieldSubmit}
+                              onCancel={cancelEditing}
+                              className="font-mono text-[9px] w-24 text-right"
+                            />
+                          ) : (
+                            <span
+                              className="font-mono text-[9px] text-on-surface-variant opacity-70 shrink-0 whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
+                              data-testid="subtype-col-type"
+                              title="더블클릭하여 데이터타입 수정"
+                              onDoubleClick={e => {
+                                e.stopPropagation();
+                                const typeStr = `${col.type}${col.size ? `(${col.size})` : ''}`;
+                                startEditing(`subcol-type-${st.id}-${col.id}`, typeStr);
+                              }}
+                            >
+                              {col.type}{col.size ? `(${col.size})` : ''}
+                            </span>
                           )}
-                          <span className="font-mono text-[10px] text-on-surface whitespace-nowrap" data-testid="subtype-col-name">{col.name}</span>
-                          {col.logicalName && (
-                            <span className="font-sans text-[9px] text-on-surface-variant whitespace-nowrap shrink-0">{col.logicalName}</span>
-                          )}
-                          {col.isNN && <span className="text-pk-color text-[10px] shrink-0">*</span>}
                         </div>
-                        <span className="font-mono text-[9px] text-on-surface-variant opacity-70 shrink-0 whitespace-nowrap" data-testid="subtype-col-type">
-                          {col.type}{col.size ? `(${col.size})` : ''}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {st.columns.length === 0 && (
                       <div className="px-2 py-0.5 text-[9px] font-mono text-outline italic">속성 없음</div>
                     )}
@@ -282,9 +591,7 @@ function fkTargetLabel(col: Column, entities: Entity[]): string | null {
   return targetCol ? `${target.name}.${targetCol.name}` : `⚠ ${target.name}.(끊어진 참조)`;
 }
 
-// info 아이콘 호버 시 표시되는 읽기전용 미리보기 — 노드 본문(컬럼/서브타입)에도 이미 보이는 정보는
-// 반복하지 않고, 캔버스만 봐서는 알 수 없는 것만 담는다: 설명, FK가 실제로 가리키는 대상,
-// 이 엔티티와 연결된 관계(부모/자식 · 카디널리티/식별 여부) 목록.
+// info 아이콘 호버 시 표시되는 읽기전용 미리보기
 function EntityHoverPreview({ entity, entities, relationships, onMouseEnter, onMouseLeave }: {
   entity: EntityNodeData;
   entities: Entity[];
@@ -397,3 +704,4 @@ function EntityHoverPreview({ entity, entities, relationships, onMouseEnter, onM
 }
 
 export default memo(EntityNode);
+
