@@ -289,6 +289,7 @@ function SubtypeColumnRow({ col, onUpdate, onDelete }: { col: Column; onUpdate: 
               value={col.type}
               onChange={e => onUpdate({ type: e.target.value as ColumnType })}
             >
+              {!col.type && <option value="">— 타입 선택 —</option>}
               {COLUMN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <input
@@ -426,6 +427,7 @@ function ColumnRow({ col, onUpdate, onDelete, dragging, dragOver, onDragStart, o
               value={col.type}
               onChange={e => onUpdate({ type: e.target.value as ColumnType })}
             >
+              {!col.type && <option value="">— 타입 선택 —</option>}
               {COLUMN_TYPES.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}

@@ -59,8 +59,8 @@ export const genId = (): string => `${Date.now()}-${Math.random().toString(36).s
 
 export const DEFAULT_COLUMN: Omit<Column, 'id' | 'name'> = {
   logicalName: '',
-  type: 'VARCHAR',
-  size: '255',
+  type: '' as ColumnType,
+  size: '',
   isPK: false,
   isFK: false,
   isNN: false,
