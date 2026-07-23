@@ -208,14 +208,27 @@ function RelationshipEdge({
   }
 
   const isSelfLoop = rel?.sourceId === rel?.targetId;
-  const edgePath = isSelfLoop
-    ? selfLoopPath(sX, sY, tX, tY)
-    : getSmoothStepPath({
-        sourceX: sX, sourceY: sY, sourcePosition: sPos,
-        targetX: tX, targetY: tY, targetPosition: tPos,
-        borderRadius: 8,
-        offset: 36,
-      })[0];
+  let edgePath = '';
+  let labelX = (sX + tX) / 2;
+  let labelY = (sY + tY) / 2;
+
+  if (isSelfLoop) {
+    edgePath = selfLoopPath(sX, sY, tX, tY);
+    const ox = Math.max(sX, tX) + 50;
+    const oy = Math.max(sY, tY) + 50;
+    labelX = ox;
+    labelY = (sY + oy) / 2;
+  } else {
+    const [pStr, lx, ly] = getSmoothStepPath({
+      sourceX: sX, sourceY: sY, sourcePosition: sPos,
+      targetX: tX, targetY: tY, targetPosition: tPos,
+      borderRadius: 8,
+      offset: 36,
+    });
+    edgePath = pStr;
+    labelX = lx;
+    labelY = ly;
+  }
 
   const sides = useMemo(
     () => deriveSides(rel ?? ({ type: 'ONE_TO_MANY_NON_IDENTIFYING' } as Relationship)),
@@ -323,7 +336,7 @@ function RelationshipEdge({
             onClick={e => { e.stopPropagation(); openRelationshipEditor(id); }}
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${(sX + tX) / 2}px, ${(sY + tY) / 2}px)`,
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
               width: 22,
               height: 22,
               borderRadius: '50%',
