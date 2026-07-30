@@ -11,7 +11,8 @@ import { Relationship, EndpointAnchor, MidOffset } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
 import { deriveSides } from '../../core/relationshipSides';
 import {
-  computeEdgeEndpoints, anchorToPoint, pointToAnchor, buildBendRoute, bendAxis, Rect,
+  computeEdgeEndpoints, anchorToPoint, pointToAnchor, buildBendRoute, bendAxis,
+  applyBendDrag, nearestBendSegment, Rect, BendSegment,
 } from '../../utils/edgeConnection';
 
 const EDGE_COLOR = '#7d7c8c';
@@ -221,6 +222,7 @@ function RelationshipEdge({
   let labelX = (sX + tX) / 2;
   let labelY = (sY + tY) / 2;
   let bendAxisNow: 'x' | 'y' = 'y';
+  let bendSegments: BendSegment[] = [];
 
   if (isSelfLoop) {
     edgePath = selfLoopPath(sX, sY, tX, tY);
@@ -239,6 +241,7 @@ function RelationshipEdge({
     labelX = route.labelX;
     labelY = route.labelY;
     bendAxisNow = route.axis;
+    bendSegments = route.segments;
   } else {
     const [pStr, lx, ly] = getSmoothStepPath({
       sourceX: sX, sourceY: sY, sourcePosition: sPos,
@@ -263,22 +266,40 @@ function RelationshipEdge({
     return true;
   };
 
-  // 선 자체를 드래그해 우회 — 이동은 의미 있는 축(좌우 배치면 상/하)으로만 반영한다.
+  // 커서로 잡은 지점이 어느 구간인지 — 우회 전에는 선 전체가 우회선 역할을 한다
+  const segmentAt = useCallback((clientX: number, clientY: number) => {
+    const p = screenToFlowPosition({ x: clientX, y: clientY });
+    const seg = bendSegments.length ? nearestBendSegment(bendSegments, p) : null;
+    return seg ?? {
+      part: 'channel' as const,
+      orientation: (bendAxisNow === 'y' ? 'h' : 'v') as 'h' | 'v',
+    };
+  }, [bendSegments, bendAxisNow, screenToFlowPosition]);
+
+  // hover 중인 구간에 맞춘 커서(수평 구간=상/하, 수직 구간=좌/우) — 어느 방향으로 끌 수 있는지 표시
+  const [hoverCursor, setHoverCursor] = useState<string | null>(null);
+  const onHover = useCallback((e: React.PointerEvent) => {
+    if (!canBend) return;
+    const next = segmentAt(e.clientX, e.clientY).orientation === 'h' ? 'ns-resize' : 'ew-resize';
+    setHoverCursor(prev => (prev === next ? prev : next));
+  }, [canBend, segmentAt]);
+
+  // 선 자체를 드래그해 우회 — 잡은 구간만 그 구간과 수직인 방향으로 움직인다.
+  // 우회선(중간 구간)은 상/하, 부모/자식 쪽 다리는 각각 독립으로 좌/우(세로 배치면 반대).
   // pointerdown에서 stopPropagation만 하고 preventDefault는 하지 않는다(뒤따르는 click이
   // 살아있어야 onEdgeClick 선택이 그대로 동작). 팬/더블클릭 줌은 nopan 클래스가 막는다.
   const startBend = useCallback((e: React.PointerEvent) => {
     if (!canBend || e.button !== 0) return;
     e.stopPropagation();
-    const axis = bendAxisNow;
     const base = rel?.midOffset ?? { x: 0, y: 0 };
+    const axis = bendAxisNow;
+    const grabbed = segmentAt(e.clientX, e.clientY).part;
     const startX = e.clientX, startY = e.clientY;
     const origin = screenToFlowPosition({ x: startX, y: startY });
     let moved = false;
     const offsetAt = (ev: PointerEvent): MidOffset => {
       const now = screenToFlowPosition({ x: ev.clientX, y: ev.clientY });
-      return axis === 'y'
-        ? { x: base.x, y: base.y + (now.y - origin.y) }
-        : { x: base.x + (now.x - origin.x), y: base.y };
+      return applyBendDrag(base, axis, grabbed, now.x - origin.x, now.y - origin.y);
     };
     const onMove = (ev: PointerEvent) => {
       if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 3) moved = true;
@@ -291,13 +312,13 @@ function RelationshipEdge({
       if (!moved) return;
       dragEndRef.current = performance.now();
       const next = offsetAt(ev);
-      // 의미 있는 축이 아닌 방향으로만 끌었으면 값이 그대로 — 히스토리·협업 op를 남기지 않는다
-      if (Math.abs(next.x - base.x) < 0.01 && Math.abs(next.y - base.y) < 0.01) return;
+      // 구간과 수직이 아닌 방향으로만 끌었으면 값이 그대로 — 히스토리·협업 op를 남기지 않는다
+      if (JSON.stringify(next) === JSON.stringify(base)) return;
       updateRelationshipMidOffset(id, next);
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
-  }, [canBend, bendAxisNow, rel, screenToFlowPosition, updateRelationshipMidOffset, id]);
+  }, [canBend, rel, bendAxisNow, segmentAt, screenToFlowPosition, updateRelationshipMidOffset, id]);
 
   // 선 더블클릭 → 우회 제거(자동 경로로 복귀)
   const resetBend = useCallback((e: React.MouseEvent) => {
@@ -332,13 +353,15 @@ function RelationshipEdge({
         fill="none"
         stroke="transparent"
         strokeWidth={12}
-        style={{ cursor: canBend ? (bendAxisNow === 'y' ? 'ns-resize' : 'ew-resize') : 'pointer' }}
+        style={{ cursor: canBend ? (hoverCursor ?? 'move') : 'pointer' }}
         onPointerDown={canBend ? startBend : undefined}
+        onPointerMove={canBend ? onHover : undefined}
+        onPointerLeave={canBend ? () => setHoverCursor(null) : undefined}
         onDoubleClick={canBend ? resetBend : undefined}
       >
         {canBend && (
           <title>
-            {`드래그: 선을 ${bendAxisNow === 'y' ? '위/아래' : '좌/우'}로 밀어 다른 엔티티 우회`
+            {`드래그: 잡은 구간만 이동 — ${bendAxisNow === 'y' ? '우회선은 위/아래, 양쪽 다리는 각각 좌/우' : '우회선은 좌/우, 양쪽 다리는 각각 위/아래'}`
               + `${rel?.midOffset ? ' · 더블클릭: 자동 경로로 복귀' : ''}`}
           </title>
         )}

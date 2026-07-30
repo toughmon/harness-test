@@ -208,11 +208,65 @@ const NORMALS: Record<Position, [number, number]> = {
   [Position.Bottom]: [0, 1],
 };
 
+// 우회 경로에서 독립적으로 끌 수 있는 구간 — 잡은 구간만 움직인다(반대쪽은 그대로).
+export type BendPart = 'channel' | 'sourceLeg' | 'targetLeg';
+
+export interface BendSegment {
+  part: BendPart;
+  orientation: 'h' | 'v';   // 구간이 놓인 방향 — 드래그는 이와 수직으로만 의미가 있다
+  a: Pt;
+  b: Pt;
+}
+
 export interface BendRoute {
   path: string;
   labelX: number;      // 우회선(중간 구간)의 중앙 — ✎ 아이콘 위치
   labelY: number;
-  axis: 'x' | 'y';     // 드래그가 의미를 갖는 축 (좌우 배치면 'y' = 상/하 드래그)
+  axis: 'x' | 'y';     // 주축 — 좌우 배치면 'y'(우회선이 수평, 상/하로 이동)
+  segments: BendSegment[];
+}
+
+// 다리 오프셋 읽기 — per-side 값이 없으면 구버전(양쪽 공통) 보조축 성분으로 폴백
+export function legOffsetOf(offset: MidOffset, axis: 'x' | 'y', end: 'source' | 'target'): number {
+  const legacy = axis === 'y' ? offset.x : offset.y;
+  return (end === 'source' ? offset.sourceLeg : offset.targetLeg) ?? legacy;
+}
+
+// 드래그 결과를 오프셋에 반영 — 잡은 구간에 해당하는 값만 바뀐다.
+// 우회선은 주축으로만, 다리는 보조축으로만 움직인다(구간과 수직인 방향).
+export function applyBendDrag(
+  base: MidOffset,
+  axis: 'x' | 'y',
+  part: BendPart,
+  dx: number,
+  dy: number,
+): MidOffset {
+  const next: MidOffset = { ...base };
+  if (part === 'channel') {
+    if (axis === 'y') next.y = base.y + dy;
+    else next.x = base.x + dx;
+    return next;
+  }
+  const d = axis === 'y' ? dx : dy;
+  const end = part === 'sourceLeg' ? 'source' : 'target';
+  const moved = legOffsetOf(base, axis, end) + d;
+  if (end === 'source') next.sourceLeg = moved;
+  else next.targetLeg = moved;
+  return next;
+}
+
+// 점 p에서 가장 가까운 구간 — pointerdown 지점으로 어느 구간을 잡았는지 판단한다
+export function nearestBendSegment(segments: BendSegment[], p: Pt): BendSegment | null {
+  let best: BendSegment | null = null;
+  let bestD = Infinity;
+  for (const seg of segments) {
+    const vx = seg.b.x - seg.a.x, vy = seg.b.y - seg.a.y;
+    const len2 = vx * vx + vy * vy;
+    const t = len2 ? clamp(((p.x - seg.a.x) * vx + (p.y - seg.a.y) * vy) / len2, 0, 1) : 0;
+    const d = Math.hypot(p.x - (seg.a.x + vx * t), p.y - (seg.a.y + vy * t));
+    if (d < bestD) { bestD = d; best = seg; }
+  }
+  return best;
 }
 
 // 드래그가 의미를 갖는 축은 '연결 면'이 아니라 두 끝점의 실제 진행 방향으로 판정한다.
@@ -289,16 +343,41 @@ export function buildBendRoute(
   const midX = baseX + offset.x;
   const midY = baseY + offset.y;
 
-  // axis='y': 중간 구간이 midY의 수평선. 반대쪽이 상/하 면으로 진입하면 t1.x === t.x라
-  // 마지막 구간이 자연히 수직이 되어 같은 점 목록으로 두 경우를 모두 커버한다.
+  // 다리(우회선까지 이어지는 구간)는 부모/자식 각각 독립 오프셋을 갖는다 — 한쪽을 끌어도
+  // 반대쪽은 그대로. 면 법선이 그 축과 같으면(예: 우측 면 + 좌/우 이동) 다리가 자기 엔티티를
+  // 관통하지 않도록 면 바깥 8px까지만 허용한다(상/하 면은 stub이 이미 밖이라 제약 불필요).
+  const outside = (v: number, edge: number, n: number) =>
+    n > 0 ? Math.max(edge + 8, v) : n < 0 ? Math.min(edge - 8, v) : v;
+  const legS = legOffsetOf(offset, axis, 'source');
+  const legT = legOffsetOf(offset, axis, 'target');
+  const legSX = outside(s1.x + legS, s.x, snx);
+  const legTX = outside(t1.x + legT, t.x, tnx);
+  const legSY = outside(s1.y + legS, s.y, sny);
+  const legTY = outside(t1.y + legT, t.y, tny);
+
+  // axis='y': 우회선이 midY의 수평선, 다리는 legSX/legTX의 수직선.
+  // 다리 오프셋이 0이면 leg == stub 지점이라 점이 중복 제거되어 기존 경로와 동일해진다.
   const pts: Pt[] = axis === 'y'
-    ? [s, s1, { x: s1.x, y: midY }, { x: t1.x, y: midY }, t1, t]
-    : [s, s1, { x: midX, y: s1.y }, { x: midX, y: t1.y }, t1, t];
+    ? [s, s1, { x: legSX, y: s1.y }, { x: legSX, y: midY }, { x: legTX, y: midY }, { x: legTX, y: t1.y }, t1, t]
+    : [s, s1, { x: s1.x, y: legSY }, { x: midX, y: legSY }, { x: midX, y: legTY }, { x: t1.x, y: legTY }, t1, t];
+
+  const segments: BendSegment[] = axis === 'y'
+    ? [
+        { part: 'sourceLeg', orientation: 'v', a: { x: legSX, y: s1.y }, b: { x: legSX, y: midY } },
+        { part: 'channel',   orientation: 'h', a: { x: legSX, y: midY }, b: { x: legTX, y: midY } },
+        { part: 'targetLeg', orientation: 'v', a: { x: legTX, y: midY }, b: { x: legTX, y: t1.y } },
+      ]
+    : [
+        { part: 'sourceLeg', orientation: 'h', a: { x: s1.x, y: legSY }, b: { x: midX, y: legSY } },
+        { part: 'channel',   orientation: 'v', a: { x: midX, y: legSY }, b: { x: midX, y: legTY } },
+        { part: 'targetLeg', orientation: 'h', a: { x: midX, y: legTY }, b: { x: t1.x, y: legTY } },
+      ];
 
   return {
     path: roundedPolyline(simplify(pts), radius),
-    labelX: axis === 'y' ? (s1.x + t1.x) / 2 : midX,
-    labelY: axis === 'y' ? midY : (s1.y + t1.y) / 2,
+    labelX: axis === 'y' ? (legSX + legTX) / 2 : midX,
+    labelY: axis === 'y' ? midY : (legSY + legTY) / 2,
     axis,
+    segments,
   };
 }

@@ -140,6 +140,38 @@ async function dragNode(idx, dx, dy) {
   await page.waitForTimeout(400);
 }
 
+// 아래로 우회한 상태에서 양쪽 '다리'(우회선까지 이어지는 수직 구간)의 x.
+// 최하단 y에 놓인 샘플점들의 최좌측=부모 쪽 다리, 최우측=자식 쪽 다리.
+const legXs = async () => {
+  const geo = await pathGeo();
+  const onRun = geo.pts.filter(p => Math.abs(p.y - geo.bottom) < 2);
+  return { s: Math.min(...onRun.map(p => p.x)), t: Math.max(...onRun.map(p => p.x)) };
+};
+
+const toScreenPt = pt => page.locator('.react-flow__edge').nth(0).evaluate((g, p) => {
+  const m = g.querySelector('path').getScreenCTM();
+  return { x: p.x * m.a + p.y * m.c + m.e, y: p.x * m.b + p.y * m.d + m.f };
+}, pt);
+
+// 지정한 구간(부모 다리 / 우회선 / 자식 다리) 위의 화면 좌표 — 구간별 독립 드래그 검증용
+async function grabPointOn(which) {
+  const geo = await pathGeo();
+  const onRun = geo.pts.filter(p => Math.abs(p.y - geo.bottom) < 2);
+  const lx = Math.min(...onRun.map(p => p.x)), rx = Math.max(...onRun.map(p => p.x));
+  // 다리 = 우회선 높이에서 벗어난 구간. 경로 진행률(at)로 부모/자식 쪽을 가른다
+  // (라운드 코너 때문에 x를 legX와 정확히 비교하면 어긋난다)
+  const cands = which === 'channel'
+    ? onRun
+    : geo.pts.filter(p =>
+        Math.abs(p.y - geo.bottom) > 12 && (which === 'sourceLeg' ? p.at < 0.5 : p.at > 0.5));
+  if (!cands.length) {
+    throw new Error(`구간 ${which} 위에서 잡을 점을 찾지 못함 — bottom=${geo.bottom.toFixed(1)} ` +
+      `onRun=${onRun.length} lx=${lx.toFixed(1)} rx=${rx.toFixed(1)} ` +
+      `ys=${geo.pts.map(p => p.y.toFixed(0)).join(',')}`);
+  }
+  return toScreenPt(cands[Math.floor(cands.length / 2)]);
+}
+
 const crosses = async idx => {
   const geo = await pathGeo();
   const r = await nodeRect(idx);
@@ -198,13 +230,45 @@ try {
     (bent.d.match(/Q/g) ?? []).length >= 4, `Q×${(bent.d.match(/Q/g) ?? []).length}`);
   check('우회는 순수 기하 — 자식 PK/FK 무변경', await childPk() === pk0 && await childFk() === fk0);
 
-  // ── 2. 축 제약: 좌/우 배치이므로 수평 드래그는 경로를 바꾸지 않는다 ──
+  // ── 2. 좌/우 드래그 — 잡은 쪽 '다리'(우회선까지 이어지는 수직 구간)만 옆으로 이동한다.
+  //      반대쪽 다리와 우회선 높이는 그대로여야 한다(구간별 독립 편집) ──
   await page.waitForTimeout(900);   // relMid coalesce 창 만료
-  await dragLine(200, 0);
+  const leg0 = await legXs();
+  await dragFrom(await grabPointOn('sourceLeg'), 200, 0);
+  const legS1 = await legXs();
   const afterH = await pathGeo();
-  check('수평 드래그는 경로 불변(상/하 축만 반영)',
+  check('부모 쪽 다리를 좌/우로 끌면 그 다리만 이동',
+    legS1.s > leg0.s + expected && Math.abs(legS1.t - leg0.t) < 3,
+    `부모 ${leg0.s.toFixed(0)}→${legS1.s.toFixed(0)} · 자식 ${leg0.t.toFixed(0)}→${legS1.t.toFixed(0)}`);
+  check('다리 이동은 우회선 높이를 바꾸지 않음',
     Math.abs(afterH.bottom - bent.bottom) < 2 && Math.abs(afterH.top - bent.top) < 2,
     `bottom ${bent.bottom.toFixed(0)} → ${afterH.bottom.toFixed(0)}`);
+  check('다리 이동 후에도 끝점 부착 위치 불변',
+    Math.abs(afterH.s.x - auto.s.x) < 3 && Math.abs(afterH.t.x - auto.t.x) < 3);
+
+  await page.waitForTimeout(900);
+  await dragFrom(await grabPointOn('targetLeg'), -150, 0);
+  const legT1 = await legXs();
+  check('자식 쪽 다리도 독립으로 이동 (부모 쪽 그대로)',
+    legT1.t < legS1.t - expected * 0.6 && Math.abs(legT1.s - legS1.s) < 3,
+    `자식 ${legS1.t.toFixed(0)}→${legT1.t.toFixed(0)} · 부모 ${legS1.s.toFixed(0)}→${legT1.s.toFixed(0)}`);
+  // 양쪽 다리를 서로 다르게 옮긴 상태 — 구간별 독립 편집 결과 기록
+  await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_edge_bend_legs.png' });
+
+  await page.waitForTimeout(900);
+  await dragFrom(await grabPointOn('channel'), 200, 0);
+  const legC = await legXs();
+  check('우회선을 좌/우로 끌어도 다리는 움직이지 않음',
+    Math.abs(legC.s - legT1.s) < 3 && Math.abs(legC.t - legT1.t) < 3 &&
+    Math.abs((await pathGeo()).bottom - bent.bottom) < 2);
+
+  // 이후 단계의 기준(bent)과 맞추기 위해 다리 이동 2건을 Undo로 되돌린다
+  // (우회선 좌/우 드래그는 값 변화가 없어 히스토리에 남지 않음)
+  for (let i = 0; i < 2; i++) { await page.keyboard.press('Control+z'); await page.waitForTimeout(450); }
+  const legUndo = await legXs();
+  check('다리 이동도 각각 Undo 1회로 복원',
+    Math.abs(legUndo.s - leg0.s) < 4 && Math.abs(legUndo.t - leg0.t) < 4,
+    `부모 ${legUndo.s.toFixed(0)} (기준 ${leg0.s.toFixed(0)}) · 자식 ${legUndo.t.toFixed(0)} (기준 ${leg0.t.toFixed(0)})`);
 
   // ── 3. 클릭(이동 없음)은 여전히 선택 — 우회가 생기지 않는다 ──
   await deselect();

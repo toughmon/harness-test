@@ -77,6 +77,10 @@ export interface EndpointAnchor {
 export interface MidOffset {
   x: number;
   y: number;
+  // 우회선까지 이어지는 '다리' 구간의 보조축 오프셋 — 부모/자식 쪽을 각각 독립으로 옮긴다.
+  // 없으면 구버전 호환으로 x/y의 보조축 성분(양쪽 공통)을 사용한다.
+  sourceLeg?: number;
+  targetLeg?: number;
 }
 
 export interface Relationship {
