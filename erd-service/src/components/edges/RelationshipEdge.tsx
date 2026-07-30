@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useCallback } from 'react';
+import { memo, useMemo, useState, useCallback, useRef } from 'react';
 import {
   EdgeProps,
   EdgeLabelRenderer,
@@ -7,10 +7,12 @@ import {
   useNodes,
   useReactFlow,
 } from '@xyflow/react';
-import { Relationship, EndpointAnchor } from '../../types/erd';
+import { Relationship, EndpointAnchor, MidOffset } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
 import { deriveSides } from '../../core/relationshipSides';
-import { computeEdgeEndpoints, anchorToPoint, pointToAnchor, Rect } from '../../utils/edgeConnection';
+import {
+  computeEdgeEndpoints, anchorToPoint, pointToAnchor, buildBendRoute, bendAxis, Rect,
+} from '../../utils/edgeConnection';
 
 const EDGE_COLOR = '#7d7c8c';
 const EDGE_SELECTED = '#a78bfa';   // 선택 시 더 선명한 보라
@@ -128,7 +130,10 @@ function RelationshipEdge({
   selected,
 }: EdgeProps) {
   const rel = data as unknown as Relationship;
-  const { relationships, selectedEdgeId, updateRelationshipAnchor, openRelationshipEditor } = useERDStore();
+  const {
+    relationships, selectedEdgeId, readOnly,
+    updateRelationshipAnchor, updateRelationshipMidOffset, openRelationshipEditor,
+  } = useERDStore();
   const { screenToFlowPosition } = useReactFlow();
 
   // 노드 위치/크기를 직접 읽어 연결점을 동적으로 계산
@@ -208,9 +213,14 @@ function RelationshipEdge({
   }
 
   const isSelfLoop = rel?.sourceId === rel?.targetId;
+  // 우회(꺾기) 오프셋 — 드래그 중이면 프리뷰 값이 스토어 값을 대신한다.
+  const [bendPreview, setBendPreview] = useState<MidOffset | null>(null);
+  const midOffset = bendPreview ?? rel?.midOffset ?? null;
+
   let edgePath = '';
   let labelX = (sX + tX) / 2;
   let labelY = (sY + tY) / 2;
+  let bendAxisNow: 'x' | 'y' = 'y';
 
   if (isSelfLoop) {
     edgePath = selfLoopPath(sX, sY, tX, tY);
@@ -218,6 +228,17 @@ function RelationshipEdge({
     const oy = Math.max(sY, tY) + 50;
     labelX = ox;
     labelY = (sY + oy) / 2;
+  } else if (midOffset) {
+    // 우회 경로 — 엔티티에서 직각으로 나온 뒤 밀어낸 중간선을 따라 횡단한다
+    const route = buildBendRoute(
+      { x: sX, y: sY, position: sPos },
+      { x: tX, y: tY, position: tPos },
+      midOffset,
+    );
+    edgePath = route.path;
+    labelX = route.labelX;
+    labelY = route.labelY;
+    bendAxisNow = route.axis;
   } else {
     const [pStr, lx, ly] = getSmoothStepPath({
       sourceX: sX, sourceY: sY, sourcePosition: sPos,
@@ -228,7 +249,61 @@ function RelationshipEdge({
     edgePath = pStr;
     labelX = lx;
     labelY = ly;
+    bendAxisNow = bendAxis({ x: sX, y: sY }, { x: tX, y: tY });
   }
+
+  const canBend = !readOnly && !isSelfLoop && !!rel;
+
+  // 우회 드래그가 끝난 시각 — 드래그 직후 따라오는 click을 삼켜 ✎ 편집 모달이 열리지 않게 한다.
+  // (아이콘이 우회 프리뷰를 따라 움직여 pointerup이 다시 아이콘 위에서 일어나는 경우가 있다)
+  const dragEndRef = useRef(0);
+  const swallowClickAfterDrag = () => {
+    if (performance.now() - dragEndRef.current > 300) return false;
+    dragEndRef.current = 0;
+    return true;
+  };
+
+  // 선 자체를 드래그해 우회 — 이동은 의미 있는 축(좌우 배치면 상/하)으로만 반영한다.
+  // pointerdown에서 stopPropagation만 하고 preventDefault는 하지 않는다(뒤따르는 click이
+  // 살아있어야 onEdgeClick 선택이 그대로 동작). 팬/더블클릭 줌은 nopan 클래스가 막는다.
+  const startBend = useCallback((e: React.PointerEvent) => {
+    if (!canBend || e.button !== 0) return;
+    e.stopPropagation();
+    const axis = bendAxisNow;
+    const base = rel?.midOffset ?? { x: 0, y: 0 };
+    const startX = e.clientX, startY = e.clientY;
+    const origin = screenToFlowPosition({ x: startX, y: startY });
+    let moved = false;
+    const offsetAt = (ev: PointerEvent): MidOffset => {
+      const now = screenToFlowPosition({ x: ev.clientX, y: ev.clientY });
+      return axis === 'y'
+        ? { x: base.x, y: base.y + (now.y - origin.y) }
+        : { x: base.x + (now.x - origin.x), y: base.y };
+    };
+    const onMove = (ev: PointerEvent) => {
+      if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 3) moved = true;
+      if (moved) setBendPreview(offsetAt(ev));
+    };
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      setBendPreview(null);
+      if (!moved) return;
+      dragEndRef.current = performance.now();
+      const next = offsetAt(ev);
+      // 의미 있는 축이 아닌 방향으로만 끌었으면 값이 그대로 — 히스토리·협업 op를 남기지 않는다
+      if (Math.abs(next.x - base.x) < 0.01 && Math.abs(next.y - base.y) < 0.01) return;
+      updateRelationshipMidOffset(id, next);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }, [canBend, bendAxisNow, rel, screenToFlowPosition, updateRelationshipMidOffset, id]);
+
+  // 선 더블클릭 → 우회 제거(자동 경로로 복귀)
+  const resetBend = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (rel?.midOffset) updateRelationshipMidOffset(id, null);
+  }, [rel, updateRelationshipMidOffset, id]);
 
   const sides = useMemo(
     () => deriveSides(rel ?? ({ type: 'ONE_TO_MANY_NON_IDENTIFYING' } as Relationship)),
@@ -249,15 +324,29 @@ function RelationshipEdge({
 
   return (
     <>
-      {/* Invisible wider hit area */}
+      {/* Invisible wider hit area — 클릭=선택, 드래그=우회(꺾기), 더블클릭=자동 경로 복귀 */}
       <path
         d={edgePath}
+        data-testid={`edge-hit-${id}`}
+        className={canBend ? 'nopan' : undefined}
         fill="none"
         stroke="transparent"
         strokeWidth={12}
-        style={{ cursor: 'pointer' }}
-      />
-      {/* Visible edge — 좌/우 절반 독립 렌더 */}
+        style={{ cursor: canBend ? (bendAxisNow === 'y' ? 'ns-resize' : 'ew-resize') : 'pointer' }}
+        onPointerDown={canBend ? startBend : undefined}
+        onDoubleClick={canBend ? resetBend : undefined}
+      >
+        {canBend && (
+          <title>
+            {`드래그: 선을 ${bendAxisNow === 'y' ? '위/아래' : '좌/우'}로 밀어 다른 엔티티 우회`
+              + `${rel?.midOffset ? ' · 더블클릭: 자동 경로로 복귀' : ''}`}
+          </title>
+        )}
+      </path>
+      {/* Visible edge — 좌/우 절반 독립 렌더.
+          보이는 선은 pointer-events를 받지 않는다: 위에 겹쳐 그려지므로 이벤트를 받으면
+          아래 히트 영역의 드래그(우회) 핸들러가 선 정중앙에서만 먹지 않게 된다.
+          클릭 선택은 히트 path에서 .react-flow__edge로 버블링되어 그대로 동작한다. */}
       {bothSolid ? (
         /* 양쪽 필수: 단일 실선 (기존 SOLID 동작과 동일, dasharray 없음) */
         <path
@@ -267,6 +356,7 @@ function RelationshipEdge({
           stroke={color}
           strokeWidth={sw}
           strokeLinecap="butt"
+          style={{ pointerEvents: 'none' }}
         />
       ) : (
         <>
@@ -279,6 +369,7 @@ function RelationshipEdge({
             strokeWidth={sw}
             strokeDasharray={bothDashed ? '4 4' : '6 4'}
             strokeLinecap="butt"
+            style={{ pointerEvents: 'none' }}
           />
           {/* 부모(좌) 절반 실선 오버레이 — 전반 50% */}
           {parentSolid && (
@@ -290,6 +381,7 @@ function RelationshipEdge({
               pathLength={100}
               strokeDasharray="50 50"
               strokeLinecap="butt"
+              style={{ pointerEvents: 'none' }}
             />
           )}
           {/* 자식(우) 절반 실선 오버레이 — 후반 50% */}
@@ -302,6 +394,7 @@ function RelationshipEdge({
               pathLength={100}
               strokeDasharray="0 50 50 0"
               strokeLinecap="butt"
+              style={{ pointerEvents: 'none' }}
             />
           )}
         </>
@@ -332,8 +425,18 @@ function RelationshipEdge({
           <div
             className="nodrag nopan"
             data-testid="edge-edit-icon"
-            title="관계 편집"
-            onClick={e => { e.stopPropagation(); openRelationshipEditor(id); }}
+            title={canBend ? '클릭: 관계 편집 · 드래그: 선 우회' : '관계 편집'}
+            onClick={e => {
+              e.stopPropagation();
+              // 더블클릭의 두 번째 클릭(=우회 해제 제스처)으로 편집 모달이 열리지 않게 한다
+              if (e.detail > 1 || swallowClickAfterDrag()) return;
+              openRelationshipEditor(id);
+            }}
+            /* 아이콘이 선 중앙(우회 드래그를 가장 잡고 싶은 지점)을 덮으므로 드래그도 받는다.
+               3px 임계값 덕에 제자리 클릭은 그대로 편집 모달을 연다. */
+            onPointerDown={canBend ? startBend : undefined}
+            /* 선 중앙을 덮으므로 선 더블클릭(우회 해제)도 아이콘에서 동작해야 한다 */
+            onDoubleClick={canBend ? resetBend : undefined}
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,

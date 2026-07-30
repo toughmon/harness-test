@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Entity, Column, Memo, Relationship, RelationshipType, Subtype, EndpointAnchor } from '../types/erd';
+import { Entity, Column, Memo, Relationship, RelationshipType, Subtype, EndpointAnchor, MidOffset } from '../types/erd';
 import * as erdOps from '../core/erdOps';
 import { genId, DEFAULT_COLUMN, type NodePosition, type ErdDoc } from '../core/erdOps';
 import { applyOp, type OpName } from '../core/opDispatch';
@@ -101,6 +101,7 @@ interface ERDStore {
   updateRelationshipType: (id: string, type: RelationshipType) => void;
   updateRelationshipSides: (id: string, partial: Partial<RelationshipSides>) => void;
   updateRelationshipAnchor: (id: string, end: 'source' | 'target', anchor: EndpointAnchor | null) => void;
+  updateRelationshipMidOffset: (id: string, offset: MidOffset | null) => void;
   updateRelationshipSubtypeScope: (id: string, side: 'source' | 'target', subtypeId: string | null) => void;
   deleteRelationship: (id: string) => void;
 
@@ -496,6 +497,16 @@ export const useERDStore = create<ERDStore>((set, get) => {
       pushHistory(`relAnchor:${id}:${end}`);
       set(st => erdOps.updateRelationshipAnchor(docOf(st), id, end, anchor));
       emit('updateRelationshipAnchor', [id, end, anchor]);
+    },
+
+    // 관계선 중간 우회(꺾기) 오프셋 (드래그 종료 시 1회 커밋, undo 지원). offset=null이면 자동 경로 복귀.
+    updateRelationshipMidOffset: (id, offset) => {
+      if (get().readOnly) return;
+      const s = get();
+      if (!s.relationships.find(r => r.id === id)) return;
+      pushHistory(`relMid:${id}`);
+      set(st => erdOps.updateRelationshipMidOffset(docOf(st), id, offset));
+      emit('updateRelationshipMidOffset', [id, offset]);
     },
 
     // 관계의 부모/자식 side를 특정 서브타입으로 스코프 지정(subtypeId=null이면 엔티티 전체로 해제)

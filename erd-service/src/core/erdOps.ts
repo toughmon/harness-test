@@ -1,4 +1,4 @@
-import { Column, ColumnType, Entity, Memo, MEMO_COLORS, Relationship, RelationshipType, EndpointAnchor } from '../types/erd';
+import { Column, ColumnType, Entity, Memo, MEMO_COLORS, Relationship, RelationshipType, EndpointAnchor, MidOffset } from '../types/erd';
 import {
   RelationshipSides,
   sidesFromType,
@@ -500,6 +500,25 @@ export function updateRelationshipAnchor(
         if (anchor) next.targetAnchor = anchor;
         else delete next.targetAnchor;
       }
+      return next;
+    }),
+  };
+}
+
+// 관계선 중간 우회(꺾기) 오프셋 설정 — offset이 null이면 제거(자동 경로 복귀).
+// 끝점 앵커와 같이 순수 기하 변경이라 FK/컬럼 부수효과는 없다.
+export function updateRelationshipMidOffset(
+  doc: ErdDoc,
+  id: string,
+  offset: MidOffset | null,
+): ErdDoc {
+  return {
+    ...doc,
+    relationships: doc.relationships.map(r => {
+      if (r.id !== id) return r;
+      const next: Relationship = { ...r };
+      if (offset) next.midOffset = offset;
+      else delete next.midOffset;
       return next;
     }),
   };

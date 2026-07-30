@@ -21,6 +21,7 @@ export type OpName =
   | 'updateRelationshipType'
   | 'updateRelationshipSides'
   | 'updateRelationshipAnchor'
+  | 'updateRelationshipMidOffset'
   | 'updateRelationshipSubtypeScope'
   | 'deleteRelationship'
   | 'addMemo'
@@ -46,6 +47,7 @@ export function applyOp(doc: ErdDoc, { op, args }: Op): ErdDoc {
     case 'updateRelationshipType': return erdOps.updateRelationshipType(doc, args[0], args[1]).doc;
     case 'updateRelationshipSides': return erdOps.updateRelationshipSides(doc, args[0], args[1]).doc;
     case 'updateRelationshipAnchor': return erdOps.updateRelationshipAnchor(doc, args[0], args[1], args[2]);
+    case 'updateRelationshipMidOffset': return erdOps.updateRelationshipMidOffset(doc, args[0], args[1]);
     case 'updateRelationshipSubtypeScope': return erdOps.updateRelationshipSubtypeScope(doc, args[0], args[1], args[2]).doc;
     case 'deleteRelationship': return erdOps.deleteRelationship(doc, args[0]).doc;
     case 'addMemo': return erdOps.addMemo(doc, args[0]).doc;

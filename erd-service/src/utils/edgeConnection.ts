@@ -1,5 +1,5 @@
 import { Position } from '@xyflow/react';
-import { Relationship, EndpointAnchor, AnchorSide } from '../types/erd';
+import { Relationship, EndpointAnchor, AnchorSide, MidOffset } from '../types/erd';
 
 // 노드의 캔버스상 사각형 (위치 + 측정된 크기)
 export interface Rect {
@@ -20,6 +20,7 @@ export interface EdgeEndpoints {
 
 const SLOT_SPACING = 28;     // 같은 면에 붙는 연결점 사이 간격(px)
 const EDGE_PADDING = 12;     // 면 양 끝 모서리에서 최소 이격(px)
+const BEND_STUB = 24;        // 우회 경로에서 엔티티 테두리를 직각으로 빠져나오는 직선 길이(px)
 
 function center(r: Rect) {
   return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
@@ -187,5 +188,117 @@ export function computeEdgeEndpoints(
   return {
     sourceX: s.x, sourceY: s.y, sourcePosition: s.position,
     targetX: t.x, targetY: t.y, targetPosition: t.position,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// 중간 우회(꺾기) 경로 — 선 중간을 드래그해 다른 엔티티를 피해가게 한다.
+// 자동 경로(getSmoothStepPath)는 두 엔티티 사이를 최단으로 지나가므로 그 사이에 놓인
+// 제3의 엔티티를 피할 수 없다. 우회 오프셋이 있으면 직각 5구간 경로로 대체한다:
+//   엔티티에서 직각으로 STUB만큼 나온 뒤 → 우회 축까지 이동 → 우회선을 따라 횡단 →
+//   반대쪽 STUB로 내려와 → 엔티티로 진입.
+// ──────────────────────────────────────────────────────────────────────────
+
+interface Pt { x: number; y: number }
+
+const NORMALS: Record<Position, [number, number]> = {
+  [Position.Left]:   [-1, 0],
+  [Position.Right]:  [1, 0],
+  [Position.Top]:    [0, -1],
+  [Position.Bottom]: [0, 1],
+};
+
+export interface BendRoute {
+  path: string;
+  labelX: number;      // 우회선(중간 구간)의 중앙 — ✎ 아이콘 위치
+  labelY: number;
+  axis: 'x' | 'y';     // 드래그가 의미를 갖는 축 (좌우 배치면 'y' = 상/하 드래그)
+}
+
+// 드래그가 의미를 갖는 축은 '연결 면'이 아니라 두 끝점의 실제 진행 방향으로 판정한다.
+// 가로로 멀리 떨어져 있으면(좌우 배치) 두 엔티티를 잇는 긴 구간이 수평선이므로 상/하(y) 드래그,
+// 세로로 떨어져 있으면 긴 구간이 수직선이므로 좌/우(x) 드래그.
+// ※ 면으로 판정하면 '양쪽 끝점이 모두 하단 면에 붙은 좌우 배치'처럼 선은 가로로 달리는데
+//    축이 x로 잡혀 상/하 드래그가 먹지 않는 경우가 생긴다.
+export function bendAxis(s: Pt, t: Pt): 'x' | 'y' {
+  return Math.abs(t.x - s.x) >= Math.abs(t.y - s.y) ? 'y' : 'x';
+}
+
+// 연속된 중복점·직선상의 불필요한 중간점 제거 (0길이 구간이 모서리 라운딩을 깨뜨리지 않게)
+function simplify(pts: Pt[]): Pt[] {
+  const out: Pt[] = [];
+  for (const p of pts) {
+    const last = out[out.length - 1];
+    if (last && Math.abs(last.x - p.x) < 0.01 && Math.abs(last.y - p.y) < 0.01) continue;
+    out.push(p);
+  }
+  const res: Pt[] = [];
+  for (let i = 0; i < out.length; i++) {
+    const a = res[res.length - 1];
+    const b = out[i];
+    const c = out[i + 1];
+    // a-b-c가 일직선이면 b는 버린다
+    if (a && c) {
+      const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+      if (Math.abs(cross) < 0.01) continue;
+    }
+    res.push(b);
+  }
+  return res;
+}
+
+// 꺾인 폴리라인 → 모서리를 둥글린 SVG path (자동 경로의 borderRadius=8과 같은 느낌)
+function roundedPolyline(pts: Pt[], r: number): string {
+  if (pts.length < 2) return '';
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = pts[i - 1], p = pts[i], b = pts[i + 1];
+    const la = Math.hypot(p.x - a.x, p.y - a.y);
+    const lb = Math.hypot(b.x - p.x, b.y - p.y);
+    const rr = Math.min(r, la / 2, lb / 2);
+    if (rr < 0.5) { d += ` L ${p.x} ${p.y}`; continue; }
+    d += ` L ${p.x + ((a.x - p.x) / la) * rr} ${p.y + ((a.y - p.y) / la) * rr}`;
+    d += ` Q ${p.x} ${p.y} ${p.x + ((b.x - p.x) / lb) * rr} ${p.y + ((b.y - p.y) / lb) * rr}`;
+  }
+  const last = pts[pts.length - 1];
+  return `${d} L ${last.x} ${last.y}`;
+}
+
+// 우회 오프셋을 반영한 직각 경로를 만든다. offset이 {0,0}이면
+// (같은 면끼리 마주보고 정렬된 흔한 경우) 결과는 자동 경로와 같은 직선이 된다.
+export function buildBendRoute(
+  s: { x: number; y: number; position: Position },
+  t: { x: number; y: number; position: Position },
+  offset: MidOffset,
+  radius = 8,
+): BendRoute {
+  const axis = bendAxis(s, t);
+  const [snx, sny] = NORMALS[s.position] ?? [1, 0];
+  const [tnx, tny] = NORMALS[t.position] ?? [-1, 0];
+  const s1 = { x: s.x + snx * BEND_STUB, y: s.y + sny * BEND_STUB };
+  const t1 = { x: t.x + tnx * BEND_STUB, y: t.y + tny * BEND_STUB };
+
+  // 오프셋 0의 기준선 — 양 끝이 같은 방향(둘 다 아래/위, 둘 다 좌/우)으로 나가면
+  // 그 바깥쪽 stub을 기준으로 삼아, 자동 경로와 같은 모양에서 드래그가 시작되게 한다.
+  const baseY = sny > 0 && tny > 0 ? Math.max(s1.y, t1.y)
+    : sny < 0 && tny < 0 ? Math.min(s1.y, t1.y)
+    : (s.y + t.y) / 2;
+  const baseX = snx > 0 && tnx > 0 ? Math.max(s1.x, t1.x)
+    : snx < 0 && tnx < 0 ? Math.min(s1.x, t1.x)
+    : (s.x + t.x) / 2;
+  const midX = baseX + offset.x;
+  const midY = baseY + offset.y;
+
+  // axis='y': 중간 구간이 midY의 수평선. 반대쪽이 상/하 면으로 진입하면 t1.x === t.x라
+  // 마지막 구간이 자연히 수직이 되어 같은 점 목록으로 두 경우를 모두 커버한다.
+  const pts: Pt[] = axis === 'y'
+    ? [s, s1, { x: s1.x, y: midY }, { x: t1.x, y: midY }, t1, t]
+    : [s, s1, { x: midX, y: s1.y }, { x: midX, y: t1.y }, t1, t];
+
+  return {
+    path: roundedPolyline(simplify(pts), radius),
+    labelX: axis === 'y' ? (s1.x + t1.x) / 2 : midX,
+    labelY: axis === 'y' ? midY : (s1.y + t1.y) / 2,
+    axis,
   };
 }

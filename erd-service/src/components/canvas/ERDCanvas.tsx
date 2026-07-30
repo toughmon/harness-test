@@ -112,7 +112,13 @@ function PaneDoubleClickHandler() {
     const handler = (ev: Event) => {
       const e = ev as MouseEvent;
       const target = e.target as HTMLElement;
-      if (target.closest('.react-flow__node') || target.closest('.react-flow__edge')) return;
+      // 노드·관계선 위 더블클릭은 각자의 동작(인라인 편집·우회 해제)이 있으므로 메모를 만들지 않는다.
+      // 관계선의 오버레이 UI(✎ 아이콘·끝점 핸들)는 edgelabel-renderer 안에 있어 별도로 걸러낸다.
+      if (
+        target.closest('.react-flow__node') ||
+        target.closest('.react-flow__edge') ||
+        target.closest('.react-flow__edgelabel-renderer')
+      ) return;
       const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
       addMemo({ x: pos.x - 110, y: pos.y - 70 });
     };

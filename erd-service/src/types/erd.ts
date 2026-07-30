@@ -72,6 +72,13 @@ export interface EndpointAnchor {
   offset: number;   // 0~1, 해당 면의 시작(좌/상)에서의 비율
 }
 
+// 관계선 중간 우회(꺾기) 오프셋 — 자동 중간점에서 얼마나 밀어냈는지(캔버스 px).
+// 절대좌표가 아니라 '자동 중간점 기준 상대값'이라 엔티티를 옮겨도 우회 모양이 따라간다.
+export interface MidOffset {
+  x: number;
+  y: number;
+}
+
 export interface Relationship {
   id: string;
   sourceId: string;
@@ -87,6 +94,9 @@ export interface Relationship {
   // ── 끝점 수동 부착 위치 — 없으면 자동(sideOf+슬롯 분산). 더블클릭으로 제거(자동 복귀) ──
   sourceAnchor?: EndpointAnchor;       // 부모(source) 끝점 수동 위치
   targetAnchor?: EndpointAnchor;       // 자식(target) 끝점 수동 위치
+  // ── 중간 우회(꺾기) — 선을 상/하(좌/우)로 드래그해 다른 엔티티를 피해가게 한다.
+  //    없으면 기존 자동 경로(smoothstep). 선 더블클릭으로 제거(자동 복귀) ──
+  midOffset?: MidOffset;
   // ── 서브타입 스코프 — 이 관계가 특정 서브타입 전용임을 표시. optional이라 기존 저장 파일과 호환 ──
   sourceSubtypeId?: string;  // 부모가 특정 서브타입일 때(라벨 표시용 — 서브타입은 PK가 없어 FK 생성엔 영향 없음)
   targetSubtypeId?: string;  // 자식이 특정 서브타입 전용일 때 — 자동 FK 컬럼이 그 서브타입의 columns에 위치

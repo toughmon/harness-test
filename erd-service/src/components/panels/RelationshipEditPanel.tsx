@@ -10,6 +10,7 @@ export default function RelationshipEditPanel() {
   const {
     relationships, entities, selectedEdgeId, editorOpen,
     closeEditor, updateRelationshipSides, updateRelationshipSubtypeScope, deleteRelationship,
+    updateRelationshipMidOffset,
   } = useERDStore();
 
   const rel = relationships.find(r => r.id === selectedEdgeId);
@@ -144,6 +145,26 @@ export default function RelationshipEditPanel() {
               : '자식 FK는 일반 컬럼(NOT NULL)입니다.'}
           </p>
         </div>
+
+        {/* 선 경로 — 선을 드래그해 우회시켜 둔 경우에만 노출 */}
+        {rel.midOffset && (
+          <>
+            <div className="w-full h-px bg-outline-variant/50" />
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-mono text-on-surface-variant">선 경로</span>
+              <button
+                className="flex items-center justify-center gap-1.5 rounded px-3 py-2 text-[12px] font-mono text-on-surface-variant border border-outline-variant hover:bg-surface-variant transition-colors cursor-pointer"
+                data-testid="rel-reset-bend"
+                onClick={() => updateRelationshipMidOffset(rel.id, null)}
+              >
+                <span className="material-symbols-outlined text-[16px]">restart_alt</span> 우회 해제 (자동 경로로 복귀)
+              </button>
+              <p className="text-[10px] text-outline italic m-0">
+                캔버스에서 선을 위/아래로 드래그하면 사이에 놓인 엔티티를 피해 우회합니다. 선을 더블클릭해도 자동 경로로 돌아갑니다.
+              </p>
+            </div>
+          </>
+        )}
 
         <div className="w-full h-px bg-outline-variant/50" />
 
