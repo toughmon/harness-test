@@ -3,11 +3,15 @@ import { useERDStore } from '../../store/erdStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDiagramStore } from '../../store/diagramStore';
 import { useMcpStore } from '../../store/mcpStore';
+import { useT, useLocaleStore } from '../../i18n';
 
 // 디자인 시안의 SideNavBar — Add Entity / Entity List는 실제 기능 연결,
 // 로그인 시 "내 다이어그램" 섹션 표시, Help/Docs는 비활성 placeholder
 // 접기 기능: 캔버스를 넓게 보기 위해 좌측 패널을 얇은 레일로 접을 수 있음
 export default function Sidebar() {
+  const t = useT();
+  // 가이드 페이지는 정적 HTML이라 언어별 사본으로 나뉜다 (public/ vs public/en/)
+  const guideBase = useLocaleStore(s => s.locale) === 'en' ? '/en' : '';
   const { entities, memos, selectedEntityId, selectEntity, addEntity, addMemo } = useERDStore();
   const readOnly = useERDStore(s => s.readOnly);
   const { status } = useAuthStore();
@@ -26,7 +30,7 @@ export default function Sidebar() {
         <button
           className="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors cursor-pointer"
           onClick={() => setCollapsed(false)}
-          title="사이드바 펼치기"
+          title={t('sidebar.expand')}
           aria-label="Expand sidebar"
           aria-expanded={false}
           data-testid="sidebar-toggle"
@@ -72,7 +76,7 @@ export default function Sidebar() {
         <button
           className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors cursor-pointer shrink-0"
           onClick={() => setCollapsed(true)}
-          title="사이드바 접기"
+          title={t('sidebar.collapse')}
           aria-label="Collapse sidebar"
           aria-expanded={true}
           data-testid="sidebar-toggle"
@@ -105,11 +109,11 @@ export default function Sidebar() {
         {status === 'authed' && (
           <div data-testid="my-diagrams">
             <div className="mb-2 px-3 flex items-center justify-between text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant opacity-70">
-              <span>내 다이어그램</span>
+              <span>{t('sidebar.myDiagrams')}</span>
               <button
                 className="material-symbols-outlined text-[16px] cursor-pointer hover:text-primary transition-colors"
                 onClick={startNew}
-                title="새 다이어그램 (빈 캔버스)"
+                title={t('sidebar.newDiagram')}
                 aria-label="New diagram"
               >
                 add
@@ -133,7 +137,7 @@ export default function Sidebar() {
                     <button
                       className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-primary cursor-pointer shrink-0"
                       onClick={e => { e.stopPropagation(); rename(d.id); }}
-                      title="이름 변경"
+                      title={t('sidebar.rename')}
                       aria-label={`Rename ${d.name}`}
                     >
                       edit
@@ -141,7 +145,7 @@ export default function Sidebar() {
                     <button
                       className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-primary cursor-pointer shrink-0"
                       onClick={e => { e.stopPropagation(); duplicate(d.id); }}
-                      title="복제"
+                      title={t('sidebar.duplicate')}
                       aria-label={`Duplicate ${d.name}`}
                     >
                       content_copy
@@ -149,7 +153,7 @@ export default function Sidebar() {
                     <button
                       className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-red-400 cursor-pointer shrink-0"
                       onClick={e => { e.stopPropagation(); remove(d.id); }}
-                      title="삭제"
+                      title={t('common.delete')}
                       aria-label={`Delete ${d.name}`}
                     >
                       delete
@@ -159,7 +163,7 @@ export default function Sidebar() {
               })}
               {list.length === 0 && (
                 <div className="px-3 py-1 text-xs text-outline italic">
-                  DB 저장 버튼으로 저장하면 여기에 표시됩니다
+                  {t('sidebar.emptyDiagrams')}
                 </div>
               )}
             </div>
@@ -199,7 +203,7 @@ export default function Sidebar() {
           })}
           {entities.length === 0 && (
             <div className="px-3 py-2 text-xs text-outline italic">
-              아직 엔티티가 없습니다
+              {t('sidebar.emptyEntities')}
             </div>
           )}
         </div>
@@ -207,10 +211,10 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-outline-variant p-2 flex flex-col gap-1">
-        <NavItem icon="cable" label="MCP 연결" onClick={openMcp} testid="sidebar-mcp-connect" />
-        <NavItem icon="menu_book" label="MCP 연결 가이드" href="/mcp-guide.html" />
-        <NavItem icon="smart_toy" label="Claude 프롬프트 가이드" href="/prompt-guide.html" />
-        <NavItem icon="description" label="Docs" href="/manual.html" />
+        <NavItem icon="cable" label={t('sidebar.mcpConnect')} onClick={openMcp} testid="sidebar-mcp-connect" />
+        <NavItem icon="menu_book" label={t('sidebar.mcpGuide')} href={`${guideBase}/mcp-guide.html`} />
+        <NavItem icon="smart_toy" label={t('sidebar.promptGuide')} href={`${guideBase}/prompt-guide.html`} />
+        <NavItem icon="description" label="Docs" href={`${guideBase}/manual.html`} />
       </div>
     </aside>
   );
@@ -218,6 +222,7 @@ export default function Sidebar() {
 
 // onClick이 있으면 버튼, href가 있으면 새 탭 링크, 둘 다 없으면 비활성 placeholder
 function NavItem({ icon, label, href, onClick, testid }: { icon: string; label: string; href?: string; onClick?: () => void; testid?: string }) {
+  const t = useT();
   const className =
     'flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant hover:bg-surface-variant hover:text-on-surface';
 
@@ -237,7 +242,7 @@ function NavItem({ icon, label, href, onClick, testid }: { icon: string; label: 
         target="_blank"
         rel="noopener noreferrer"
         className={`${className} cursor-pointer no-underline`}
-        title={`${label} (새 탭)`}
+        title={t('nav.newTab', { label })}
       >
         <span className="material-symbols-outlined text-[18px]">{icon}</span>
         {label}
@@ -246,7 +251,7 @@ function NavItem({ icon, label, href, onClick, testid }: { icon: string; label: 
   }
 
   return (
-    <span className={`${className} cursor-default`} title={`${label} (준비 중)`}>
+    <span className={`${className} cursor-default`} title={t('nav.comingSoon', { label })}>
       <span className="material-symbols-outlined text-[18px]">{icon}</span>
       {label}
     </span>

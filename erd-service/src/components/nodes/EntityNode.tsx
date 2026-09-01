@@ -2,7 +2,9 @@ import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Column, ColumnType, Entity, ENTITY_COLORS, Relationship } from '../../types/erd';
 import { useERDStore } from '../../store/erdStore';
-import { deriveSides, labelForSides } from '../../core/relationshipSides';
+import { deriveSides } from '../../core/relationshipSides';
+import { labelForSides } from '../../i18n/labels';
+import { useT, type TFunc } from '../../i18n';
 
 type EntityNodeData = Entity;
 
@@ -79,6 +81,7 @@ function InlineInput({
 }
 
 function EntityNode({ data }: NodeProps) {
+  const t = useT();
   const entityData = data as unknown as EntityNodeData;
   const { updateEntity, updateColumn, updateSubtypeColumn, openEntityEditor, entities, relationships } = useERDStore();
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -183,7 +186,7 @@ function EntityNode({ data }: NodeProps) {
           ) : (
             <span
               className="font-mono text-[11px] font-bold text-on-surface whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
-              title="더블클릭하여 속성명 수정"
+              title={t('node.dblAttrName')}
               data-testid="col-name"
               onDoubleClick={e => {
                 e.stopPropagation();
@@ -205,7 +208,7 @@ function EntityNode({ data }: NodeProps) {
           ) : (
             <span
               className="font-sans text-[10px] text-on-surface-variant whitespace-nowrap shrink-0 cursor-pointer hover:text-primary hover:underline"
-              title="더블클릭하여 한글명 수정"
+              title={t('node.dblLogicalName')}
               data-testid="col-logical-name"
               onDoubleClick={e => {
                 e.stopPropagation();
@@ -216,7 +219,7 @@ function EntityNode({ data }: NodeProps) {
                 col.logicalName
               ) : (
                 <span className="opacity-0 group-hover:opacity-40 hover:!opacity-100 text-outline text-[9px] italic">
-                  +한글명
+                  {t('node.addLogical')}
                 </span>
               )}
             </span>
@@ -236,7 +239,7 @@ function EntityNode({ data }: NodeProps) {
         ) : (
           <span
             className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0 cursor-pointer hover:text-primary hover:underline"
-            title="더블클릭하여 데이터타입 수정"
+            title={t('node.dblType')}
             data-testid="col-type"
             onDoubleClick={e => {
               e.stopPropagation();
@@ -294,7 +297,7 @@ function EntityNode({ data }: NodeProps) {
             ) : (
               <span
                 className="font-mono text-xs font-bold text-on-surface whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
-                title="더블클릭하여 물리명 수정"
+                title={t('node.dblPhysicalName')}
                 onDoubleClick={e => {
                   e.stopPropagation();
                   startEditing('entity-name', entityData.name);
@@ -315,7 +318,7 @@ function EntityNode({ data }: NodeProps) {
             ) : (
               <span
                 className="font-sans text-[11px] text-on-surface-variant whitespace-nowrap shrink-0 cursor-pointer hover:text-primary hover:underline"
-                title="더블클릭하여 한글명 수정"
+                title={t('node.dblLogicalName')}
                 onDoubleClick={e => {
                   e.stopPropagation();
                   startEditing('entity-logicalName', entityData.logicalName || '');
@@ -325,7 +328,7 @@ function EntityNode({ data }: NodeProps) {
                   entityData.logicalName
                 ) : (
                   <span className="opacity-0 hover:opacity-100 text-outline text-[10px] italic">
-                    +한글명
+                    {t('node.addLogical')}
                   </span>
                 )}
               </span>
@@ -339,7 +342,7 @@ function EntityNode({ data }: NodeProps) {
             >
               <button
                 className="text-on-surface-variant hover:text-primary cursor-pointer flex items-center"
-                title="상세 정보 / 편집"
+                title={t('node.infoEdit')}
                 data-testid="entity-info-icon"
                 onClick={e => { e.stopPropagation(); cancelHide(); setShowPreview(false); openEntityEditor(entityData.id); }}
               >
@@ -348,7 +351,7 @@ function EntityNode({ data }: NodeProps) {
             </div>
             <button
               className="text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center"
-              title="색상 변경"
+              title={t('memo.changeColor')}
               onClick={e => { e.stopPropagation(); setShowPalette(v => !v); }}
             >
               <span className="material-symbols-outlined text-[16px]">more_horiz</span>
@@ -389,7 +392,7 @@ function EntityNode({ data }: NodeProps) {
 
           {entityData.columns.length === 0 && (
             <div className="px-3 py-1.5 text-[11px] font-mono text-outline italic">
-              컬럼 없음
+              {t('node.noColumns')}
             </div>
           )}
         </div>
@@ -404,7 +407,10 @@ function EntityNode({ data }: NodeProps) {
                 {entityData.subsetName || 'SubSet'}
               </span>
               <span className="font-sans text-[9px] px-1 py-px rounded bg-surface-container text-on-surface-variant shrink-0">
-                {(entityData.subtypeExclusive ?? true) ? '배타' : '포함'}·{(entityData.subtypeComplete ?? false) ? '완전' : '불완전'}
+                {t('subset.badge', {
+                  ex: t((entityData.subtypeExclusive ?? true) ? 'subset.exclusiveShort' : 'subset.inclusiveShort'),
+                  comp: t((entityData.subtypeComplete ?? false) ? 'subset.completeShort' : 'subset.incompleteShort'),
+                })}
               </span>
             </div>
             {/* 중첩 서브타입 박스들 */}
@@ -432,7 +438,7 @@ function EntityNode({ data }: NodeProps) {
                     ) : (
                       <span
                         className="font-mono text-[10px] font-bold text-on-surface whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
-                        title="더블클릭하여 서브타입명 수정"
+                        title={t('node.dblSubtypeName')}
                         onDoubleClick={e => {
                           e.stopPropagation();
                           startEditing(`subtype-name-${st.id}`, st.name);
@@ -453,7 +459,7 @@ function EntityNode({ data }: NodeProps) {
                     ) : (
                       <span
                         className="font-sans text-[9px] text-on-surface-variant whitespace-nowrap shrink-0 cursor-pointer hover:text-primary hover:underline"
-                        title="더블클릭하여 한글명 수정"
+                        title={t('node.dblLogicalName')}
                         onDoubleClick={e => {
                           e.stopPropagation();
                           startEditing(`subtype-logicalName-${st.id}`, st.logicalName || '');
@@ -463,7 +469,7 @@ function EntityNode({ data }: NodeProps) {
                           st.logicalName
                         ) : (
                           <span className="opacity-0 hover:opacity-100 text-outline text-[8px] italic">
-                            +한글명
+                            {t('node.addLogical')}
                           </span>
                         )}
                       </span>
@@ -493,7 +499,7 @@ function EntityNode({ data }: NodeProps) {
                               <span
                                 className="font-mono text-[10px] text-on-surface whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
                                 data-testid="subtype-col-name"
-                                title="더블클릭하여 속성명 수정"
+                                title={t('node.dblAttrName')}
                                 onDoubleClick={e => {
                                   e.stopPropagation();
                                   startEditing(`subcol-name-${st.id}-${col.id}`, col.name);
@@ -514,7 +520,7 @@ function EntityNode({ data }: NodeProps) {
                             ) : (
                               <span
                                 className="font-sans text-[9px] text-on-surface-variant whitespace-nowrap shrink-0 cursor-pointer hover:text-primary hover:underline"
-                                title="더블클릭하여 한글명 수정"
+                                title={t('node.dblLogicalName')}
                                 onDoubleClick={e => {
                                   e.stopPropagation();
                                   startEditing(`subcol-logicalName-${st.id}-${col.id}`, col.logicalName || '');
@@ -524,7 +530,7 @@ function EntityNode({ data }: NodeProps) {
                                   col.logicalName
                                 ) : (
                                   <span className="opacity-0 group-hover:opacity-40 hover:!opacity-100 text-outline text-[8px] italic">
-                                    +한글명
+                                    {t('node.addLogical')}
                                   </span>
                                 )}
                               </span>
@@ -544,7 +550,7 @@ function EntityNode({ data }: NodeProps) {
                             <span
                               className="font-mono text-[9px] text-on-surface-variant opacity-70 shrink-0 whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
                               data-testid="subtype-col-type"
-                              title="더블클릭하여 데이터타입 수정"
+                              title={t('node.dblType')}
                               onDoubleClick={e => {
                                 e.stopPropagation();
                                 const typeStr = `${col.type}${col.size ? `(${col.size})` : ''}`;
@@ -558,7 +564,7 @@ function EntityNode({ data }: NodeProps) {
                       );
                     })}
                     {st.columns.length === 0 && (
-                      <div className="px-2 py-0.5 text-[9px] font-mono text-outline italic">속성 없음</div>
+                      <div className="px-2 py-0.5 text-[9px] font-mono text-outline italic">{t('node.noAttributes')}</div>
                     )}
                   </div>
                 </div>
@@ -583,12 +589,12 @@ function EntityNode({ data }: NodeProps) {
 }
 
 // FK 컬럼이 실제로 어느 엔티티·컬럼을 참조하는지 — 캔버스 노드에는 링크 아이콘만 있어 대상이 안 보인다.
-function fkTargetLabel(col: Column, entities: Entity[]): string | null {
+function fkTargetLabel(col: Column, entities: Entity[], t: TFunc): string | null {
   if (!col.isFK || !col.refEntityId) return null;
   const target = entities.find(e => e.id === col.refEntityId);
-  if (!target) return '⚠ 참조 엔티티 없음';
+  if (!target) return t('node.fkMissingEntity');
   const targetCol = target.columns.find(c => c.id === col.refColumnId);
-  return targetCol ? `${target.name}.${targetCol.name}` : `⚠ ${target.name}.(끊어진 참조)`;
+  return targetCol ? `${target.name}.${targetCol.name}` : t('node.fkBrokenRef', { name: target.name });
 }
 
 // info 아이콘 호버 시 표시되는 읽기전용 미리보기
@@ -599,6 +605,7 @@ function EntityHoverPreview({ entity, entities, relationships, onMouseEnter, onM
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) {
+  const t = useT();
   const related = relationships.filter(r => r.sourceId === entity.id || r.targetId === entity.id);
 
   return (
@@ -617,14 +624,14 @@ function EntityHoverPreview({ entity, entities, relationships, onMouseEnter, onM
       </div>
 
       <p className="text-[11px] text-on-surface-variant m-0 whitespace-pre-line">
-        {entity.description || <span className="italic text-outline">설명 없음</span>}
+        {entity.description || <span className="italic text-outline">{t('preview.noDescription')}</span>}
       </p>
 
       <div className="w-full h-px bg-outline-variant/50" />
 
       <div className="flex flex-col gap-1">
         {entity.columns.map(col => {
-          const fkTarget = fkTargetLabel(col, entities);
+          const fkTarget = fkTargetLabel(col, entities, t);
           return (
             <div key={col.id} className="flex flex-col gap-0.5">
               <div className="flex items-center justify-between gap-2 text-[11px]">
@@ -648,7 +655,7 @@ function EntityHoverPreview({ entity, entities, relationships, onMouseEnter, onM
           );
         })}
         {entity.columns.length === 0 && (
-          <p className="text-[11px] font-mono text-outline italic m-0">컬럼 없음</p>
+          <p className="text-[11px] font-mono text-outline italic m-0">{t('node.noColumns')}</p>
         )}
       </div>
 
@@ -665,12 +672,12 @@ function EntityHoverPreview({ entity, entities, relationships, onMouseEnter, onM
 
       <div className="flex flex-col gap-1" data-testid="entity-relations-summary">
         <span className="font-sans text-[10px] font-bold text-on-surface-variant">
-          관계 {related.length > 0 ? `(${related.length})` : ''}
+          {t('preview.relations')} {related.length > 0 ? `(${related.length})` : ''}
         </span>
         {related.map(rel => {
           const iAmSource = rel.sourceId === entity.id;
           const other = entities.find(e => e.id === (iAmSource ? rel.targetId : rel.sourceId));
-          const role = iAmSource ? '자식' : '부모';
+          const role = t(iAmSource ? 'rel.roleChild' : 'rel.roleParent');
           const mySubtypeId = iAmSource ? rel.sourceSubtypeId : rel.targetSubtypeId;
           const scopeName = mySubtypeId ? entity.subtypes?.find(st => st.id === mySubtypeId)?.name : undefined;
           return (
@@ -690,13 +697,13 @@ function EntityHoverPreview({ entity, entities, relationships, onMouseEnter, onM
                 )}
               </div>
               <span className="font-sans text-[9px] text-on-surface-variant opacity-70 shrink-0 whitespace-nowrap">
-                {labelForSides(deriveSides(rel))}
+                {labelForSides(deriveSides(rel), t)}
               </span>
             </div>
           );
         })}
         {related.length === 0 && (
-          <p className="text-[11px] font-mono text-outline italic m-0">연결된 관계 없음</p>
+          <p className="text-[11px] font-mono text-outline italic m-0">{t('preview.noRelations')}</p>
         )}
       </div>
     </div>

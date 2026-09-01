@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useERDStore } from '../../store/erdStore';
 import { COLUMN_TYPES, Column, ColumnType, ENTITY_COLORS, Subtype } from '../../types/erd';
-import { confirmDialog } from '../../store/dialogStore';
 import EditorModal from '../common/EditorModal';
+import { confirmDeleteEntity } from '../../store/deleteActions';
+import { useT } from '../../i18n';
 
 // 엔티티 속성 편집 모달 — info 아이콘 클릭 / 우클릭 "편집"으로 연다 (editorOpen === 'entity').
 // 변경은 기존과 동일하게 실시간 반영.
 export default function EntityEditPanel() {
+  const t = useT();
   const {
     entities, selectedEntityId, editorOpen, closeEditor,
-    updateEntity, deleteEntity,
+    updateEntity,
     addColumn, updateColumn, deleteColumn, moveColumn,
     addSubtype, updateSubsetMeta,
   } = useERDStore();
@@ -32,16 +34,8 @@ export default function EntityEditPanel() {
       headerActions={
         <button
           className="text-on-surface-variant hover:text-error transition-colors flex items-center cursor-pointer"
-          onClick={async () => {
-            const ok = await confirmDialog({
-              title: '엔티티 삭제',
-              message: `"${entity.name}" 엔티티를 삭제할까요?\n연결된 관계선도 함께 삭제됩니다.`,
-              confirmText: '삭제',
-              danger: true,
-            });
-            if (ok) deleteEntity(entity.id);
-          }}
-          title="엔티티 삭제"
+          onClick={() => { void confirmDeleteEntity(entity.id); }}
+          title={t('delete.entity.title')}
           data-testid="entity-editor-delete"
         >
           <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -52,7 +46,7 @@ export default function EntityEditPanel() {
         {/* Table general info */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Table Name (물리명)</label>
+            <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">{t('entity.tableName')}</label>
             <input
               className="bg-input-bg border border-outline-variant rounded px-3 py-2 text-on-surface font-mono text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
               type="text"
@@ -62,11 +56,11 @@ export default function EntityEditPanel() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Logical Name (논리명)</label>
+            <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">{t('entity.logicalName')}</label>
             <input
               className="bg-input-bg border border-outline-variant rounded px-3 py-2 text-on-surface font-sans text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
               type="text"
-              placeholder="한글 명칭 (예: 사용자)"
+              placeholder={t('entity.logicalNamePlaceholder')}
               value={entity.logicalName ?? ''}
               onChange={e => updateEntity(entity.id, { logicalName: e.target.value })}
             />
@@ -76,7 +70,7 @@ export default function EntityEditPanel() {
             <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">Description / Notes</label>
             <textarea
               className="bg-input-bg border border-outline-variant rounded px-3 py-2 text-on-surface font-sans text-xs h-20 resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all custom-scrollbar"
-              placeholder="테이블 설명을 입력하세요..."
+              placeholder={t('entity.descriptionPlaceholder')}
               value={entity.description ?? ''}
               onChange={e => updateEntity(entity.id, { description: e.target.value })}
             />
@@ -142,7 +136,7 @@ export default function EntityEditPanel() {
         {/* SubSet — 배타적 서브타입 */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">SubSet (서브타입)</label>
+            <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">{t('subset.label')}</label>
             <button
               className="text-primary hover:text-inverse-primary text-[11px] font-mono flex items-center gap-1 transition-colors cursor-pointer"
               onClick={() => addSubtype(entity.id)}
@@ -154,7 +148,7 @@ export default function EntityEditPanel() {
 
           {(entity.subtypes?.length ?? 0) === 0 ? (
             <p className="text-[11px] text-outline italic m-0">
-              서브타입을 추가하면 슈퍼타입 안에 배타적 하위 엔티티 그룹이 생성됩니다.
+              {t('subset.hint')}
             </p>
           ) : (
             <>
@@ -163,7 +157,7 @@ export default function EntityEditPanel() {
                 <input
                   className="bg-input-bg border border-outline-variant rounded px-3 py-2 text-on-surface font-mono text-xs focus:outline-none focus:border-primary"
                   type="text"
-                  placeholder="SubSet 이름 (구분자)"
+                  placeholder={t('subset.namePlaceholder')}
                   value={entity.subsetName ?? 'SubSet'}
                   onChange={e => updateSubsetMeta(entity.id, { subsetName: e.target.value })}
                 />
@@ -175,7 +169,7 @@ export default function EntityEditPanel() {
                       checked={entity.subtypeExclusive ?? true}
                       onChange={e => updateSubsetMeta(entity.id, { subtypeExclusive: e.target.checked })}
                     />
-                    <span className="font-mono text-[11px] text-on-surface-variant">배타 (Exclusive)</span>
+                    <span className="font-mono text-[11px] text-on-surface-variant">{t('subset.exclusive')}</span>
                   </label>
                   <label className="flex items-center gap-1.5 cursor-pointer bg-input-bg border border-outline-variant rounded px-2 py-1.5 flex-1 justify-center">
                     <input
@@ -184,7 +178,7 @@ export default function EntityEditPanel() {
                       checked={entity.subtypeComplete ?? false}
                       onChange={e => updateSubsetMeta(entity.id, { subtypeComplete: e.target.checked })}
                     />
-                    <span className="font-mono text-[11px] text-on-surface-variant">완전 (Complete)</span>
+                    <span className="font-mono text-[11px] text-on-surface-variant">{t('subset.complete')}</span>
                   </label>
                 </div>
               </div>
@@ -205,6 +199,7 @@ export default function EntityEditPanel() {
 
 // 서브타입 카드 — 이름·논리명 편집 + 고유 속성(컬럼) 관리 + 삭제
 function SubtypeCard({ entityId, subtype }: { entityId: string; subtype: Subtype }) {
+  const t = useT();
   const { updateSubtype, removeSubtype, addSubtypeColumn, updateSubtypeColumn, deleteSubtypeColumn } = useERDStore();
   return (
     <div className="rounded p-2.5 flex flex-col gap-2 bg-surface-container border border-outline-variant" data-testid="subtype-card">
@@ -213,13 +208,13 @@ function SubtypeCard({ entityId, subtype }: { entityId: string; subtype: Subtype
         <input
           className="flex-1 min-w-0 bg-input-bg border border-outline-variant rounded px-2 py-1 text-on-surface font-mono text-[11px] focus:outline-none focus:border-primary"
           type="text"
-          placeholder="물리명"
+          placeholder={t('column.namePlaceholder')}
           value={subtype.name}
           onChange={e => updateSubtype(entityId, subtype.id, { name: e.target.value })}
         />
         <button
           className="text-outline-variant hover:text-error shrink-0 flex items-center cursor-pointer"
-          title="서브타입 삭제"
+          title={t('subset.deleteSubtype')}
           onClick={() => removeSubtype(entityId, subtype.id)}
         >
           <span className="material-symbols-outlined text-[16px]">delete</span>
@@ -228,7 +223,7 @@ function SubtypeCard({ entityId, subtype }: { entityId: string; subtype: Subtype
       <input
         className="w-full bg-input-bg border border-outline-variant rounded px-2 py-1 text-on-surface font-sans text-[11px] focus:outline-none focus:border-primary"
         type="text"
-        placeholder="논리명 (한글)"
+        placeholder={t('column.logicalPlaceholder')}
         value={subtype.logicalName ?? ''}
         onChange={e => updateSubtype(entityId, subtype.id, { logicalName: e.target.value })}
       />
@@ -247,7 +242,7 @@ function SubtypeCard({ entityId, subtype }: { entityId: string; subtype: Subtype
           onClick={() => addSubtypeColumn(entityId, subtype.id)}
           data-testid="add-subtype-column"
         >
-          <span className="material-symbols-outlined text-[12px]">add</span> 속성 추가
+          <span className="material-symbols-outlined text-[12px]">add</span> {t('subset.addAttribute')}
         </button>
       </div>
     </div>
@@ -256,6 +251,7 @@ function SubtypeCard({ entityId, subtype }: { entityId: string; subtype: Subtype
 
 // 서브타입 고유 속성 1행 — 펼치면 타입/제약 편집
 function SubtypeColumnRow({ col, onUpdate, onDelete }: { col: Column; onUpdate: (u: Partial<Column>) => void; onDelete: () => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded bg-surface-variant/40 border border-transparent hover:border-outline-variant">
@@ -266,7 +262,7 @@ function SubtypeColumnRow({ col, onUpdate, onDelete }: { col: Column; onUpdate: 
         <button
           className="text-outline-variant hover:text-error shrink-0 flex items-center cursor-pointer"
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          title="속성 삭제"
+          title={t('subset.deleteAttribute')}
         >
           <span className="material-symbols-outlined text-[14px]">delete</span>
         </button>
@@ -275,12 +271,12 @@ function SubtypeColumnRow({ col, onUpdate, onDelete }: { col: Column; onUpdate: 
         <div className="flex flex-col gap-2 px-2 pb-2 pt-1 border-t border-outline-variant/40">
           <input
             className="w-full bg-input-bg border border-outline-variant rounded px-2 py-1 text-on-surface font-mono text-[11px] focus:outline-none focus:border-primary"
-            type="text" placeholder="물리명" value={col.name}
+            type="text" placeholder={t('column.namePlaceholder')} value={col.name}
             onChange={e => onUpdate({ name: e.target.value })}
           />
           <input
             className="w-full bg-input-bg border border-outline-variant rounded px-2 py-1 text-on-surface font-sans text-[11px] focus:outline-none focus:border-primary"
-            type="text" placeholder="논리명 (한글)" value={col.logicalName ?? ''}
+            type="text" placeholder={t('column.logicalPlaceholder')} value={col.logicalName ?? ''}
             onChange={e => onUpdate({ logicalName: e.target.value })}
           />
           <div className="flex items-center gap-2">
@@ -289,7 +285,7 @@ function SubtypeColumnRow({ col, onUpdate, onDelete }: { col: Column; onUpdate: 
               value={col.type}
               onChange={e => onUpdate({ type: e.target.value as ColumnType })}
             >
-              {!col.type && <option value="">— 타입 선택 —</option>}
+              {!col.type && <option value="">{t('column.selectType')}</option>}
               {COLUMN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <input
@@ -327,6 +323,7 @@ interface ColRowProps {
 }
 
 function ColumnRow({ col, onUpdate, onDelete, dragging, dragOver, onDragStart, onDragEnd, onDragOver, onDrop }: ColRowProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   return (
@@ -344,7 +341,7 @@ function ColumnRow({ col, onUpdate, onDelete, dragging, dragOver, onDragStart, o
         {/* 드래그 핸들 — 순서 변경 */}
         <span
           className="material-symbols-outlined text-[16px] text-outline-variant hover:text-on-surface cursor-grab active:cursor-grabbing shrink-0 mr-1 opacity-40 group-hover:opacity-100 transition-opacity"
-          title="드래그하여 순서 변경"
+          title={t('column.dragReorder')}
           draggable
           data-testid={`col-drag-${col.name}`}
           onClick={e => e.stopPropagation()}
@@ -377,7 +374,7 @@ function ColumnRow({ col, onUpdate, onDelete, dragging, dragOver, onDragStart, o
         <button
           className="text-outline-variant hover:text-error opacity-0 group-hover:opacity-100 transition-opacity ml-2 flex items-center cursor-pointer shrink-0"
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          title="컬럼 삭제"
+          title={t('column.delete')}
         >
           <span className="material-symbols-outlined text-[16px]">delete</span>
         </button>
@@ -405,7 +402,7 @@ function ColumnRow({ col, onUpdate, onDelete, dragging, dragOver, onDragStart, o
             <input
               className="flex-1 min-w-0 bg-input-bg border border-outline-variant rounded px-2 py-1.5 text-on-surface font-mono text-xs focus:outline-none focus:border-primary"
               type="text"
-              placeholder="물리명"
+              placeholder={t('column.namePlaceholder')}
               value={col.name}
               onChange={e => onUpdate({ name: e.target.value })}
             />
@@ -415,7 +412,7 @@ function ColumnRow({ col, onUpdate, onDelete, dragging, dragOver, onDragStart, o
           <input
             className="w-full bg-input-bg border border-outline-variant rounded px-2 py-1.5 text-on-surface font-sans text-xs focus:outline-none focus:border-primary"
             type="text"
-            placeholder="논리명 (한글 명칭)"
+            placeholder={t('column.logicalPlaceholder')}
             value={col.logicalName ?? ''}
             onChange={e => onUpdate({ logicalName: e.target.value })}
           />
@@ -427,7 +424,7 @@ function ColumnRow({ col, onUpdate, onDelete, dragging, dragOver, onDragStart, o
               value={col.type}
               onChange={e => onUpdate({ type: e.target.value as ColumnType })}
             >
-              {!col.type && <option value="">— 타입 선택 —</option>}
+              {!col.type && <option value="">{t('column.selectType')}</option>}
               {COLUMN_TYPES.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}

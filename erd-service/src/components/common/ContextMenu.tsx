@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useT } from '../../i18n';
 
 // 엔티티·관계선·메모 공용 우클릭 컨텍스트 메뉴 — 편집/삭제 진입점.
 interface ContextMenuProps {
@@ -10,6 +11,7 @@ interface ContextMenuProps {
 }
 
 export default function ContextMenu({ x, y, onEdit, onDelete, onClose }: ContextMenuProps) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   // 뷰포트 밖으로 나가지 않도록 위치 보정 (렌더 후 실제 크기 기준)
   const [pos, setPos] = useState({ x, y });
@@ -52,14 +54,14 @@ export default function ContextMenu({ x, y, onEdit, onDelete, onClose }: Context
         onClick={() => { onClose(); onEdit(); }}
         data-testid="context-menu-edit"
       >
-        <span className="material-symbols-outlined text-[15px]">edit</span> 편집
+        <span className="material-symbols-outlined text-[15px]">edit</span> {t('common.edit')}
       </button>
       <button
         className="w-full text-left px-3 py-2 text-xs text-error hover:bg-error-container/30 flex items-center gap-2 cursor-pointer"
         onClick={() => { onClose(); onDelete(); }}
         data-testid="context-menu-delete"
       >
-        <span className="material-symbols-outlined text-[15px]">delete</span> 삭제
+        <span className="material-symbols-outlined text-[15px]">delete</span> {t('common.delete')}
       </button>
     </div>
   );

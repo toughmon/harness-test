@@ -2,8 +2,10 @@ import { useRef, useEffect } from 'react';
 import { NodeProps, NodeResizer } from '@xyflow/react';
 import { useERDStore } from '../../store/erdStore';
 import { Memo, MEMO_COLORS } from '../../types/erd';
+import { useT } from '../../i18n';
 
 export default function MemoNode({ data }: NodeProps) {
+  const t = useT();
   const memo = data as unknown as Memo;
   const { updateMemo, deleteMemo, selectMemo, selectedMemoId, selectedEntityIds, selectedMemoIds, updateMemoSize } = useERDStore();
   const isSelected = selectedMemoId === memo.id;
@@ -58,14 +60,14 @@ export default function MemoNode({ data }: NodeProps) {
                 border: memo.color === c ? '1.5px solid #374151' : '1.5px solid rgba(55,65,81,0.3)',
               }}
               onClick={e => { e.stopPropagation(); updateMemo(memo.id, { color: c }); }}
-              title={`색상 변경`}
+              title={t('memo.changeColor')}
             />
           ))}
           <button
             className={`nodrag material-symbols-outlined cursor-pointer transition-opacity ml-1 hover:!opacity-100 ${isSelected ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'}`}
             style={{ color: '#374151', fontSize: 14 }}
             onClick={e => { e.stopPropagation(); deleteMemo(memo.id); }}
-            title="메모 삭제"
+            title={t('delete.memo.title')}
           >
             close
           </button>
@@ -81,7 +83,7 @@ export default function MemoNode({ data }: NodeProps) {
         style={{ color: '#1e293b', fontFamily: 'inherit' }}
         onFocus={() => { focusedRef.current = true; selectMemo(memo.id); }}
         onBlur={e => { focusedRef.current = false; updateMemo(memo.id, { text: e.target.value }); }}
-        placeholder="메모를 입력하세요..."
+        placeholder={t('memo.placeholder')}
       />
     </div>
   );

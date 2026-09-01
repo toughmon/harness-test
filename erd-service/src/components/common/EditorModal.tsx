@@ -1,5 +1,6 @@
 import { useEffect, ReactNode } from 'react';
 import { useDialogStore } from '../../store/dialogStore';
+import { useT } from '../../i18n';
 
 // 공용 편집 모달 — 우측 고정 패널(Entity/Relationship/Memo)을 대체하는 컨테이너.
 // DialogModal·RelTypeModal과 동일한 오버레이 패턴(fixed inset-0 bg-black/60 + 중앙 카드)을 재사용.
@@ -13,6 +14,7 @@ interface EditorModalProps {
 }
 
 export default function EditorModal({ title, icon, onClose, headerActions, children, testId }: EditorModalProps) {
+  const t = useT();
   // 삭제 확인(DialogModal)이 이 모달 위에 뜬 상태에선 Escape가 확인창을 닫도록 양보한다.
   const dialogOpen = useDialogStore(s => !!s.dialog);
 
@@ -48,7 +50,7 @@ export default function EditorModal({ title, icon, onClose, headerActions, child
             <button
               className="text-on-surface-variant hover:text-on-surface text-lg leading-none cursor-pointer"
               onClick={onClose}
-              title="닫기"
+              title={t('common.close')}
               data-testid="editor-modal-close"
             >
               ×

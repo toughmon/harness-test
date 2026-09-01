@@ -1,4 +1,18 @@
-import { RELATIONSHIP_LABELS, RelationshipType } from '../../types/erd';
+import { RelationshipType } from '../../types/erd';
+import { useT, type TFunc } from '../../i18n';
+
+// 선택 메뉴에 노출할 순서 — 라벨/설명은 사전(relType.* / relTypeDesc.*)이 소유한다.
+// types/erd.ts의 RELATIONSHIP_LABELS는 MCP 도구 설명(LLM 대면)이 쓰는 정본이라 건드리지 않는다.
+const TYPE_ORDER: RelationshipType[] = [
+  'ONE_TO_MANY_IDENTIFYING',
+  'ONE_TO_MANY_IDENTIFYING_SOLID',
+  'ONE_TO_MANY_NON_IDENTIFYING',
+  'ONE_TO_MANY_OPTIONAL',
+  'ONE_TO_ONE_IDENTIFYING',
+  'ONE_TO_ONE_IDENTIFYING_SOLID',
+  'ONE_TO_ONE_NON_IDENTIFYING',
+  'ONE_TO_ONE_OPTIONAL',
+];
 
 interface Props {
   onSelect: (type: RelationshipType) => void;
@@ -7,12 +21,13 @@ interface Props {
   current?: RelationshipType;   // 타입 변경 모드에서 현재 타입 강조
 }
 
-export default function RelTypeModal({ onSelect, onCancel, title = '관계 종류 선택', current }: Props) {
+export default function RelTypeModal({ onSelect, onCancel, title, current }: Props) {
+  const t = useT();
+  const heading = title ?? t('relType.modalTitle');
   // 말이 안 되는 조합(1:1 실선+실선, 1:1 점선+점선)은 선택 메뉴에서 제외.
   // enum·렌더링·설명은 기존 저장 다이어그램 호환을 위해 그대로 유지한다.
   const HIDDEN_TYPES: RelationshipType[] = ['ONE_TO_ONE_IDENTIFYING_SOLID', 'ONE_TO_ONE_OPTIONAL'];
-  const types = (Object.entries(RELATIONSHIP_LABELS) as [RelationshipType, string][])
-    .filter(([type]) => !HIDDEN_TYPES.includes(type));
+  const types = TYPE_ORDER.filter(type => !HIDDEN_TYPES.includes(type));
 
   return (
     <div
@@ -25,10 +40,10 @@ export default function RelTypeModal({ onSelect, onCancel, title = '관계 종�
       >
         <div className="px-5 py-3 border-b border-outline-variant flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-primary">mediation</span>
-          <h3 className="text-sm font-semibold text-on-surface m-0">{title}</h3>
+          <h3 className="text-sm font-semibold text-on-surface m-0">{heading}</h3>
         </div>
         <div className="p-2">
-          {types.map(([type, label]) => (
+          {types.map(type => (
             <button
               key={type}
               className={`w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-variant rounded-lg transition-colors cursor-pointer group ${
@@ -37,14 +52,14 @@ export default function RelTypeModal({ onSelect, onCancel, title = '관계 종�
               onClick={() => onSelect(type)}
             >
               <div className="font-mono text-xs font-bold group-hover:text-primary transition-colors flex items-center gap-2">
-                <span>{label}</span>
+                <span>{t(`relType.${type}`)}</span>
                 {current === type && (
-                  <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[9px] uppercase tracking-wider font-sans">현재</span>
+                  <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[9px] uppercase tracking-wider font-sans">{t('relType.current')}</span>
                 )}
                 <RelLinePreview type={type} className="ml-auto shrink-0" />
               </div>
               <div className="text-[11px] text-on-surface-variant mt-0.5">
-                {getTypeDesc(type)}
+                {getTypeDesc(type, t)}
               </div>
             </button>
           ))}
@@ -54,7 +69,7 @@ export default function RelTypeModal({ onSelect, onCancel, title = '관계 종�
             className="w-full text-xs text-on-surface-variant hover:text-on-surface py-1.5 cursor-pointer transition-colors"
             onClick={onCancel}
           >
-            취소
+            {t('common.cancel')}
           </button>
         </div>
       </div>
@@ -125,25 +140,6 @@ function RelLinePreview({ type, className }: { type: RelationshipType; className
   );
 }
 
-function getTypeDesc(type: RelationshipType): string {
-  switch (type) {
-    case 'ONE_TO_MANY_IDENTIFYING':
-      return 'FK 자동 추가 — 하위 PK(식별자)에 포함 · 부모 점선+자식 실선';
-    case 'ONE_TO_MANY_IDENTIFYING_SOLID':
-      return 'FK 자동 추가 — 하위 PK(식별자)에 포함 · 전체 실선';
-    case 'ONE_TO_MANY_NON_IDENTIFYING':
-      return 'FK 자동 추가 — 식별자 미포함 · 점선';
-    case 'ONE_TO_MANY_OPTIONAL':
-      return 'FK 자동 추가 — 식별자 미포함, NULL 허용 · 점선';
-    case 'ONE_TO_ONE_IDENTIFYING':
-      return '1:1 식별 — FK가 식별자에 포함 · 부모 점선+자식 실선';
-    case 'ONE_TO_ONE_IDENTIFYING_SOLID':
-      return '1:1 식별 — FK가 식별자에 포함 · 전체 실선';
-    case 'ONE_TO_ONE_NON_IDENTIFYING':
-      return '1:1 비식별 — FK 식별자 미포함 · 점선';
-    case 'ONE_TO_ONE_OPTIONAL':
-      return '1:1 비식별 — 식별자 미포함, NULL 허용 · 전체 점선';
-    default:
-      return '';
-  }
+function getTypeDesc(type: RelationshipType, t: TFunc): string {
+  return t(`relTypeDesc.${type}`);
 }

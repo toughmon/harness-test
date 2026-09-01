@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMcpStore } from '../../store/mcpStore';
 import { useAuthStore } from '../../store/authStore';
 import { api, McpToken, McpTokenIssued } from '../../api/client';
+import { useT, getT, useLocaleStore } from '../../i18n';
 
 // MCP 원클릭 연결 모달 — 로그인 사용자가 개인 토큰(PAT)을 발급하고, 토큰이 박힌
 // `claude mcp add` 한 줄을 복사해 Claude Code에 붙여넣으면 끝. (서비스계정·레포·재시작 불필요)
@@ -9,7 +10,6 @@ import { api, McpToken, McpTokenIssued } from '../../api/client';
 
 const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
 const MCP_URL = `${ORIGIN}/mcp`;
-const TOKEN_PLACEHOLDER = '<발급한_토큰>';
 
 function buildCommand(token: string) {
   // `--header`는 가변인자(<header...>)라 name/url 뒤(맨 끝)에 와야 한다.
@@ -45,6 +45,8 @@ function legacyCopy(text: string): boolean {
 }
 
 export default function McpConnectModal() {
+  const tr = useT();
+  const guideBase = useLocaleStore(s => s.locale) === 'en' ? '/en' : '';
   const { closeModal } = useMcpStore();
   const { status, openModal: openAuth } = useAuthStore();
 
@@ -59,7 +61,7 @@ export default function McpConnectModal() {
 
   useEffect(() => {
     if (!authed) return;
-    api.listMcpTokens().then(setTokens).catch(() => setError('토큰 목록을 불러오지 못했습니다.'));
+    api.listMcpTokens().then(setTokens).catch(() => setError(getT()('mcp.listFailed')));
   }, [authed]);
 
   const issue = async () => {
@@ -71,7 +73,7 @@ export default function McpConnectModal() {
       setLabel('');
       setTokens(await api.listMcpTokens());
     } catch {
-      setError('토큰 발급에 실패했습니다.');
+      setError(tr('mcp.issueFailed'));
     } finally {
       setBusy(false);
     }
@@ -83,7 +85,7 @@ export default function McpConnectModal() {
       setTokens(await api.listMcpTokens());
       if (issued?.id === id) setIssued(null);
     } catch {
-      setError('토큰 취소에 실패했습니다.');
+      setError(tr('mcp.revokeFailed'));
     }
   };
 
@@ -97,7 +99,7 @@ export default function McpConnectModal() {
     }
   };
 
-  const shownToken = issued?.token ?? TOKEN_PLACEHOLDER;
+  const shownToken = issued?.token ?? tr('mcp.tokenPlaceholderText');
   const command = buildCommand(shownToken);
 
   return (
@@ -110,11 +112,11 @@ export default function McpConnectModal() {
         {/* 헤더 */}
         <div className="px-5 py-3 border-b border-outline-variant flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-primary">cable</span>
-          <h3 className="text-sm font-semibold text-on-surface m-0 flex-1">Claude Code MCP 연결</h3>
+          <h3 className="text-sm font-semibold text-on-surface m-0 flex-1">{tr('mcp.title')}</h3>
           <button
             className="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-on-surface cursor-pointer"
             onClick={closeModal}
-            aria-label="닫기"
+            aria-label={tr('common.close')}
           >
             close
           </button>
@@ -124,31 +126,30 @@ export default function McpConnectModal() {
           <div className="p-6 flex flex-col items-center gap-4 text-center">
             <span className="material-symbols-outlined text-[40px] text-on-surface-variant">lock</span>
             <p className="text-sm text-on-surface-variant m-0">
-              MCP 토큰을 발급하려면 먼저 로그인해야 합니다.
+              {tr('mcp.loginRequired')}
             </p>
             <button
               className="bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-semibold hover:bg-inverse-primary hover:text-white transition-colors cursor-pointer"
               onClick={() => { closeModal(); openAuth(); }}
             >
-              로그인 / 회원가입
+              {tr('mcp.loginOrRegister')}
             </button>
           </div>
         ) : (
           <div className="p-5 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
             <p className="text-xs text-on-surface-variant m-0 leading-relaxed">
-              아래 한 줄을 복사해 터미널에 붙여넣으면 Claude Code가 이 ERD 서비스에 바로 연결됩니다.
-              레포 복제·Node 설치·파일 편집·재시작이 필요 없습니다.
+              {tr('mcp.intro')}
             </p>
 
             {/* 토큰 발급 */}
             <div className="flex items-end gap-2">
               <label className="flex flex-col gap-1 flex-1">
-                <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">토큰 이름 (선택)</span>
+                <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">{tr('mcp.tokenLabel')}</span>
                 <input
                   type="text"
                   value={label}
                   onChange={e => setLabel(e.target.value)}
-                  placeholder="예: 내 노트북 Claude Code"
+                  placeholder={tr('mcp.tokenPlaceholder')}
                   maxLength={100}
                   className="bg-surface border border-outline-variant rounded px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
                 />
@@ -159,7 +160,7 @@ export default function McpConnectModal() {
                 onClick={issue}
                 className="bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-semibold hover:bg-inverse-primary hover:text-white transition-colors cursor-pointer active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
               >
-                {busy ? '발급 중...' : '토큰 발급'}
+                {tr(busy ? 'mcp.issuing' : 'mcp.issue')}
               </button>
             </div>
 
@@ -167,14 +168,14 @@ export default function McpConnectModal() {
               <div data-testid="mcp-issued-token" className="rounded-lg border border-primary/40 bg-primary/5 p-3 flex flex-col gap-1">
                 <span className="text-[11px] font-bold text-primary flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">warning</span>
-                  토큰은 지금만 표시됩니다 — 아래 명령을 바로 복사하세요
+                  {tr('mcp.tokenOnce')}
                 </span>
               </div>
             )}
 
             {/* 복사용 명령 */}
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">연결 명령</span>
+              <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">{tr('mcp.command')}</span>
               <div className="relative">
                 <pre
                   data-testid="mcp-command"
@@ -184,7 +185,7 @@ export default function McpConnectModal() {
                   data-testid="mcp-copy"
                   onClick={() => copy(command, 'cmd')}
                   disabled={!issued}
-                  title={issued ? '복사' : '먼저 토큰을 발급하세요'}
+                  title={tr(issued ? 'common.copy' : 'mcp.issueFirst')}
                   className="absolute top-2 right-2 material-symbols-outlined text-[16px] text-on-surface-variant hover:text-primary cursor-pointer disabled:opacity-40"
                 >
                   {copied === 'cmd' ? 'check' : 'content_copy'}
@@ -192,7 +193,7 @@ export default function McpConnectModal() {
               </div>
               {!issued && (
                 <span className="text-[11px] text-outline italic">
-                  토큰을 발급하면 명령에 실제 토큰이 채워집니다.
+                  {tr('mcp.tokenFillHint')}
                 </span>
               )}
             </div>
@@ -200,13 +201,13 @@ export default function McpConnectModal() {
             {/* .mcp.json 대안 */}
             {issued && (
               <details className="text-xs text-on-surface-variant">
-                <summary className="cursor-pointer hover:text-on-surface">또는 .mcp.json에 직접 추가</summary>
+                <summary className="cursor-pointer hover:text-on-surface">{tr('mcp.orMcpJson')}</summary>
                 <div className="relative mt-2">
                   <pre className="bg-surface border border-outline-variant rounded-lg p-3 pr-10 text-[11px] leading-relaxed text-on-surface font-mono whitespace-pre-wrap break-all m-0">{buildJson(issued.token)}</pre>
                   <button
                     onClick={() => copy(buildJson(issued.token), 'json')}
                     className="absolute top-2 right-2 material-symbols-outlined text-[16px] text-on-surface-variant hover:text-primary cursor-pointer"
-                    title="복사"
+                    title={tr('common.copy')}
                   >
                     {copied === 'json' ? 'check' : 'content_copy'}
                   </button>
@@ -220,18 +221,18 @@ export default function McpConnectModal() {
 
             {/* 발급된 토큰 목록 */}
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">발급된 토큰</span>
+              <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">{tr('mcp.issuedTokens')}</span>
               <div data-testid="mcp-token-list" className="flex flex-col gap-1">
                 {tokens.map(t => (
                   <div key={t.id} className="flex items-center gap-2 px-3 py-1.5 rounded border border-outline-variant text-xs text-on-surface">
                     <span className="material-symbols-outlined text-[14px] text-on-surface-variant shrink-0">key</span>
-                    <span className="flex-1 truncate">{t.label || '(이름 없음)'}</span>
+                    <span className="flex-1 truncate">{t.label || tr('share.unnamed')}</span>
                     <span className="text-[10px] text-outline shrink-0">
-                      {t.last_used_at ? '사용됨' : '미사용'}
+                      {tr(t.last_used_at ? 'share.used' : 'share.unused')}
                     </span>
                     <button
                       onClick={() => revoke(t.id)}
-                      title="취소"
+                      title={tr('mcp.revokeToken')}
                       aria-label={`Revoke token ${t.id}`}
                       className="material-symbols-outlined text-[14px] text-on-surface-variant hover:text-red-400 cursor-pointer shrink-0"
                     >
@@ -240,19 +241,19 @@ export default function McpConnectModal() {
                   </div>
                 ))}
                 {tokens.length === 0 && (
-                  <div className="px-3 py-1 text-xs text-outline italic">아직 발급한 토큰이 없습니다.</div>
+                  <div className="px-3 py-1 text-xs text-outline italic">{tr('mcp.empty')}</div>
                 )}
               </div>
             </div>
 
             <a
-              href="/mcp-guide.html"
+              href={`${guideBase}/mcp-guide.html`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[11px] text-primary hover:underline self-start no-underline flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-[13px]">help</span>
-              자세한 연결 가이드 보기
+              {tr('mcp.seeGuide')}
             </a>
           </div>
         )}

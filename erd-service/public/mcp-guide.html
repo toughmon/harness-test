@@ -8,38 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
   <style>
-    :root {
-      --bg: #131313;
-      --surface-low: #1c1b1b;
-      --surface: #201f1f;
-      --surface-high: #2a2a2a;
-      --surface-variant: #353534;
-      --on-surface: #e5e2e1;
-      --on-surface-variant: #c7c4d7;
-      --outline: #908fa0;
-      --outline-variant: #464554;
-      --primary: #c0c1ff;
-      --primary-container: #8083ff;
-      --pk: #f59e0b;
-      --fk: #6366f1;
-      --ok: #4ade80;
-      --warn: #fbbf24;
-      --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
-      --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0; padding: 0;
-      background: var(--bg);
-      color: var(--on-surface);
-      font-family: var(--font-sans);
-      -webkit-font-smoothing: antialiased;
-      line-height: 1.7;
-      scroll-behavior: smooth;
-    }
-    .layout { display: flex; max-width: 1180px; margin: 0 auto; align-items: flex-start; }
-
     /* 좌측 목차 */
     nav.toc {
       position: sticky; top: 0; align-self: flex-start;
@@ -47,82 +17,36 @@
       padding: 28px 16px 40px 24px;
       border-right: 1px solid var(--outline-variant);
     }
+
     nav.toc .brand {
       font-size: 22px; font-weight: 900; letter-spacing: -0.02em;
       color: var(--primary); margin-bottom: 4px;
     }
-    nav.toc .sub { font-family: var(--font-mono); font-size: 11px; color: var(--on-surface-variant); margin-bottom: 20px; }
-    nav.toc a {
-      display: block; color: var(--on-surface-variant); text-decoration: none;
-      font-size: 13px; padding: 6px 10px; border-radius: 6px; transition: all .15s;
-      border-left: 2px solid transparent;
-    }
-    nav.toc a:hover { background: var(--surface-variant); color: var(--on-surface); }
+
     nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
 
-    /* 본문 */
-    main { flex: 1; min-width: 0; padding: 40px 48px 120px; }
     main h1 {
       font-size: 32px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px;
     }
-    main h1 .badge {
-      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-      color: var(--primary); background: rgba(128,131,255,.12);
-      padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 10px;
-    }
-    .lead { color: var(--on-surface-variant); font-size: 15px; margin: 0 0 8px; }
-    .note {
-      border-left: 3px solid var(--primary-container);
-      background: rgba(128,131,255,.06);
-      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
-      color: var(--on-surface-variant); font-size: 14px;
-    }
+
     .warn {
       border-left: 3px solid var(--warn);
       background: rgba(251,191,36,.07);
       padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
       color: var(--on-surface-variant); font-size: 14px;
     }
-    section { scroll-margin-top: 24px; padding-top: 16px; }
-    h2 {
-      font-size: 22px; font-weight: 700; margin: 36px 0 14px;
-      padding-bottom: 8px; border-bottom: 1px solid var(--outline-variant);
-    }
+
     h2 .step {
       display: inline-flex; align-items: center; justify-content: center;
       width: 26px; height: 26px; border-radius: 999px; margin-right: 10px;
       background: var(--primary-container); color: #1a1a2e;
       font-size: 14px; font-weight: 700; font-family: var(--font-mono);
     }
-    h3 { font-size: 16px; font-weight: 700; margin: 26px 0 10px; color: var(--on-surface); }
-    p { margin: 10px 0; }
+
     ul, ol { margin: 10px 0; padding-left: 22px; }
-    li { margin: 5px 0; }
-    strong { color: #fff; font-weight: 700; }
-    code {
-      font-family: var(--font-mono); font-size: 12.5px;
-      background: var(--surface-high); color: var(--primary);
-      padding: 1px 6px; border-radius: 4px;
-    }
-    pre {
-      background: var(--surface-low); border: 1px solid var(--outline-variant);
-      border-radius: 10px; padding: 16px 18px; overflow-x: auto;
-      font-family: var(--font-mono); font-size: 12px; color: var(--on-surface-variant);
-      line-height: 1.55;
-    }
+
     pre code { background: none; color: inherit; padding: 0; }
-    table {
-      width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px;
-      border: 1px solid var(--outline-variant); border-radius: 10px; overflow: hidden;
-    }
-    th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--outline-variant); vertical-align: top; }
-    th { background: var(--surface); font-weight: 600; color: var(--on-surface); font-size: 12.5px; }
-    tr:last-child td { border-bottom: none; }
-    td:first-child, th:first-child { white-space: nowrap; }
-    footer {
-      margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--outline-variant);
-      color: var(--outline); font-size: 12px;
-    }
+
     @media (max-width: 860px) {
       nav.toc { display: none; }
       main { padding: 28px 22px 80px; }
@@ -143,6 +67,7 @@
       <a href="#advanced">고급: 로컬 stdio 방식</a>
       <a href="#trouble">문제 해결</a>
       <a href="#caveats">주의사항</a>
+      <a href="/en/mcp-guide.html" class="back">🌐 English</a>
       <a href="/manual.html" class="back">← 사용자 매뉴얼</a>
     </nav>
 

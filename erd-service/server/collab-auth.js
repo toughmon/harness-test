@@ -15,6 +15,7 @@ export async function resolveConnection(app, req) {
   if (!access) return null;
 
   const actorId = access.userId != null ? `u${access.userId}` : (access.guestId ?? 'g?');
-  const label = user?.username ?? '게스트';
+  // 비로그인 참여자의 표시 이름은 클라이언트가 로케일에 맞게 채운다(서버는 로케일을 모름)
+  const label = user?.username ?? null;
   return { ...access, actorId, label };
 }

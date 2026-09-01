@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getT } from '../i18n';
 
 // 공용 다이얼로그 — window.alert/confirm/prompt 대체 (Promise 기반)
 
@@ -38,7 +39,7 @@ export const useDialogStore = create<DialogStore>((set) => ({
   close: () => set({ dialog: null }),
 }));
 
-export function alertDialog(message: string, title = '알림'): Promise<void> {
+export function alertDialog(message: string, title = getT()('dialog.alert')): Promise<void> {
   return new Promise((resolve) => {
     useDialogStore.getState().show({ kind: 'alert', message, title, resolve });
   });
@@ -46,12 +47,12 @@ export function alertDialog(message: string, title = '알림'): Promise<void> {
 
 export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
   return new Promise((resolve) => {
-    useDialogStore.getState().show({ kind: 'confirm', title: '확인', ...options, resolve });
+    useDialogStore.getState().show({ kind: 'confirm', title: getT()('dialog.confirm'), ...options, resolve });
   });
 }
 
 export function promptDialog(options: PromptOptions): Promise<string | null> {
   return new Promise((resolve) => {
-    useDialogStore.getState().show({ kind: 'prompt', title: '입력', ...options, resolve });
+    useDialogStore.getState().show({ kind: 'prompt', title: getT()('dialog.prompt'), ...options, resolve });
   });
 }

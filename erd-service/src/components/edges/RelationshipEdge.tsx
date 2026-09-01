@@ -14,6 +14,7 @@ import {
   computeEdgeEndpoints, anchorToPoint, pointToAnchor, buildBendRoute, bendAxis,
   applyBendDrag, nearestBendSegment, Rect, BendSegment,
 } from '../../utils/edgeConnection';
+import { useT } from '../../i18n';
 
 const EDGE_COLOR = '#7d7c8c';
 const EDGE_SELECTED = '#a78bfa';   // 선택 시 더 선명한 보라
@@ -130,6 +131,7 @@ function RelationshipEdge({
   data,
   selected,
 }: EdgeProps) {
+  const t = useT();
   const rel = data as unknown as Relationship;
   const {
     relationships, selectedEdgeId, readOnly,
@@ -361,8 +363,8 @@ function RelationshipEdge({
       >
         {canBend && (
           <title>
-            {`드래그: 잡은 구간만 이동 — ${bendAxisNow === 'y' ? '우회선은 위/아래, 양쪽 다리는 각각 좌/우' : '우회선은 좌/우, 양쪽 다리는 각각 위/아래'}`
-              + `${rel?.midOffset ? ' · 더블클릭: 자동 경로로 복귀' : ''}`}
+            {t(bendAxisNow === 'y' ? 'edge.dragHintY' : 'edge.dragHintX')
+              + (rel?.midOffset ? t('edge.dragHintReset') : '')}
           </title>
         )}
       </path>
@@ -448,7 +450,7 @@ function RelationshipEdge({
           <div
             className="nodrag nopan"
             data-testid="edge-edit-icon"
-            title={canBend ? '클릭: 관계 편집 · 드래그: 선 우회' : '관계 편집'}
+            title={t(canBend ? 'edge.editOrBend' : 'edge.edit')}
             onClick={e => {
               e.stopPropagation();
               // 더블클릭의 두 번째 클릭(=우회 해제 제스처)으로 편집 모달이 열리지 않게 한다
@@ -490,7 +492,7 @@ function RelationshipEdge({
               className="nodrag nopan edge-anchor-handle"
               data-testid={`edge-anchor-${h.end}`}
               data-end={h.end}
-              title="드래그: 부착 위치 이동 · 더블클릭: 자동 위치로 복귀"
+              title={t('edge.anchorHint')}
               onPointerDown={startDrag(h.end)}
               onDoubleClick={resetAnchor(h.end)}
               style={{

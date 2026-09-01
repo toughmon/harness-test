@@ -83,11 +83,5 @@ export function applySides(rel: Relationship, partial: Partial<RelationshipSides
   };
 }
 
-// 사람이 읽는 요약 라벨 (패널 표시용)
-export function labelForSides(sides: RelationshipSides): string {
-  const card = sides.childCardinality === 'many' ? '1:M' : '1:1';
-  const kind = sides.identifying ? '식별' : '비식별';
-  const p = sides.parentOptional ? '점선' : '실선';
-  const c = sides.childOptional ? '점선' : '실선';
-  return `${card} ${kind} (${p} + ${c})`;
-}
+// ※ 사람이 읽는 요약 라벨은 i18n/labels.ts로 옮겼다 — 조각을 코드에서 이어붙이면
+//    어순이 로케일에 종속되므로, 템플릿 자체를 사전이 소유해야 한다.

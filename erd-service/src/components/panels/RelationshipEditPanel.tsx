@@ -1,18 +1,21 @@
 import { useERDStore } from '../../store/erdStore';
-import { confirmDialog } from '../../store/dialogStore';
-import { deriveSides, labelForSides, type RelationshipSides } from '../../core/relationshipSides';
+import { deriveSides, type RelationshipSides } from '../../core/relationshipSides';
+import { labelForSides } from '../../i18n/labels';
+import { useT } from '../../i18n';
 import EditorModal from '../common/EditorModal';
 import type { Subtype } from '../../types/erd';
+import { confirmDeleteRelationship } from '../../store/deleteActions';
 
 // 관계선 편집 모달 — ✎ 아이콘 클릭 / 우클릭 "편집"으로 연다 (editorOpen === 'relationship').
 // 선의 좌(부모)/우(자식) 절반을 각각 독립 설정한다.
 export default function RelationshipEditPanel() {
   const {
     relationships, entities, selectedEdgeId, editorOpen,
-    closeEditor, updateRelationshipSides, updateRelationshipSubtypeScope, deleteRelationship,
+    closeEditor, updateRelationshipSides, updateRelationshipSubtypeScope,
     updateRelationshipMidOffset,
   } = useERDStore();
 
+  const t = useT();
   const rel = relationships.find(r => r.id === selectedEdgeId);
   const sides = rel ? deriveSides(rel) : null;
   const parent = rel ? entities.find(e => e.id === rel.sourceId) : undefined;
@@ -28,7 +31,7 @@ export default function RelationshipEditPanel() {
 
   return (
     <EditorModal
-      title="관계 속성"
+      title={t('relEdit.title')}
       icon="mediation"
       onClose={closeEditor}
       testId="rel-panel"
@@ -57,7 +60,7 @@ export default function RelationshipEditPanel() {
             <RelMiniPreview sides={sides} />
           </div>
           <p className="text-[11px] text-on-surface-variant font-mono m-0 text-center" data-testid="rel-summary">
-            {labelForSides(sides)}
+            {labelForSides(sides, t)}
           </p>
         </div>
 
@@ -66,7 +69,7 @@ export default function RelationshipEditPanel() {
         {/* 부모 쪽 절반 */}
         <div className="flex flex-col gap-3">
           <label className="font-mono text-[11px] text-primary tracking-wider flex items-baseline gap-1.5">
-            부모 쪽 <span className="text-on-surface-variant normal-case truncate">· {parent?.name ?? '?'}</span>
+            {t('relEdit.parentSide')} <span className="text-on-surface-variant normal-case truncate">· {parent?.name ?? '?'}</span>
           </label>
           {!!parent?.subtypes?.length && (
             <SubtypeScopeSelect
@@ -77,11 +80,11 @@ export default function RelationshipEditPanel() {
             />
           )}
           <SegToggle
-            label="참여 (선 스타일)"
+            label={t('relEdit.participation')}
             value={sides.parentOptional ? 'optional' : 'mandatory'}
             options={[
-              { value: 'mandatory', label: '실선 · 필수', testid: 'rel-parent-mandatory' },
-              { value: 'optional', label: '점선 · 선택', testid: 'rel-parent-optional' },
+              { value: 'mandatory', label: t('relEdit.mandatory'), testid: 'rel-parent-mandatory' },
+              { value: 'optional', label: t('relEdit.optional'), testid: 'rel-parent-optional' },
             ]}
             onChange={v => set({ parentOptional: v === 'optional' })}
           />
@@ -92,7 +95,7 @@ export default function RelationshipEditPanel() {
         {/* 자식 쪽 절반 */}
         <div className="flex flex-col gap-3">
           <label className="font-mono text-[11px] text-primary tracking-wider flex items-baseline gap-1.5">
-            자식 쪽 <span className="text-on-surface-variant normal-case truncate">· {child?.name ?? '?'}</span>
+            {t('relEdit.childSide')} <span className="text-on-surface-variant normal-case truncate">· {child?.name ?? '?'}</span>
           </label>
           {!!child?.subtypes?.length && (
             <SubtypeScopeSelect
@@ -103,20 +106,20 @@ export default function RelationshipEditPanel() {
             />
           )}
           <SegToggle
-            label="참여 (선 스타일)"
+            label={t('relEdit.participation')}
             value={sides.childOptional ? 'optional' : 'mandatory'}
             options={[
-              { value: 'mandatory', label: '실선 · 필수', testid: 'rel-child-mandatory' },
-              { value: 'optional', label: '점선 · 선택', testid: 'rel-child-optional' },
+              { value: 'mandatory', label: t('relEdit.mandatory'), testid: 'rel-child-mandatory' },
+              { value: 'optional', label: t('relEdit.optional'), testid: 'rel-child-optional' },
             ]}
             onChange={v => set({ childOptional: v === 'optional' })}
           />
           <SegToggle
-            label="카디널리티"
+            label={t('relEdit.cardinality')}
             value={sides.childCardinality}
             options={[
-              { value: 'one', label: '1 (단일)', testid: 'rel-card-one' },
-              { value: 'many', label: '다 (까마귀발)', testid: 'rel-card-many' },
+              { value: 'one', label: t('relEdit.cardOne'), testid: 'rel-card-one' },
+              { value: 'many', label: t('relEdit.cardMany'), testid: 'rel-card-many' },
             ]}
             onChange={v => set({ childCardinality: v })}
           />
@@ -133,16 +136,16 @@ export default function RelationshipEditPanel() {
               disabled={sides.childOptional || !!rel.targetSubtypeId}
               onChange={e => set({ identifying: e.target.checked })}
             />
-            <span className="font-mono text-[11px] text-on-surface-variant">식별 관계 (FK를 자식 PK에 포함)</span>
+            <span className="font-mono text-[11px] text-on-surface-variant">{t('relEdit.identifying')}</span>
           </label>
           <p className="text-[10px] text-outline italic m-0">
             {rel.targetSubtypeId
-              ? '자식이 서브타입 전용이면 식별 관계가 될 수 없습니다 — 서브타입 컬럼은 조건부라 PK가 될 수 없습니다.'
+              ? t('relEdit.identHintSubtype')
               : sides.childOptional
-              ? '자식이 선택 참여(점선)면 식별 관계가 될 수 없습니다 — FK는 NULL 허용 일반 컬럼.'
+              ? t('relEdit.identHintOptional')
               : sides.identifying
-              ? '자식 FK가 PK에 포함됩니다 (식별 막대 표시).'
-              : '자식 FK는 일반 컬럼(NOT NULL)입니다.'}
+              ? t('relEdit.identHintOn')
+              : t('relEdit.identHintOff')}
           </p>
         </div>
 
@@ -151,16 +154,16 @@ export default function RelationshipEditPanel() {
           <>
             <div className="w-full h-px bg-outline-variant/50" />
             <div className="flex flex-col gap-2">
-              <span className="text-[11px] font-mono text-on-surface-variant">선 경로</span>
+              <span className="text-[11px] font-mono text-on-surface-variant">{t('relEdit.linePath')}</span>
               <button
                 className="flex items-center justify-center gap-1.5 rounded px-3 py-2 text-[12px] font-mono text-on-surface-variant border border-outline-variant hover:bg-surface-variant transition-colors cursor-pointer"
                 data-testid="rel-reset-bend"
                 onClick={() => updateRelationshipMidOffset(rel.id, null)}
               >
-                <span className="material-symbols-outlined text-[16px]">restart_alt</span> 우회 해제 (자동 경로로 복귀)
+                <span className="material-symbols-outlined text-[16px]">restart_alt</span> {t('relEdit.clearBend')}
               </button>
               <p className="text-[10px] text-outline italic m-0">
-                캔버스에서 선을 위/아래로 드래그하면 사이에 놓인 엔티티를 피해 우회합니다. 선을 더블클릭해도 자동 경로로 돌아갑니다.
+                {t('relEdit.bendHint')}
               </p>
             </div>
           </>
@@ -172,17 +175,9 @@ export default function RelationshipEditPanel() {
         <button
           className="flex items-center justify-center gap-1.5 rounded px-3 py-2 text-[12px] font-mono text-error border border-error/40 hover:bg-error-container/30 transition-colors cursor-pointer"
           data-testid="rel-delete"
-          onClick={async () => {
-            const ok = await confirmDialog({
-              title: '관계 삭제',
-              message: `"${parent?.name ?? '?'} → ${child?.name ?? '?'}" 관계를 삭제할까요?\n자동 생성된 FK 컬럼도 함께 제거됩니다.`,
-              confirmText: '삭제',
-              danger: true,
-            });
-            if (ok) deleteRelationship(rel.id);
-          }}
+          onClick={() => { void confirmDeleteRelationship(rel.id); }}
         >
-          <span className="material-symbols-outlined text-[16px]">delete</span> 관계 삭제
+          <span className="material-symbols-outlined text-[16px]">delete</span> {t('delete.relationship.title')}
         </button>
       </div>
     </EditorModal>
@@ -198,16 +193,17 @@ function SubtypeScopeSelect({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">구체적 대상</label>
+      <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">{t('relEdit.scopeLabel')}</label>
       <select
         data-testid={testid}
         className="bg-input-bg border border-outline-variant rounded px-2 py-1.5 text-on-surface font-mono text-[11px] focus:outline-none focus:border-primary appearance-none cursor-pointer"
         value={value}
         onChange={e => onChange(e.target.value)}
       >
-        <option value="">(엔티티 전체)</option>
+        <option value="">{t('relEdit.scopeAll')}</option>
         {subtypes.map(st => (
           <option key={st.id} value={st.id}>{st.name}{st.logicalName ? ` · ${st.logicalName}` : ''}</option>
         ))}
@@ -251,6 +247,7 @@ function SegToggle<T extends string>({
 
 // 관계선 좌/우 절반 미리보기 — RelationshipEdge 렌더 규칙을 가로선으로 축약
 function RelMiniPreview({ sides }: { sides: RelationshipSides }) {
+  const t = useT();
   const C = '#c7c4d7';
   const SW = 1.5;
   const W = 200, H = 26, midY = H / 2;
@@ -262,7 +259,7 @@ function RelMiniPreview({ sides }: { sides: RelationshipSides }) {
   const childSolid = !sides.childOptional;
 
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="관계선 미리보기">
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('relEdit.previewAlt')}>
       {/* 부모(좌) 절반 */}
       <line
         x1={xLeft} y1={midY} x2={xMid} y2={midY}

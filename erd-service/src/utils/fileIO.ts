@@ -1,5 +1,6 @@
 import { Entity, Memo, Relationship, ERDData } from '../types/erd';
 import { toERDData } from './erdData';
+import { getT } from '../i18n';
 
 export function saveERD(
   entities: Entity[],
@@ -26,15 +27,15 @@ export function loadERD(file: File): Promise<ERDData> {
       try {
         const data = JSON.parse(e.target?.result as string) as ERDData;
         if (!data.version || !data.entities || !data.relationships) {
-          reject(new Error('유효하지 않은 ERD 파일입니다.'));
+          reject(new Error(getT()('file.invalidErd')));
           return;
         }
         resolve(data);
       } catch {
-        reject(new Error('JSON 파싱 오류'));
+        reject(new Error(getT()('file.jsonParseError')));
       }
     };
-    reader.onerror = () => reject(new Error('파일 읽기 오류'));
+    reader.onerror = () => reject(new Error(getT()('file.readError')));
     reader.readAsText(file);
   });
 }

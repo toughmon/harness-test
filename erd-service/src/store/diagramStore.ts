@@ -4,6 +4,11 @@ import { useERDStore } from './erdStore';
 import { useCollabStore } from './collabStore';
 import { toERDData, fromERDData } from '../utils/erdData';
 import { alertDialog, confirmDialog, promptDialog } from './dialogStore';
+import { getT, type TFunc } from '../i18n';
+import { errorMessage } from '../i18n/errors';
+
+// 스토어는 React 밖이라 훅을 못 쓴다 — 호출 시점의 로케일로 번역한다
+const t: TFunc = (key, params) => getT()(key, params);
 
 // DB 다이어그램 메타 상태 — 목록/현재 열린 다이어그램/미저장 변경(dirty) 추적
 // erdStore는 수정하지 않고 subscribe로만 변경을 감지한다
@@ -57,9 +62,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   confirmDiscard: async () => {
     if (!get().dirty) return true;
     return confirmDialog({
-      title: '저장되지 않은 변경',
-      message: '저장하지 않은 변경사항이 있습니다.\n계속하면 현재 작업 내용이 사라집니다.',
-      confirmText: '계속',
+      title: t('diagram.unsavedTitle'),
+      message: t('diagram.unsavedMessage'),
+      confirmText: t('diagram.continue'),
       danger: true,
     });
   },
@@ -88,10 +93,10 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
         await api.updateDiagram(currentId, data);
       } else {
         const name = await promptDialog({
-          title: 'DB에 저장',
-          message: '다이어그램 이름을 입력하세요',
-          defaultValue: '새 다이어그램',
-          placeholder: '예: 주문 시스템 ERD',
+          title: t('diagram.saveTitle'),
+          message: t('diagram.savePrompt'),
+          defaultValue: t('diagram.defaultName'),
+          placeholder: t('diagram.namePlaceholder'),
         });
         if (!name) return;
         const created = await api.createDiagram(name, data);
@@ -101,7 +106,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       set({ dirty: false });
       await get().fetchList();
     } catch (err) {
-      alertDialog(`저장에 실패했습니다.\n${(err as Error).message}`, '저장 실패');
+      alertDialog(`${t('diagram.saveFailed')}\n${errorMessage(err)}`, t('diagram.saveFailedTitle'));
     } finally {
       set({ saving: false });
     }
@@ -138,8 +143,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   rename: async (id) => {
     const current = get().list.find(d => d.id === id);
     const name = await promptDialog({
-      title: '이름 변경',
-      message: '새 이름을 입력하세요',
+      title: t('diagram.renameTitle'),
+      message: t('diagram.renamePrompt'),
       defaultValue: current?.name ?? '',
     });
     if (!name) return;
@@ -150,9 +155,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   duplicate: async (id) => {
     const current = get().list.find(d => d.id === id);
     const name = await promptDialog({
-      title: '다이어그램 복제',
-      message: '복제본의 이름을 입력하세요',
-      defaultValue: current ? `${current.name} 사본` : '복제본',
+      title: t('diagram.duplicateTitle'),
+      message: t('diagram.duplicatePrompt'),
+      defaultValue: current ? t('diagram.copyOf', { name: current.name }) : t('diagram.copyDefault'),
     });
     if (!name) return;
     try {
@@ -160,16 +165,16 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       await api.createDiagram(name, diagram.data);
       await get().fetchList();
     } catch (err) {
-      alertDialog(`복제에 실패했습니다.\n${(err as Error).message}`, '복제 실패');
+      alertDialog(`${t('diagram.duplicateFailed')}\n${errorMessage(err)}`, t('diagram.duplicateFailedTitle'));
     }
   },
 
   remove: async (id) => {
     const current = get().list.find(d => d.id === id);
     const ok = await confirmDialog({
-      title: '다이어그램 삭제',
-      message: `"${current?.name ?? ''}" 다이어그램을 삭제할까요?\n되돌릴 수 없습니다.`,
-      confirmText: '삭제',
+      title: t('diagram.deleteTitle'),
+      message: t('diagram.deleteMessage', { name: current?.name ?? '' }),
+      confirmText: t('common.delete'),
       danger: true,
     });
     if (!ok) return;

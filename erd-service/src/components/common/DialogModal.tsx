@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useDialogStore } from '../../store/dialogStore';
+import { useT } from '../../i18n';
 
 // 공용 알림/확인/입력 모달 — RelTypeModal·AuthModal과 동일한 오버레이 패턴
 
 export default function DialogModal() {
+  const t = useT();
   const { dialog, close } = useDialogStore();
   const [value, setValue] = useState('');
 
@@ -84,7 +86,7 @@ export default function DialogModal() {
                 onClick={cancel}
                 data-testid="dialog-cancel"
               >
-                취소
+                {t('common.cancel')}
               </button>
             )}
             <button
@@ -97,7 +99,7 @@ export default function DialogModal() {
               disabled={dialog.kind === 'prompt' && !value.trim()}
               data-testid="dialog-ok"
             >
-              {dialog.kind === 'confirm' ? (dialog.confirmText ?? '확인') : '확인'}
+              {dialog.kind === 'confirm' ? (dialog.confirmText ?? t('common.confirm')) : t('common.confirm')}
             </button>
           </div>
         </div>

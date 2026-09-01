@@ -8,36 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
   <style>
-    :root {
-      --bg: #131313;
-      --surface-low: #1c1b1b;
-      --surface: #201f1f;
-      --surface-high: #2a2a2a;
-      --surface-variant: #353534;
-      --on-surface: #e5e2e1;
-      --on-surface-variant: #c7c4d7;
-      --outline: #908fa0;
-      --outline-variant: #464554;
-      --primary: #c0c1ff;
-      --primary-container: #8083ff;
-      --pk: #f59e0b;
-      --fk: #6366f1;
-      --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
-      --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0; padding: 0;
-      background: var(--bg);
-      color: var(--on-surface);
-      font-family: var(--font-sans);
-      -webkit-font-smoothing: antialiased;
-      line-height: 1.7;
-      scroll-behavior: smooth;
-    }
-    .layout { display: flex; max-width: 1180px; margin: 0 auto; align-items: flex-start; }
-
     /* 좌측 목차 */
     nav.toc {
       position: sticky; top: 0; align-self: flex-start;
@@ -45,71 +17,26 @@
       padding: 28px 16px 40px 24px;
       border-right: 1px solid var(--outline-variant);
     }
+
     nav.toc .brand {
       font-size: 22px; font-weight: 900; letter-spacing: -0.02em;
       color: var(--primary); margin-bottom: 4px;
     }
-    nav.toc .sub { font-family: var(--font-mono); font-size: 11px; color: var(--on-surface-variant); margin-bottom: 20px; }
-    nav.toc a {
-      display: block; color: var(--on-surface-variant); text-decoration: none;
-      font-size: 13px; padding: 6px 10px; border-radius: 6px; transition: all .15s;
-      border-left: 2px solid transparent;
-    }
-    nav.toc a:hover { background: var(--surface-variant); color: var(--on-surface); }
 
-    /* 본문 */
-    main { flex: 1; min-width: 0; padding: 40px 48px 120px; }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+
     main h1 {
       font-size: 32px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px;
     }
-    main h1 .badge {
-      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-      color: var(--primary); background: rgba(128,131,255,.12);
-      padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 10px;
-    }
-    .lead { color: var(--on-surface-variant); font-size: 15px; margin: 0 0 8px; }
-    .note {
-      border-left: 3px solid var(--primary-container);
-      background: rgba(128,131,255,.06);
-      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
-      color: var(--on-surface-variant); font-size: 14px;
-    }
-    section { scroll-margin-top: 24px; padding-top: 16px; }
-    h2 {
-      font-size: 22px; font-weight: 700; margin: 36px 0 14px;
-      padding-bottom: 8px; border-bottom: 1px solid var(--outline-variant);
-    }
-    h3 { font-size: 16px; font-weight: 700; margin: 26px 0 10px; color: var(--on-surface); }
-    p { margin: 10px 0; }
+
     ul { margin: 10px 0; padding-left: 22px; }
-    li { margin: 5px 0; }
-    strong { color: #fff; font-weight: 700; }
-    code {
-      font-family: var(--font-mono); font-size: 12.5px;
-      background: var(--surface-high); color: var(--primary);
-      padding: 1px 6px; border-radius: 4px;
-    }
-    pre {
-      background: var(--surface-low); border: 1px solid var(--outline-variant);
-      border-radius: 10px; padding: 16px 18px; overflow-x: auto;
-      font-family: var(--font-mono); font-size: 12px; color: var(--on-surface-variant);
-      line-height: 1.55;
-    }
-    table {
-      width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px;
-      border: 1px solid var(--outline-variant); border-radius: 10px; overflow: hidden;
-    }
-    th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--outline-variant); vertical-align: top; }
-    th { background: var(--surface); font-weight: 600; color: var(--on-surface); font-size: 12.5px; }
-    tr:last-child td { border-bottom: none; }
-    td:first-child, th:first-child { white-space: nowrap; }
+
     .pill { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-family: var(--font-mono); }
+
     .pk { color: var(--pk); }
+
     .fk { color: var(--fk); }
-    footer {
-      margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--outline-variant);
-      color: var(--outline); font-size: 12px;
-    }
+
     @media (max-width: 860px) {
       nav.toc { display: none; }
       main { padding: 28px 22px 80px; }
@@ -136,6 +63,8 @@
       <a href="#shortcuts">12. 단축키</a>
       <a href="#quickstart">13. 빠른 시작</a>
       <a href="#faq">14. FAQ</a>
+      <a href="#language">15. 화면 언어</a>
+      <a href="/en/manual.html" class="back">🌐 English</a>
     </nav>
 
     <main>
@@ -182,6 +111,8 @@
           <tr><td><strong>DB 저장</strong></td><td>로그인 시에만 표시. 현재 다이어그램을 내 계정에 저장</td></tr>
           <tr><td><strong>Save</strong></td><td>다이어그램을 <strong>JSON 파일</strong>로 내려받기</td></tr>
           <tr><td>불러오기 📂</td><td>저장해 둔 <strong>JSON 파일</strong>을 열기</td></tr>
+          <tr><td>언어 🌐</td><td>화면 언어를 한국어(KO)/영어(EN)로 전환. 선택은 이 브라우저에 기억됩니다</td></tr>
+          <tr><td>테마 ☀/🌙</td><td>다크/라이트 모드 전환</td></tr>
           <tr><td>알림 / 설정</td><td>(준비 중)</td></tr>
           <tr><td>계정 👤</td><td>비로그인 시 로그인 창, 로그인 시 사용자 메뉴(로그아웃)</td></tr>
         </table>
@@ -196,7 +127,7 @@
             <strong>복제</strong>는 이름을 입력(기본값 "원본 이름 사본")하면 현재 캔버스는 그대로 두고 동일한 내용의 새 다이어그램을 목록에 추가합니다.</li>
           <li><strong>Entity List</strong> — 현재 다이어그램의 엔티티 목록. 클릭하면 해당 엔티티가 캔버스에서 선택(하이라이트)됩니다. 색상·논리명(한글)이 함께 표시됩니다.</li>
           <li><strong>접기/펼치기</strong> — 헤더의 패널 접기 버튼(⊟)으로 사이드바를 얇은 막대로 접어 캔버스를 넓게 볼 수 있습니다.</li>
-          <li><strong>하단 메뉴</strong> — <strong>MCP 연결</strong>(로그인 후 개인 토큰을 발급해 Claude Code 연결 명령 한 줄을 복사하는 모달) · <strong>MCP 연결 가이드</strong>(연결 방법 상세, <a href="/mcp-guide.html" style="color:var(--primary)">새 탭</a>) · <strong>Help</strong> · <strong>Docs</strong>(이 매뉴얼).</li>
+          <li><strong>하단 메뉴</strong> — <strong>MCP 연결</strong>(로그인 후 개인 토큰을 발급해 Claude Code 연결 명령 한 줄을 복사하는 모달) · <strong>MCP 연결 가이드</strong>(연결 방법 상세, <a href="/mcp-guide.html" style="color:var(--primary)">새 탭</a>) · <strong>Claude 프롬프트 가이드</strong> · <strong>Docs</strong>(이 매뉴얼).</li>
         </ul>
       </section>
 
@@ -478,6 +409,26 @@
         <p>참조가 사라진 자동 생성 FK 컬럼은 함께 정리됩니다. (실행 취소로 복원 가능)</p>
         <h3>Q. 작업 내용이 자동 저장되나요?</h3>
         <p>아니요. 명시적으로 <strong>Save(JSON)</strong> 또는 <strong>DB 저장</strong>을 눌러야 보관됩니다. 이름 옆 점(●) 표시로 미저장 여부를 확인하세요.</p>
+      </section>
+
+
+      <section id="language">
+        <h2>15. 화면 언어 (한국어 / English)</h2>
+        <p>상단 바의 <strong>🌐 언어 버튼</strong>으로 화면 언어를 한국어(KO)와 영어(EN) 사이에서 전환합니다.</p>
+        <ul>
+          <li>기본값은 <strong>한국어</strong>입니다. 브라우저 언어를 자동 감지하지 않고, 직접 고른 값만 사용합니다.</li>
+          <li>선택한 언어는 <strong>이 브라우저에 저장</strong>되어 새로고침·재방문 후에도 유지됩니다.</li>
+          <li>좌측 사이드바의 세 가이드 페이지(MCP 연결 가이드 · Claude 프롬프트 가이드 · Docs)도 선택한 언어의 판본으로 열립니다. 가이드 페이지 안에서도 목차 하단의 <strong>🌐</strong> 링크로 서로 오갈 수 있습니다.</li>
+        </ul>
+        <p><strong>언어를 바꿔도 달라지지 않는 것</strong> — 다이어그램에 저장되는 값은 전부 그대로입니다.</p>
+        <table>
+          <tr><th>구분</th><th>예</th><th>언어 전환 시</th></tr>
+          <tr><td>내가 입력한 값</td><td>엔티티·컬럼의 물리명/논리명, 설명, 메모 내용, 다이어그램 이름</td><td>변경 없음</td></tr>
+          <tr><td>앱이 넣는 기본값</td><td><code>Entity1</code>, <code>id</code>, <code>column</code>, <code>SubType1</code>, <code>SubSet</code>, 자기참조 FK의 <code>parent_</code> 접두사</td><td>변경 없음(항상 영문)</td></tr>
+          <tr><td>새로 만들 때의 입력창 기본 문구</td><td>저장 시 "새 다이어그램", 복제 시 "○○ 사본"</td><td>만드는 시점의 언어를 따름</td></tr>
+          <tr><td>SQL 내보내기의 도구 생성 주석</td><td>파일 헤더, 서브타입 구분자 COMMENT</td><td>내보내는 시점의 언어를 따름</td></tr>
+        </table>
+        <div class="note">이미 저장해 둔 다이어그램의 이름은 언어를 바꿔도 소급해서 바뀌지 않습니다.</div>
       </section>
 
       <footer>

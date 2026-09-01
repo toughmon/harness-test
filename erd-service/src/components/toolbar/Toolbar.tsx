@@ -3,6 +3,7 @@ import { useERDStore } from '../../store/erdStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDiagramStore } from '../../store/diagramStore';
 import { useThemeStore } from '../../store/themeStore';
+import { useT, useLocaleStore } from '../../i18n';
 import { useShareStore } from '../../store/shareStore';
 import { useCollabStore } from '../../store/collabStore';
 import { useSharedSessionStore } from '../../store/sharedSessionStore';
@@ -13,24 +14,33 @@ import { alertDialog } from '../../store/dialogStore';
 
 // 접속자 아바타 클러스터 (presence)
 function Presence({ participants }: { participants: Participant[] }) {
+  const t = useT();
   if (participants.length === 0) return null;
   return (
     <div
       data-testid="collab-participants"
       data-count={participants.length}
       className="flex items-center -space-x-1.5 mr-1"
-      title={`${participants.length}명 접속 중`}
+      title={t('toolbar.participants', { n: participants.length })}
     >
-      {participants.slice(0, 5).map(p => (
+      {participants.slice(0, 5).map(p => {
+        const name = p.label ?? t('collab.guest');
+        return (
         <div
           key={p.actorId}
           className="w-7 h-7 rounded-full border-2 border-surface flex items-center justify-center text-[11px] font-bold text-white"
           style={{ background: p.color }}
-          title={`${p.label}${p.role === 'viewer' ? ' (뷰어)' : p.role === 'owner' ? ' (소유자)' : ''}`}
+          title={t(
+            p.role === 'viewer' ? 'toolbar.participant.viewer'
+              : p.role === 'owner' ? 'toolbar.participant.owner'
+              : 'toolbar.participant.plain',
+            { name },
+          )}
         >
-          {p.label.charAt(0).toUpperCase()}
+          {name.charAt(0).toUpperCase()}
         </div>
-      ))}
+        );
+      })}
       {participants.length > 5 && (
         <div className="w-7 h-7 rounded-full border-2 border-surface bg-surface-variant text-on-surface-variant flex items-center justify-center text-[10px] font-bold">
           +{participants.length - 5}
@@ -50,6 +60,8 @@ export default function Toolbar() {
   const { user, status, openModal, logout } = useAuthStore();
   const { currentId, dirty, saving, list, saveCurrent } = useDiagramStore();
   const { theme, toggleTheme } = useThemeStore();
+  const { locale, toggleLocale } = useLocaleStore();
+  const t = useT();
   const openShare = useShareStore(s => s.openModal);
   const collabStatus = useCollabStore(s => s.status);
   const participants = useCollabStore(s => s.participants);
@@ -71,7 +83,7 @@ export default function Toolbar() {
       const { entities: loaded, relationships: rels, positions, memos: loadedMemos } = fromERDData(data);
       loadData(loaded, rels, positions, loadedMemos);
     } catch (err) {
-      alertDialog((err as Error).message, '불러오기 실패');
+      alertDialog((err as Error).message, t('toolbar.openFailed'));
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -84,13 +96,13 @@ export default function Toolbar() {
           <div className="hidden md:flex items-center gap-1.5 text-xs text-on-surface-variant font-mono" data-testid="current-diagram">
             <span className="material-symbols-outlined text-[16px]">cloud</span>
             {currentName}
-            {dirty && <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" title="저장되지 않은 변경" />}
+            {dirty && <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" title={t('toolbar.unsavedChanges')} />}
           </div>
         )}
         {readOnly && (
           <div className="flex items-center gap-1.5 text-xs text-on-surface-variant font-mono" data-testid="shared-session">
             <span className="material-symbols-outlined text-[16px] text-primary">groups</span>
-            공유 세션
+            {t('toolbar.sharedSession')}
           </div>
         )}
       </div>
@@ -108,15 +120,15 @@ export default function Toolbar() {
               className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant bg-surface-variant px-2.5 py-1 rounded-full"
             >
               <span className="material-symbols-outlined text-[15px]">visibility</span>
-              읽기 전용
+              {t('toolbar.readOnly')}
             </span>
             <button
               data-testid="leave-share"
               className="text-on-surface-variant hover:text-primary transition-colors text-xs font-semibold px-3 py-1.5 rounded border border-outline-variant cursor-pointer"
               onClick={leaveShared}
-              title="공유 세션 나가기"
+              title={t('toolbar.leaveShared')}
             >
-              나가기
+              {t('toolbar.leave')}
             </button>
           </>
         ) : (
@@ -126,7 +138,7 @@ export default function Toolbar() {
               className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer disabled:opacity-30 disabled:cursor-default disabled:hover:text-on-surface-variant"
               onClick={undo}
               disabled={past.length === 0}
-              title="실행 취소 (Ctrl+Z)"
+              title={t('toolbar.undo')}
               aria-label="Undo"
             >
               <span className="material-symbols-outlined text-[20px]">undo</span>
@@ -135,7 +147,7 @@ export default function Toolbar() {
               className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer disabled:opacity-30 disabled:cursor-default disabled:hover:text-on-surface-variant"
               onClick={redo}
               disabled={future.length === 0}
-              title="다시 실행 (Ctrl+Y)"
+              title={t('toolbar.redo')}
               aria-label="Redo"
             >
               <span className="material-symbols-outlined text-[20px]">redo</span>
@@ -148,11 +160,11 @@ export default function Toolbar() {
                 data-testid="share-btn"
                 className="text-on-surface-variant hover:text-primary transition-colors px-2 py-1.5 rounded flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                 onClick={openShare}
-                title="공유 링크 만들기"
+                title={t('toolbar.createShareLink')}
                 aria-label="Share"
               >
                 <span className="material-symbols-outlined text-[18px]">share</span>
-                공유
+                {t('toolbar.share')}
               </button>
             )}
 
@@ -162,11 +174,11 @@ export default function Toolbar() {
                 className="bg-primary text-on-primary hover:bg-inverse-primary hover:text-white px-3 py-1.5 rounded transition-colors text-xs font-mono font-semibold cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-default flex items-center gap-1.5"
                 onClick={saveCurrent}
                 disabled={saving || entities.length === 0}
-                title={currentId !== null ? 'DB에 저장 (덮어쓰기)' : 'DB에 새 다이어그램으로 저장'}
+                title={t(currentId !== null ? 'toolbar.saveDbOverwrite' : 'toolbar.saveDbNew')}
                 aria-label="DB Save"
               >
                 <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
-                {saving ? '저장 중...' : 'DB 저장'}
+                {t(saving ? 'toolbar.saving' : 'toolbar.saveDb')}
               </button>
             )}
 
@@ -183,7 +195,7 @@ export default function Toolbar() {
             <button
               className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
-              title="불러오기 (JSON)"
+              title={t('toolbar.openJson')}
               aria-label="Open file"
             >
               <span className="material-symbols-outlined text-[20px]">folder_open</span>
@@ -193,20 +205,30 @@ export default function Toolbar() {
 
         <div className="flex items-center gap-2 border-l border-outline-variant pl-4 ml-2">
           <button
+            aria-label="Toggle language"
+            data-testid="locale-toggle"
+            className="text-on-surface-variant hover:text-primary transition-colors px-1 py-1 cursor-pointer flex items-center gap-1"
+            title={t('toolbar.toggleLocale')}
+            onClick={toggleLocale}
+          >
+            <span className="material-symbols-outlined text-[20px]">translate</span>
+            <span className="font-mono text-[11px] font-bold tracking-wider">{locale.toUpperCase()}</span>
+          </button>
+          <button
             aria-label="Toggle theme"
             data-testid="theme-toggle"
             className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-pointer"
-            title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+            title={t(theme === 'dark' ? 'toolbar.toLightMode' : 'toolbar.toDarkMode')}
             onClick={toggleTheme}
           >
             <span className="material-symbols-outlined text-[20px]">
               {theme === 'dark' ? 'light_mode' : 'dark_mode'}
             </span>
           </button>
-          <button aria-label="Notifications" className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-default" title="알림 (준비 중)">
+          <button aria-label="Notifications" className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-default" title={t('toolbar.notifications')}>
             <span className="material-symbols-outlined text-[20px]">notifications</span>
           </button>
-          <button aria-label="Settings" className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-default" title="설정 (준비 중)">
+          <button aria-label="Settings" className="text-on-surface-variant hover:text-primary transition-colors p-1 cursor-default" title={t('toolbar.settings')}>
             <span className="material-symbols-outlined text-[20px]">settings</span>
           </button>
           {/* 사용자 아바타 — anon: 로그인 모달, authed: 드롭다운(로그아웃) */}
@@ -217,7 +239,7 @@ export default function Toolbar() {
                   ? 'border-primary bg-primary text-on-primary font-bold text-sm'
                   : 'border-outline-variant bg-secondary-container text-on-secondary-container hover:border-primary'
               }`}
-              title={status === 'authed' ? user?.username : '로그인'}
+              title={status === 'authed' ? user?.username : t('toolbar.login')}
               aria-label="User"
               onClick={() => {
                 if (status === 'authed') setUserMenuOpen(o => !o);
@@ -242,7 +264,7 @@ export default function Toolbar() {
                     logout();
                   }}
                 >
-                  로그아웃
+                  {t('toolbar.logout')}
                 </button>
               </div>
             )}

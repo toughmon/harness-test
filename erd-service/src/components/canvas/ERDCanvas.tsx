@@ -28,13 +28,16 @@ import ContextMenu from '../common/ContextMenu';
 import { computeAutoLayout } from '../../utils/autoLayout';
 import { exportDiagramPng } from '../../utils/exportImage';
 import { exportDiagramSql } from '../../utils/exportSql';
-import { alertDialog, confirmDialog } from '../../store/dialogStore';
+import { alertDialog } from '../../store/dialogStore';
+import { confirmDeleteEntity, confirmDeleteRelationship, confirmDeleteMemo } from '../../store/deleteActions';
+import { useT } from '../../i18n';
 
 const nodeTypes = { entity: EntityNode, memo: MemoNode };
 const edgeTypes = { relationship: RelationshipEdge };
 
 // 디자인 시안의 플로팅 글래스 줌 툴바 — 줌/핏 + 자동 정렬 + PNG/SQL 내보내기 + 전체화면
 function ZoomToolbar({ isFullscreen, onToggleFullscreen }: { isFullscreen: boolean; onToggleFullscreen: () => void }) {
+  const t = useT();
   const { zoomIn, zoomOut, fitView, getNodes } = useReactFlow();
   const { zoom } = useViewport();
   const { entities, relationships, setAllPositions } = useERDStore();
@@ -50,15 +53,15 @@ function ZoomToolbar({ isFullscreen, onToggleFullscreen }: { isFullscreen: boole
     try {
       await exportDiagramPng(getNodes());
     } catch (err) {
-      alertDialog((err as Error).message, 'PNG 내보내기 실패');
+      alertDialog((err as Error).message, t('canvas.pngFailed'));
     }
   };
 
   const handleExportSql = () => {
     try {
-      exportDiagramSql(entities);
+      exportDiagramSql(entities, t);
     } catch (err) {
-      alertDialog((err as Error).message, 'SQL 내보내기 실패');
+      alertDialog((err as Error).message, t('canvas.sqlFailed'));
     }
   };
 
@@ -81,17 +84,17 @@ function ZoomToolbar({ isFullscreen, onToggleFullscreen }: { isFullscreen: boole
           <span className="material-symbols-outlined text-[18px]">fit_screen</span>
         </button>
         <div className="w-px h-5 bg-outline-variant mx-1" />
-        <button className={btn} title="자동 정렬" onClick={handleAutoLayout}>
+        <button className={btn} title={t('canvas.autoLayout')} onClick={handleAutoLayout}>
           <span className="material-symbols-outlined text-[18px]">account_tree</span>
         </button>
-        <button className={btn} title="PNG 내보내기" onClick={handleExportPng}>
+        <button className={btn} title={t('canvas.exportPng')} onClick={handleExportPng}>
           <span className="material-symbols-outlined text-[18px]">photo_camera</span>
         </button>
-        <button className={btn} title="SQL 내보내기 (MySQL)" onClick={handleExportSql}>
+        <button className={btn} title={t('canvas.exportSql')} onClick={handleExportSql}>
           <span className="material-symbols-outlined text-[18px]">database</span>
         </button>
         <div className="w-px h-5 bg-outline-variant mx-1" />
-        <button className={btn} title={isFullscreen ? '전체화면 종료 (Esc)' : '전체화면'} onClick={onToggleFullscreen}>
+        <button className={btn} title={t(isFullscreen ? 'canvas.exitFullscreen' : 'canvas.fullscreen')} onClick={onToggleFullscreen}>
           <span className="material-symbols-outlined text-[18px]">
             {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
           </span>
@@ -130,11 +133,11 @@ function PaneDoubleClickHandler() {
 }
 
 export default function ERDCanvas() {
+  const t = useT();
   const {
     entities, relationships, nodePositions, memos,
     selectEntity, selectEdge, selectMemo, addRelationship, moveNodes,
     addMemo, setSelection,
-    deleteEntity, deleteRelationship, deleteMemo,
     openEntityEditor, openRelationshipEditor, openMemoEditor,
   } = useERDStore();
   const readOnly = useERDStore(s => s.readOnly);
@@ -292,42 +295,14 @@ export default function ERDCanvas() {
     else openMemoEditor(contextMenu.id);
   }, [contextMenu, openEntityEditor, openRelationshipEditor, openMemoEditor]);
 
-  // 삭제 확인 메시지는 App.tsx의 Delete 키 핸들러·각 편집 패널의 삭제 버튼과 동일하게 유지
+  // 삭제 확인은 store/deleteActions의 공통 헬퍼가 담당 — Delete 키 핸들러·편집 모달과 문구를 공유한다
   const handleContextMenuDelete = useCallback(async () => {
     if (!contextMenu) return;
     const { type, id } = contextMenu;
-    if (type === 'entity') {
-      const entity = entities.find(e => e.id === id);
-      if (!entity) return;
-      const ok = await confirmDialog({
-        title: '엔티티 삭제',
-        message: `"${entity.name}" 엔티티를 삭제할까요?\n연결된 관계선도 함께 삭제됩니다.`,
-        confirmText: '삭제',
-        danger: true,
-      });
-      if (ok) deleteEntity(entity.id);
-    } else if (type === 'relationship') {
-      const rel = relationships.find(r => r.id === id);
-      if (!rel) return;
-      const parent = entities.find(e => e.id === rel.sourceId);
-      const child = entities.find(e => e.id === rel.targetId);
-      const ok = await confirmDialog({
-        title: '관계 삭제',
-        message: `"${parent?.name ?? '?'} → ${child?.name ?? '?'}" 관계를 삭제할까요?\n자동 생성된 FK 컬럼도 함께 제거됩니다.`,
-        confirmText: '삭제',
-        danger: true,
-      });
-      if (ok) deleteRelationship(rel.id);
-    } else {
-      const ok = await confirmDialog({
-        title: '메모 삭제',
-        message: '이 메모를 삭제할까요?',
-        confirmText: '삭제',
-        danger: true,
-      });
-      if (ok) { deleteMemo(id); selectMemo(null); }
-    }
-  }, [contextMenu, entities, relationships, deleteEntity, deleteRelationship, deleteMemo, selectMemo]);
+    if (type === 'entity') await confirmDeleteEntity(id);
+    else if (type === 'relationship') await confirmDeleteRelationship(id);
+    else await confirmDeleteMemo(id);
+  }, [contextMenu]);
 
   const handleRelTypeSelect = (type: RelationshipType) => {
     if (!pendingConn?.source || !pendingConn?.target) return;
@@ -389,10 +364,10 @@ export default function ERDCanvas() {
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="material-symbols-outlined text-[48px] text-outline-variant mb-4">schema</span>
           <p className="text-sm text-on-surface-variant m-0">
-            좌측의 <strong className="text-primary font-semibold">Add Entity</strong> 버튼으로 시작하세요
+            {t('canvas.emptyBefore')}{' '}<strong className="text-primary font-semibold">Add Entity</strong>{' '}{t('canvas.emptyAfter')}
           </p>
           <p className="text-xs text-outline mt-1.5">
-            엔티티에 마우스를 올리면 나타나는 핸들을 드래그해 관계선을 연결할 수 있습니다
+            {t('canvas.emptyHint2')}
           </p>
         </div>
       )}

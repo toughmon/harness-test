@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YourERD · Claude Prompt Guide</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <style>
+    /* table of contents */
+    nav.toc {
+      position: sticky; top: 0; align-self: flex-start;
+      width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      padding: 28px 16px 40px 24px;
+      border-right: 1px solid var(--outline-variant);
+    }
+
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--primary); margin-bottom: 4px; }
+
+    nav.toc .section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--outline); padding: 14px 10px 4px; margin-top: 4px;
+    }
+
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+
+    main h1 { font-size: 32px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+
+    .warn {
+      border-left: 3px solid var(--warn);
+      background: rgba(251,191,36,.07);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+
+    .ok {
+      border-left: 3px solid var(--ok);
+      background: rgba(74,222,128,.06);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+
+    h2 .ico {
+      font-size: 20px; vertical-align: middle; margin-right: 8px;
+      font-family: "Material Symbols Outlined", sans-serif;
+    }
+
+    ul, ol { margin: 10px 0; padding-left: 22px; }
+
+    /* prompt block */
+    .prompt-block {
+      background: var(--surface-low);
+      border: 1px solid var(--outline-variant);
+      border-left: 3px solid var(--primary-container);
+      border-radius: 0 10px 10px 0;
+      padding: 14px 18px;
+      margin: 10px 0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--on-surface);
+      line-height: 1.6;
+      position: relative;
+    }
+
+    .prompt-block::before {
+      content: "💬";
+      position: absolute;
+      top: 12px; right: 14px;
+      font-size: 14px; opacity: .5;
+    }
+
+    .prompt-block em {
+      font-style: normal;
+      color: var(--on-surface-variant);
+      font-size: 11px;
+    }
+
+    /* result block */
+    .result-block {
+      background: rgba(74,222,128,.04);
+      border: 1px solid rgba(74,222,128,.18);
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin: 6px 0 16px;
+      font-size: 13px;
+      color: var(--on-surface-variant);
+    }
+
+    .result-block::before { content: "→  "; color: var(--ok); font-weight: 700; font-family: var(--font-mono); }
+
+    /* card grid */
+    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+
+    .card {
+      background: var(--surface-low); border: 1px solid var(--outline-variant);
+      border-radius: 10px; padding: 16px 18px;
+    }
+
+    .card h4 { font-size: 13px; font-weight: 700; color: var(--primary); margin: 0 0 8px; }
+
+    .card .prompts { display: flex; flex-direction: column; gap: 6px; }
+
+    .card .p { font-family: var(--font-mono); font-size: 12px; color: var(--on-surface-variant); }
+
+    pre code { background: none; color: inherit; padding: 0; }
+
+    @media (max-width: 860px) {
+      nav.toc { display: none; }
+      main { padding: 28px 22px 80px; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">YourERD</div>
+    <div class="sub">Claude Prompt Guide</div>
+    <div class="section-label">Basics</div>
+    <a href="#entity">Creating entities</a>
+    <a href="#column">Adding / editing columns</a>
+    <a href="#relation">Relationships</a>
+    <a href="#delete">Deleting</a>
+    <div class="section-label">Worked scenarios</div>
+    <a href="#scenario-shop">Online store ERD</a>
+    <a href="#scenario-blog">Blog / community</a>
+    <a href="#scenario-hr">HR / org management</a>
+    <a href="#scenario-recurse">Recursive (hierarchies)</a>
+    <div class="section-label">Tips</div>
+    <a href="#tips">Writing good prompts</a>
+    <a href="#types">Data type cheat sheet</a>
+    <a href="/prompt-guide.html" class="back">🌐 한국어</a>
+    <a href="/en/mcp-guide.html" class="back">← MCP setup guide</a>
+    <a href="/en/manual.html" class="back">← User manual</a>
+  </nav>
+
+  <main>
+    <h1>Claude Prompt Guide <span class="badge">MCP</span></h1>
+    <p class="lead">How to draw an ERD by talking to Claude over MCP. Copy the examples below as they are, or adapt them.</p>
+
+    <div class="note">
+      You need <strong>a working MCP connection</strong> first.
+      See the <a href="/en/mcp-guide.html" style="color:var(--primary)">MCP setup guide</a> for how to connect.
+      Once connected, try asking Claude Code "is the yourerd MCP connected?".
+    </div>
+
+    <!-- ─────────────── entities ─────────────── -->
+    <section id="entity">
+      <h2>Creating entities</h2>
+
+      <h3>A single entity</h3>
+      <div class="prompt-block">"Create a user entity"</div>
+      <div class="result-block">A User entity is created with a default id (PK) column.</div>
+
+      <div class="prompt-block">"Create a User entity with the logical name 'Member'."</div>
+      <div class="result-block">An entity with physical name User and logical name Member is created.</div>
+
+      <h3>Several entities at once</h3>
+      <div class="prompt-block">"Create User, Order and Product entities"</div>
+      <div class="result-block">All three are created, each with a default PK.</div>
+
+      <div class="prompt-block">"Create every entity an online store ERD needs — User, Product, Order, OrderItem, Delivery and Category"</div>
+      <div class="result-block">Six entities are created in order.</div>
+
+      <h3>Renaming an entity</h3>
+      <div class="prompt-block">"Rename the User entity to Member"</div>
+      <div class="prompt-block">"Change the Order entity's logical name to 'Order details'"</div>
+    </section>
+
+    <!-- ─────────────── columns ─────────────── -->
+    <section id="column">
+      <h2>Adding / editing columns</h2>
+
+      <h3>Adding basic columns</h3>
+      <div class="prompt-block">"Add username, email and password columns to the User entity"</div>
+      <div class="result-block">Three VARCHAR columns are added.</div>
+
+      <div class="prompt-block">"Add name (VARCHAR 200), price (DECIMAL), stock (INT) and created_at (DATETIME) columns to the Product entity"</div>
+      <div class="result-block">The columns are added with the types and sizes you gave.</div>
+
+      <h3>Including logical names</h3>
+      <div class="prompt-block">"Add these columns to the User entity:<br>- username (User name) VARCHAR(50)<br>- email (Email) VARCHAR(200) UNIQUE<br>- phone (Mobile number) VARCHAR(20)<br>- created_at (Signed up at) DATETIME"</div>
+
+      <h3>Specifying constraints</h3>
+      <div class="prompt-block">"Add status (Order status) VARCHAR(20) NOT NULL and ordered_at (Ordered at) DATETIME NOT NULL to the Order entity"</div>
+
+      <div class="prompt-block">"Change the price column on Product to DECIMAL(12,2) and make it NOT NULL"</div>
+
+      <h3>Setting the PK</h3>
+      <div class="prompt-block">"Rename the User entity's id column to user_id and keep it as the PK"</div>
+
+      <div class="warn">⚠️ <strong>Do not delete PK columns.</strong> Deleting a PK that a relationship references as an FK leaves the FK column dangling. To replace a PK, delete the relationship first, change the PK, then recreate the relationship.</div>
+    </section>
+
+    <!-- ─────────────── relationships ─────────────── -->
+    <section id="relation">
+      <h2>Relationships</h2>
+
+      <h3>1:N non-identifying (the most common)</h3>
+      <div class="prompt-block">"Connect User and Order as 1:N — one user can have many orders"</div>
+      <div class="result-block">A user_id FK is generated automatically on the Order entity.</div>
+
+      <div class="prompt-block">"Connect Category and Product as a 1:N non-identifying relationship"</div>
+
+      <h3>1:N identifying (the child includes the parent PK)</h3>
+      <div class="prompt-block">"Connect Order and OrderItem as a 1:N identifying relationship — an OrderItem cannot exist without its Order"</div>
+      <div class="result-block">OrderItem's FK (order_id) becomes part of its composite PK.</div>
+
+      <h3>1:1 relationships</h3>
+      <div class="prompt-block">"Connect User and UserProfile as 1:1"</div>
+      <div class="prompt-block">"Connect Order and Payment as a 1:1 identifying relationship — a payment cannot exist without an order"</div>
+
+      <h3>Several relationships at once</h3>
+      <div class="prompt-block">"Set up these relationships:<br>- User → Order (1:N non-identifying)<br>- Order → OrderItem (1:N identifying)<br>- Product → OrderItem (1:N non-identifying)"</div>
+
+      <h3>Changing a relationship type</h3>
+      <div class="prompt-block">"Make the User-Order relationship identifying"</div>
+      <div class="prompt-block">"Change the Order-OrderItem relationship to non-identifying"</div>
+
+      <div class="note">
+        <strong>Identifying vs non-identifying — how to choose:</strong><br>
+        • <strong>Identifying</strong>: the child record is meaningless without its parent (order items, payment history, …)<br>
+        • <strong>Non-identifying</strong>: the child can also stand on its own (post-author, product-category, …)
+      </div>
+    </section>
+
+    <!-- ─────────────── deleting ─────────────── -->
+    <section id="delete">
+      <h2>Deleting</h2>
+
+      <div class="prompt-block">"Delete the Address entity"</div>
+      <div class="result-block">The entity is removed along with any FK columns referencing it.</div>
+
+      <div class="prompt-block">"Remove the User-Address relationship"</div>
+      <div class="result-block">The relationship and its auto-generated FK column are removed.</div>
+
+      <div class="prompt-block">"Delete the description column from the Product entity"</div>
+    </section>
+
+    <!-- ─────────────── scenario: store ─────────────── -->
+    <section id="scenario-shop">
+      <h2>Scenario — online store ERD</h2>
+      <p>Ask for the whole thing up front and Claude designs the entire structure.</p>
+
+      <div class="prompt-block">
+"Build an online store ERD with this structure:<br><br>
+Entities:<br>
+- User (Member): id, username(User name), email(Email), phone(Mobile), created_at(Signed up at)<br>
+- Product: id, name(Product name), price(Price) DECIMAL, stock(Stock) INT, category_id FK<br>
+- Category: id, name(Category name), parent_id(Parent category)<br>
+- Order: id, user_id FK, status(Order status), total(Total amount) DECIMAL, ordered_at(Ordered at)<br>
+- OrderItem: order_id FK+PK, product_id FK+PK, qty(Quantity) INT, price(Unit price) DECIMAL<br>
+- Delivery: id, order_id FK, address(Shipping address), status(Delivery status), shipped_at(Shipped at)<br><br>
+Relationships:<br>
+- Category → Product (1:N non-identifying)<br>
+- User → Order (1:N non-identifying)<br>
+- Order → OrderItem (1:N identifying)<br>
+- Product → OrderItem (1:N non-identifying)<br>
+- Order → Delivery (1:1)"
+      </div>
+
+      <h3>Building it step by step</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h4>Step 1 — the skeleton</h4>
+          <div class="prompts">
+            <div class="p">"Create User, Product, Order and OrderItem entities"</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>Step 2 — fill in columns</h4>
+          <div class="prompts">
+            <div class="p">"Add email, password and created_at columns to User"</div>
+            <div class="p">"Add name, price (DECIMAL) and stock (INT) to Product"</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>Step 3 — connect them</h4>
+          <div class="prompts">
+            <div class="p">"Set up User→Order as 1:N and Order→OrderItem as 1:N identifying"</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>Step 4 — ask for a review</h4>
+          <div class="prompts">
+            <div class="p">"List the entities and the relationship structure in the current diagram"</div>
+            <div class="p">"Tell me if any columns are missing or if there are normalization problems"</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── scenario: blog ─────────────── -->
+    <section id="scenario-blog">
+      <h2>Scenario — blog / community</h2>
+
+      <div class="prompt-block">
+"Build a blog ERD:<br><br>
+- User: id, nickname(Nickname), email(Email), created_at(Signed up at)<br>
+- Post: id, user_id FK, title(Title), content(Body) TEXT, published_at(Published at)<br>
+- Comment: id, post_id FK, user_id FK, content(Body), created_at(Written at)<br>
+- Tag: id, name(Tag name) UNIQUE<br>
+- PostTag: post_id FK+PK, tag_id FK+PK<br><br>
+Relationships:<br>
+- User → Post (1:N non-identifying)<br>
+- Post → Comment (1:N identifying)<br>
+- User → Comment (1:N non-identifying)<br>
+- Post → PostTag (1:N identifying)<br>
+- Tag → PostTag (1:N non-identifying)"
+      </div>
+
+      <div class="note">
+        <strong>Expressing N:M relationships:</strong> YourERD does not support N:M directly.
+        Create a junction entity (PostTag, OrderItem, …) and connect it with two 1:N relationships.
+        If you tell Claude "connect Post and Tag as N:M", it creates the junction table for you.
+      </div>
+    </section>
+
+    <!-- ─────────────── scenario: HR ─────────────── -->
+    <section id="scenario-hr">
+      <h2>Scenario — HR / org management</h2>
+
+      <div class="prompt-block">
+"Build an HR management ERD:<br><br>
+- Department: id, name(Department name), manager_id(Department head) FK nullable<br>
+- Employee: id, dept_id FK, name(Name), email(Email), hire_date(Hire date), salary(Salary) DECIMAL<br>
+- Position: id, name(Position name), level(Level) INT<br>
+- EmployeePosition (position history): id, emp_id FK, pos_id FK, assigned_at(Assigned at), ended_at(Ended at) nullable<br><br>
+Relationships:<br>
+- Department → Employee (1:N non-identifying)<br>
+- Employee → Department (1:1 non-identifying, manager_id — separate from the self reference)<br>
+- Position → EmployeePosition (1:N non-identifying)<br>
+- Employee → EmployeePosition (1:N non-identifying)"
+      </div>
+    </section>
+
+    <!-- ─────────────── scenario: recursion ─────────────── -->
+    <section id="scenario-recurse">
+      <h2>Scenario — recursion / hierarchies</h2>
+      <p>YourERD supports <strong>recursive relationships that connect an entity to itself</strong>.</p>
+
+      <h3>Simple recursion (parent-child)</h3>
+      <div class="prompt-block">"Create a Category entity and give it a 1:N non-identifying recursive relationship to itself — a parent-category / child-category hierarchy"</div>
+      <div class="result-block">A parent_id FK is added to Category and a self-referencing loop is drawn.</div>
+
+      <div class="prompt-block">"Add a manager self-reference to the Employee entity — one employee can have several reports"</div>
+
+      <div class="prompt-block">"Add a parent_comment_id self-reference to the Comment entity so it supports threaded replies (optional participation, nullable)"</div>
+
+      <h3>Unbounded hierarchies (nested paths)</h3>
+      <div class="prompt-block">
+"Build a folder hierarchy ERD:<br>
+- Folder: id, name(Folder name), owner_id FK, parent_id(Parent folder) self-referencing FK nullable<br>
+- File: id, folder_id FK, name(File name), size(Size) BIGINT, created_at<br><br>
+Relationships: User → Folder (1:N), Folder → Folder (1:N recursive), Folder → File (1:N)"
+      </div>
+    </section>
+
+    <!-- ─────────────── tips ─────────────── -->
+    <section id="tips">
+      <h2>Writing effective prompts</h2>
+
+      <div class="card-grid">
+        <div class="card">
+          <h4>✅ What works well</h4>
+          <div class="prompts">
+            <div class="p">Give both the physical name and the logical name</div>
+            <div class="p">State the data type (VARCHAR, INT, DECIMAL…)</div>
+            <div class="p">Be explicit about direction and kind ("1:N non-identifying")</div>
+            <div class="p">Bundle several steps into one request</div>
+            <div class="p">Explain the domain ("cannot exist without an order")</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>⚠️ Watch out for</h4>
+          <div class="prompts">
+            <div class="p">Split N:M into a junction entity</div>
+            <div class="p">Never delete an FK/PK column directly</div>
+            <div class="p">Delete the relationship before renaming a PK</div>
+            <div class="p">Ask explicitly: "save this diagram"</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Checking the current state</h3>
+      <div class="prompt-block">"What entities are in the diagram right now?"</div>
+      <div class="prompt-block">"Show me the columns on the User entity"</div>
+      <div class="prompt-block">"Which entities are related to Order?"</div>
+
+      <h3>Asking it to save</h3>
+      <div class="prompt-block">"Save what we've done to the database"</div>
+      <div class="prompt-block">"Save it as a new diagram called 'Store v2'"</div>
+
+      <h3>Listing and switching diagrams</h3>
+      <div class="prompt-block">"Show me my diagrams"</div>
+      <div class="prompt-block">"Open the 'Blog ERD' diagram"</div>
+    </section>
+
+    <!-- ─────────────── data types ─────────────── -->
+    <section id="types">
+      <h2>Data type cheat sheet</h2>
+      <p>Use these names when you tell Claude a type and it will map them exactly.</p>
+      <table>
+        <thead><tr><th>Type</th><th>Use for</th><th>How to say it to Claude</th></tr></thead>
+        <tbody>
+          <tr><td><code>INT</code></td><td>Integers (counts, quantities, indexes)</td><td>"INT", "integer", "a whole number"</td></tr>
+          <tr><td><code>BIGINT</code></td><td>Large integers (file sizes, timestamps)</td><td>"BIGINT", "a big number"</td></tr>
+          <tr><td><code>VARCHAR(n)</code></td><td>Variable-length strings</td><td>"VARCHAR(100)", "a string up to 100 characters"</td></tr>
+          <tr><td><code>CHAR(n)</code></td><td>Fixed length (codes, phone numbers)</td><td>"CHAR(10)", "exactly 10 characters"</td></tr>
+          <tr><td><code>TEXT</code></td><td>Long text (body copy, descriptions)</td><td>"TEXT", "a long string", "body"</td></tr>
+          <tr><td><code>DECIMAL(p,s)</code></td><td>Exact decimals (money, rates)</td><td>"DECIMAL(12,2)", "an amount", "a price"</td></tr>
+          <tr><td><code>FLOAT</code></td><td>Floating point (coordinates, statistics)</td><td>"FLOAT", "a real number"</td></tr>
+          <tr><td><code>DATETIME</code></td><td>Date and time</td><td>"DATETIME", "a timestamp"</td></tr>
+          <tr><td><code>DATE</code></td><td>Date only</td><td>"DATE", "a date"</td></tr>
+          <tr><td><code>BOOLEAN</code></td><td>True / false</td><td>"BOOLEAN", "bool", "true/false"</td></tr>
+          <tr><td><code>UUID</code></td><td>Unique identifiers (stored as CHAR(36))</td><td>"UUID"</td></tr>
+          <tr><td><code>JSON</code></td><td>Unstructured data</td><td>"JSON", "metadata"</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      YourERD · Claude Prompt Guide · natural-language ERD design over MCP
+    </footer>
+  </main>
+</div>
+</body>
+</html>

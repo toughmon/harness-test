@@ -14,7 +14,7 @@ export function canEdit(role: CollabRole): boolean {
 
 export interface Participant {
   actorId: string;   // 'u<userId>' | 'g<guestId>'
-  label: string;     // 표시 이름(username 등)
+  label: string | null;  // 표시 이름(username). 비로그인 참여자는 null → 클라이언트가 로케일별 '게스트'로 표시
   role: CollabRole;
   color: string;     // actorId 해시 기반 아바타 색
 }

@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useDiagramStore } from '../../store/diagramStore';
 import { useCollabStore } from '../../store/collabStore';
 import { api, Share, ShareIssued } from '../../api/client';
+import { useT, getT } from '../../i18n';
 
 // 다이어그램 공유 모달 — 소유자가 링크를 발급/조회/폐기하고 한 줄 링크를 복사해 공유.
 // 대상은 현재 열린 다이어그램(currentId). 링크를 열면 여러 명이 실시간으로 "함께 보기"(읽기 전용).
@@ -37,6 +38,7 @@ function shareUrl(token: string) {
 }
 
 export default function ShareModal() {
+  const t = useT();
   const { closeModal } = useShareStore();
   const { status } = useAuthStore();
   const currentId = useDiagramStore(s => s.currentId);
@@ -57,7 +59,7 @@ export default function ShareModal() {
   // 공유 대상 다이어그램이 정해지면 링크 목록을 불러오고, 소유자를 협업 룸에 연결(편집이 뷰어에게 실시간 반영).
   useEffect(() => {
     if (!canShare || currentId === null) return;
-    api.listShares(currentId).then(setShares).catch(() => setError('공유 링크 목록을 불러오지 못했습니다.'));
+    api.listShares(currentId).then(setShares).catch(() => setError(getT()('share.listFailed')));
     connect(currentId);
   }, [canShare, currentId, connect]);
 
@@ -71,7 +73,7 @@ export default function ShareModal() {
       setShares(await api.listShares(currentId));
       connect(currentId);   // 링크 발급 즉시 브로드캐스트 시작
     } catch {
-      setError('공유 링크 발급에 실패했습니다.');
+      setError(t('share.issueFailed'));
     } finally {
       setBusy(false);
     }
@@ -84,7 +86,7 @@ export default function ShareModal() {
       setShares(await api.listShares(currentId));
       if (issued?.id === id) setIssued(null);
     } catch {
-      setError('공유 링크 폐기에 실패했습니다.');
+      setError(t('share.revokeFailed'));
     }
   };
 
@@ -109,11 +111,11 @@ export default function ShareModal() {
         {/* 헤더 */}
         <div className="px-5 py-3 border-b border-outline-variant flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-primary">share</span>
-          <h3 className="text-sm font-semibold text-on-surface m-0 flex-1">다이어그램 공유</h3>
+          <h3 className="text-sm font-semibold text-on-surface m-0 flex-1">{t('share.title')}</h3>
           <button
             className="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-on-surface cursor-pointer"
             onClick={closeModal}
-            aria-label="닫기"
+            aria-label={t('common.close')}
           >
             close
           </button>
@@ -122,32 +124,33 @@ export default function ShareModal() {
         {!authed ? (
           <div className="p-6 flex flex-col items-center gap-4 text-center">
             <span className="material-symbols-outlined text-[40px] text-on-surface-variant">lock</span>
-            <p className="text-sm text-on-surface-variant m-0">공유 링크를 만들려면 먼저 로그인해야 합니다.</p>
+            <p className="text-sm text-on-surface-variant m-0">{t('share.loginRequired')}</p>
           </div>
         ) : currentId === null ? (
           <div className="p-6 flex flex-col items-center gap-4 text-center">
             <span className="material-symbols-outlined text-[40px] text-on-surface-variant">cloud_off</span>
             <p className="text-sm text-on-surface-variant m-0">
-              공유하려면 먼저 다이어그램을 <strong className="text-primary">DB에 저장</strong>하세요.
+              {t('share.saveFirstBefore')}{' '}<strong className="text-primary">{t('share.saveFirstStrong')}</strong>{t('share.saveFirstAfter')}
             </p>
           </div>
         ) : (
           <div className="p-5 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
             <p className="text-xs text-on-surface-variant m-0 leading-relaxed">
-              <strong className="text-on-surface">{currentName}</strong> 다이어그램의 공유 링크를 만듭니다.
-              링크를 받은 사람이 로그인하면 여러 명이 실시간으로 <strong className="text-on-surface">함께 볼</strong> 수 있습니다(읽기 전용).
-              실시간 동시 편집은 다음 단계에서 제공됩니다.
+              <strong className="text-on-surface">{currentName}</strong>{' '}
+              {t('share.intro1')}{' '}
+              <strong className="text-on-surface">{t('share.introStrong')}</strong>{' '}
+              {t('share.intro2')}
             </p>
 
             {/* 링크 발급 */}
             <div className="flex items-end gap-2">
               <label className="flex flex-col gap-1 flex-1">
-                <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">링크 이름 (선택)</span>
+                <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">{t('share.linkLabel')}</span>
                 <input
                   type="text"
                   value={label}
                   onChange={e => setLabel(e.target.value)}
-                  placeholder="예: 리뷰용 링크"
+                  placeholder={t('share.linkPlaceholder')}
                   maxLength={100}
                   className="bg-surface border border-outline-variant rounded px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
                 />
@@ -158,7 +161,7 @@ export default function ShareModal() {
                 onClick={issue}
                 className="bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-semibold hover:bg-inverse-primary hover:text-white transition-colors cursor-pointer active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
               >
-                {busy ? '생성 중...' : '뷰어 링크 생성'}
+                {t(busy ? 'share.creating' : 'share.createViewerLink')}
               </button>
             </div>
 
@@ -166,7 +169,7 @@ export default function ShareModal() {
               <div data-testid="share-issued" className="rounded-lg border border-primary/40 bg-primary/5 p-3 flex flex-col gap-2">
                 <span className="text-[11px] font-bold text-primary flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  공유 링크가 생성되었습니다
+                  {t('share.created')}
                 </span>
                 <div className="relative">
                   <pre
@@ -176,7 +179,7 @@ export default function ShareModal() {
                   <button
                     data-testid="share-copy"
                     onClick={() => copy(shareUrl(issued.token))}
-                    title="복사"
+                    title={t('common.copy')}
                     className="absolute top-2 right-2 material-symbols-outlined text-[16px] text-on-surface-variant hover:text-primary cursor-pointer"
                   >
                     {copied ? 'check' : 'content_copy'}
@@ -191,19 +194,19 @@ export default function ShareModal() {
 
             {/* 발급된 링크 목록 */}
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">공유 링크</span>
+              <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">{t('share.linksLabel')}</span>
               <div data-testid="share-list" className="flex flex-col gap-1">
                 {activeShares.map(s => (
                   <div key={s.id} className="flex items-center gap-2 px-3 py-1.5 rounded border border-outline-variant text-xs text-on-surface">
                     <span className="material-symbols-outlined text-[14px] text-on-surface-variant shrink-0">link</span>
                     <span className="shrink-0 px-1.5 py-0.5 rounded bg-surface-variant text-[10px] uppercase tracking-wide">
-                      {s.role === 'editor' ? '편집자' : '뷰어'}
+                      {t(s.role === 'editor' ? 'share.roleEditor' : 'share.roleViewer')}
                     </span>
-                    <span className="flex-1 truncate">{s.label || '(이름 없음)'}</span>
-                    <span className="text-[10px] text-outline shrink-0">{s.last_used_at ? '사용됨' : '미사용'}</span>
+                    <span className="flex-1 truncate">{s.label || t('share.unnamed')}</span>
+                    <span className="text-[10px] text-outline shrink-0">{t(s.last_used_at ? 'share.used' : 'share.unused')}</span>
                     <button
                       onClick={() => revoke(s.id)}
-                      title="폐기"
+                      title={t('share.revoke')}
                       aria-label={`Revoke share ${s.id}`}
                       className="material-symbols-outlined text-[14px] text-on-surface-variant hover:text-red-400 cursor-pointer shrink-0"
                     >
@@ -212,7 +215,7 @@ export default function ShareModal() {
                   </div>
                 ))}
                 {activeShares.length === 0 && (
-                  <div className="px-3 py-1 text-xs text-outline italic">아직 만든 공유 링크가 없습니다.</div>
+                  <div className="px-3 py-1 text-xs text-outline italic">{t('share.empty')}</div>
                 )}
               </div>
             </div>

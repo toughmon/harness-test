@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { ApiError } from '../../api/client';
+import { useT } from '../../i18n';
+import { errorMessage } from '../../i18n/errors';
 
 // 로그인/가입 모달 — RelTypeModal과 동일한 오버레이 패턴
 
 type Mode = 'login' | 'register';
 
-const ERROR_MESSAGES: Record<string, string> = {
-  username_taken: '이미 사용 중인 아이디입니다.',
-  invalid_credentials: '아이디 또는 비밀번호가 올바르지 않습니다.',
-};
-
 export default function AuthModal() {
+  const t = useT();
   const { login, register, closeModal } = useAuthStore();
   const [mode, setMode] = useState<Mode>('login');
   const [username, setUsername] = useState('');
@@ -24,11 +21,11 @@ export default function AuthModal() {
     if (busy) return;
     setError('');
     if (username.trim().length < 3) {
-      setError('아이디는 3자 이상이어야 합니다 (영문/숫자/._-).');
+      setError(t('auth.usernameTooShort'));
       return;
     }
     if (password.length < 8) {
-      setError('비밀번호는 8자 이상이어야 합니다.');
+      setError(t('auth.passwordTooShort'));
       return;
     }
     setBusy(true);
@@ -36,11 +33,7 @@ export default function AuthModal() {
       if (mode === 'login') await login(username.trim(), password);
       else await register(username.trim(), password);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(ERROR_MESSAGES[err.code] ?? (err.status === 400 ? '입력 형식이 올바르지 않습니다.' : `오류가 발생했습니다 (${err.code})`));
-      } else {
-        setError('서버에 연결할 수 없습니다.');
-      }
+      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -63,7 +56,7 @@ export default function AuthModal() {
         <div className="px-5 py-3 border-b border-outline-variant flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-primary">person</span>
           <h3 className="text-sm font-semibold text-on-surface m-0">
-            {mode === 'login' ? '로그인' : '회원가입'}
+            {t(mode === 'login' ? 'auth.login' : 'auth.register')}
           </h3>
         </div>
 
@@ -80,30 +73,30 @@ export default function AuthModal() {
               }`}
               onClick={() => switchMode(m)}
             >
-              {m === 'login' ? '로그인' : '회원가입'}
+              {t(m === 'login' ? 'auth.login' : 'auth.register')}
             </button>
           ))}
         </div>
 
         <form className="p-5 flex flex-col gap-3" onSubmit={handleSubmit}>
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">아이디</span>
+            <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">{t('auth.username')}</span>
             <input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="영문/숫자 3자 이상"
+              placeholder={t('auth.usernamePlaceholder')}
               autoFocus
               className="bg-surface border border-outline-variant rounded px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">비밀번호</span>
+            <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant">{t('auth.password')}</span>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="8자 이상"
+              placeholder={t('auth.passwordPlaceholder')}
               className="bg-surface border border-outline-variant rounded px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
             />
           </label>
@@ -119,14 +112,14 @@ export default function AuthModal() {
             disabled={busy}
             className="w-full bg-primary text-on-primary py-2 rounded-lg text-sm font-semibold hover:bg-inverse-primary hover:text-white transition-colors cursor-pointer active:scale-[0.98] disabled:opacity-50"
           >
-            {busy ? '처리 중...' : mode === 'login' ? '로그인' : '가입하기'}
+            {busy ? t('auth.busy') : t(mode === 'login' ? 'auth.login' : 'auth.signUp')}
           </button>
           <button
             type="button"
             className="w-full text-xs text-on-surface-variant hover:text-on-surface py-1 cursor-pointer transition-colors"
             onClick={closeModal}
           >
-            취소
+            {t('common.cancel')}
           </button>
         </form>
       </div>

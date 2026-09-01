@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YourERD · MCP Setup Guide</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <style>
+    /* left table of contents */
+    nav.toc {
+      position: sticky; top: 0; align-self: flex-start;
+      width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      padding: 28px 16px 40px 24px;
+      border-right: 1px solid var(--outline-variant);
+    }
+
+    nav.toc .brand {
+      font-size: 22px; font-weight: 900; letter-spacing: -0.02em;
+      color: var(--primary); margin-bottom: 4px;
+    }
+
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+
+    main h1 {
+      font-size: 32px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px;
+    }
+
+    .warn {
+      border-left: 3px solid var(--warn);
+      background: rgba(251,191,36,.07);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+
+    h2 .step {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 999px; margin-right: 10px;
+      background: var(--primary-container); color: #1a1a2e;
+      font-size: 14px; font-weight: 700; font-family: var(--font-mono);
+    }
+
+    ul, ol { margin: 10px 0; padding-left: 22px; }
+
+    pre code { background: none; color: inherit; padding: 0; }
+
+    @media (max-width: 860px) {
+      nav.toc { display: none; }
+      main { padding: 28px 22px 80px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="brand">YourERD</div>
+      <div class="sub">MCP Setup Guide</div>
+      <a href="#intro">Overview</a>
+      <a href="#step1">1. Sign in &amp; create a token</a>
+      <a href="#step2">2. Paste one command</a>
+      <a href="#step3">3. Verify the connection</a>
+      <a href="#usage">How to use it</a>
+      <a href="#tools">Tool reference</a>
+      <a href="#advanced">Advanced: local stdio mode</a>
+      <a href="#trouble">Troubleshooting</a>
+      <a href="#caveats">Things to know</a>
+      <a href="/mcp-guide.html" class="back">🌐 한국어</a>
+      <a href="/en/manual.html" class="back">← User manual</a>
+    </nav>
+
+    <main>
+      <h1>MCP Setup Guide <span class="badge">Claude Code</span></h1>
+      <p class="lead">How to connect an MCP server so that Claude Code can create and edit diagrams in this YourERD service using plain language.</p>
+
+      <section id="intro">
+        <h2>Overview</h2>
+        <p><strong>MCP (Model Context Protocol)</strong> is the standard that lets AI clients such as Claude Code call external tools. YourERD hosts a <strong>remote MCP endpoint (<code>/mcp</code>)</strong> directly on its server, so once connected you can say things like:</p>
+        <div class="note">"Create a user entity with seq (user id) as an integer PK and name varchar(100)" → entities, columns and relationships are created and saved on the server automatically.</div>
+        <p>You <strong>do not</strong> need to clone the repository, install Node, hand-edit <code>.mcp.json</code>, or restart Claude Code. Just paste a single command containing the <strong>personal token</strong> you created on the web.</p>
+        <pre><code>Claude Code ──HTTP (personal token)──▶ YourERD server /mcp  (no extra process or repo)</code></pre>
+      </section>
+
+      <section id="step1">
+        <h2><span class="step">1</span>Sign in &amp; create a token</h2>
+        <ul>
+          <li><strong>Sign in</strong> to YourERD (no account yet? use the avatar in the top right → Sign up). MCP only sees and edits diagrams belonging to your own account.</li>
+          <li>Open <strong>“Connect MCP”</strong> at the bottom of the left sidebar.</li>
+          <li>Press <strong>“Create token”</strong> to generate a personal access token (PAT). The connection command appears with the token already filled in.</li>
+        </ul>
+        <div class="warn">⚠️ The raw token is shown <strong>only once, right after it is created</strong>. Copy the command there and then. If you lose it, just create a new one — and revoke tokens you no longer use from the list.</div>
+      </section>
+
+      <section id="step2">
+        <h2><span class="step">2</span>Paste one command</h2>
+        <p>Use the <strong>copy</strong> button in the modal and paste the command into your terminal. (The shape is shown below — in practice your real token is already filled in.)</p>
+        <pre><code>claude mcp add --scope user --transport http \
+  erd https://yourerd.com/mcp \
+  --header "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
+        <p style="font-size:13px;color:var(--on-surface-variant)"><code>--header</code> must come <strong>last</strong> — it takes a variable number of values, so placing it earlier swallows the name and URL and the command fails.</p>
+        <p>You can also add it to <code>.mcp.json</code> yourself (expand “Or add it to .mcp.json directly” in the modal).</p>
+        <pre><code>{
+  "mcpServers": {
+    "erd": {
+      "type": "http",
+      "url": "https://yourerd.com/mcp",
+      "headers": { "Authorization": "Bearer &lt;YOUR_TOKEN&gt;" }
+    }
+  }
+}</code></pre>
+      </section>
+
+      <section id="step3">
+        <h2><span class="step">3</span>Verify the connection</h2>
+        <p>A remote MCP server registers immediately, so no restart is needed. In Claude Code:</p>
+        <ul>
+          <li>Type <code>/mcp</code> — if the <code>erd</code> server and its tools are listed, you are connected</li>
+          <li>Or ask "show me my ERD diagrams" — that runs <code>list_diagrams</code></li>
+        </ul>
+        <div class="note">The token travels in the <code>Authorization: Bearer</code> header, so connect over <strong>https</strong> whenever possible.</div>
+      </section>
+
+      <section id="usage">
+        <h2>How to use it</h2>
+        <p>Once connected, just ask in plain language. For example:</p>
+        <ul>
+          <li>"Create a new ERD for an order system"</li>
+          <li>"Add User and Order entities, then connect User→Order as a 1:M non-identifying relationship"</li>
+          <li>"Add an email varchar(255) column to User"</li>
+          <li>"Summarize the diagram you just made"</li>
+        </ul>
+        <p>When you connect a relationship, the parent's PK is <strong>added to the child as an FK column automatically</strong> (for an identifying relationship the FK also becomes part of the child's PK).</p>
+      </section>
+
+      <section id="tools">
+        <h2>Tool reference</h2>
+        <p>Reference arguments (entity, column, source, target) accept <strong>either an id or a name</strong>.</p>
+        <table>
+          <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>list_diagrams</code></td><td>List my diagrams</td></tr>
+            <tr><td><code>create_diagram</code></td><td>Create an empty diagram and select it</td></tr>
+            <tr><td><code>select_diagram</code></td><td>Choose the diagram to work on (by id or name)</td></tr>
+            <tr><td><code>get_diagram</code></td><td>Summarize the current or a given diagram</td></tr>
+            <tr><td><code>rename_diagram</code> / <code>delete_diagram</code></td><td>Rename / delete</td></tr>
+            <tr><td><code>add_entity</code></td><td>Add an entity (with a default id PK)</td></tr>
+            <tr><td><code>update_entity</code> / <code>delete_entity</code></td><td>Update / delete (cascades FK and relationship cleanup)</td></tr>
+            <tr><td><code>add_column</code> / <code>update_column</code> / <code>delete_column</code></td><td>Column CRUD</td></tr>
+            <tr><td><code>add_relationship</code></td><td>Add a relationship and copy the parent PK into the child as an FK</td></tr>
+            <tr><td><code>update_relationship_type</code></td><td>Change the relationship type (identifying ↔ non-identifying)</td></tr>
+            <tr><td><code>delete_relationship</code></td><td>Delete a relationship and remove the auto-generated FK</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="advanced">
+        <h2>Advanced: local stdio mode</h2>
+        <p>The older approach — cloning the repository and <strong>running the MCP server locally</strong> — is still supported (useful for development and debugging). It requires Node 18+ and a repo clone, and you put service-account credentials in <code>.mcp.json</code>.</p>
+        <pre><code>cd erd-service/mcp &amp;&amp; npm install
+
+# .mcp.json at the project root
+{
+  "mcpServers": {
+    "erd": {
+      "command": "npx",
+      "args": ["-y", "tsx", "erd-service/mcp/src/index.ts"],
+      "env": {
+        "ERD_BASE_URL": "https://yourerd.com",
+        "ERD_USERNAME": "my-account-mcp",
+        "ERD_PASSWORD": "my-password"
+      }
+    }
+  }
+}</code></pre>
+        <div class="warn">⚠️ This mode puts your password in <code>.mcp.json</code> in plain text — never commit or share that file. For everyday use, prefer the <strong>remote token method above (recommended)</strong>.</div>
+      </section>
+
+      <section id="trouble">
+        <h2>Troubleshooting</h2>
+        <table>
+          <thead><tr><th>Symptom</th><th>Cause / fix</th></tr></thead>
+          <tbody>
+            <tr><td>No tools show up</td><td>Check the status with <code>/mcp</code>. Make sure the server URL (ending in <code>/mcp</code>) and the <code>Authorization</code> header are exactly right</td></tr>
+            <tr><td>Connection refused (401)</td><td>The token expired, was revoked, or is wrong — create a new one under “Connect MCP” on the web and register the command again</td></tr>
+            <tr><td>Diagrams look empty</td><td>A token only sees diagrams from <strong>the account that created it</strong>. Check which account you are signed in as</td></tr>
+            <tr><td>Edits do not appear on screen</td><td>Expected by design — reopen the diagram or refresh the page (see below)</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="caveats">
+        <h2>Things to know</h2>
+        <ul>
+          <li><strong>Refresh required</strong>: MCP edits are saved to the database, but a browser tab that is already open does not update on its own. Reopen the diagram or refresh.</li>
+          <li><strong>Last save wins</strong>: if the same diagram is saved from MCP and the browser at the same time, the later save overwrites the earlier one.</li>
+          <li><strong>Account isolation</strong>: everyone sees and edits only the diagrams in their own MCP account. To collaborate, share one account.</li>
+          <li>Subtypes (SubSet), bulk creation, and real-time sync are out of scope for now.</li>
+        </ul>
+        <div class="note">For developer-level documentation, see <code>erd-service/mcp/README.md</code> in the repository.</div>
+      </section>
+
+      <footer>
+        YourERD · MCP Setup Guide — this page is served by the YourERD server at <code>/en/mcp-guide.html</code>.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

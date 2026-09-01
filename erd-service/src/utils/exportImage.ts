@@ -1,12 +1,13 @@
 import { getNodesBounds, getViewportForBounds, Node } from '@xyflow/react';
 import { toPng } from 'html-to-image';
+import { getT } from '../i18n';
 
 // 현재 다이어그램 전체를 PNG로 내보내기 — React Flow viewport를 노드 영역에 맞게 변환 후 캡처
 export async function exportDiagramPng(nodes: Node[]): Promise<void> {
   if (nodes.length === 0) return;
 
   const viewportEl = document.querySelector<HTMLElement>('.react-flow__viewport');
-  if (!viewportEl) throw new Error('캔버스를 찾을 수 없습니다');
+  if (!viewportEl) throw new Error(getT()('export.canvasNotFound'));
 
   const bounds = getNodesBounds(nodes);
   const scale = 1.5;

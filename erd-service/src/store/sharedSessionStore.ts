@@ -4,6 +4,7 @@ import { fromERDData } from '../utils/erdData';
 import { useERDStore } from './erdStore';
 import { useCollabStore } from './collabStore';
 import { useAuthStore } from './authStore';
+import { getT } from '../i18n';
 
 // 공유 링크로 연 세션(뷰어/편집자) — 소유자의 "내 다이어그램" 흐름과 분리된 별도 진입 경로.
 // /d/:token(또는 ?share=)로 들어오면 enter()가 다이어그램을 읽어 로드하고 협업 룸에 연결한다.
@@ -48,7 +49,7 @@ export const useSharedSessionStore = create<SharedSessionState>((set) => ({
         set({ needsLogin: true });
         useAuthStore.getState().openModal();
       } else {
-        set({ error: '만료되었거나 유효하지 않은 공유 링크입니다.' });
+        set({ error: getT()('share.invalidLink') });
       }
     }
   },

@@ -1,0 +1,111 @@
+/* YourERD 가이드 페이지 공통 스타일 — manual / mcp-guide / prompt-guide가 공유한다.
+   예전에는 세 페이지가 동일한 M3 다크 팔레트를 각자 인라인으로 복붙하고 있었고,
+   언어별 사본이 생기면 6벌이 될 상황이라 공통 블록만 여기로 추출했다.
+   페이지 고유 규칙은 각 HTML의 <style>에 그대로 남아 있다. */
+
+:root {
+  --bg: #131313;
+  --surface-low: #1c1b1b;
+  --surface: #201f1f;
+  --surface-high: #2a2a2a;
+  --surface-variant: #353534;
+  --on-surface: #e5e2e1;
+  --on-surface-variant: #c7c4d7;
+  --outline: #908fa0;
+  --outline-variant: #464554;
+  --primary: #c0c1ff;
+  --primary-container: #8083ff;
+  --pk: #f59e0b;
+  --fk: #6366f1;
+  --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+}
+* { box-sizing: border-box; }
+
+html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--on-surface);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.7;
+      scroll-behavior: smooth;
+    }
+
+.layout { display: flex; max-width: 1180px; margin: 0 auto; align-items: flex-start; }
+
+nav.toc .sub { font-family: var(--font-mono); font-size: 11px; color: var(--on-surface-variant); margin-bottom: 20px; }
+
+nav.toc a {
+      display: block; color: var(--on-surface-variant); text-decoration: none;
+      font-size: 13px; padding: 6px 10px; border-radius: 6px; transition: all .15s;
+      border-left: 2px solid transparent;
+    }
+
+nav.toc a:hover { background: var(--surface-variant); color: var(--on-surface); }
+
+/* 본문 */
+    main { flex: 1; min-width: 0; padding: 40px 48px 120px; }
+
+main h1 .badge {
+      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+      color: var(--primary); background: rgba(128,131,255,.12);
+      padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 10px;
+    }
+
+.lead { color: var(--on-surface-variant); font-size: 15px; margin: 0 0 8px; }
+
+.note {
+      border-left: 3px solid var(--primary-container);
+      background: rgba(128,131,255,.06);
+      padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 18px 0;
+      color: var(--on-surface-variant); font-size: 14px;
+    }
+
+section { scroll-margin-top: 24px; padding-top: 16px; }
+
+h2 {
+      font-size: 22px; font-weight: 700; margin: 36px 0 14px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--outline-variant);
+    }
+
+h3 { font-size: 16px; font-weight: 700; margin: 26px 0 10px; color: var(--on-surface); }
+
+p { margin: 10px 0; }
+
+li { margin: 5px 0; }
+
+strong { color: #fff; font-weight: 700; }
+
+code {
+      font-family: var(--font-mono); font-size: 12.5px;
+      background: var(--surface-high); color: var(--primary);
+      padding: 1px 6px; border-radius: 4px;
+    }
+
+pre {
+      background: var(--surface-low); border: 1px solid var(--outline-variant);
+      border-radius: 10px; padding: 16px 18px; overflow-x: auto;
+      font-family: var(--font-mono); font-size: 12px; color: var(--on-surface-variant);
+      line-height: 1.55;
+    }
+
+table {
+      width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px;
+      border: 1px solid var(--outline-variant); border-radius: 10px; overflow: hidden;
+    }
+
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--outline-variant); vertical-align: top; }
+
+th { background: var(--surface); font-weight: 600; color: var(--on-surface); font-size: 12.5px; }
+
+tr:last-child td { border-bottom: none; }
+
+td:first-child, th:first-child { white-space: nowrap; }
+
+footer {
+      margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--outline-variant);
+      color: var(--outline); font-size: 12px;
+    }
