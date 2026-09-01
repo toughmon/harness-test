@@ -33,7 +33,19 @@
       "Skill(artifact-design)",
       "Bash(mkdir *)",
       "Artifact",
-      "PowerShell(Copy-Item *)"
+      "PowerShell(Copy-Item *)",
+      "PowerShell(git *)",
+      "PowerShell(npm run *)",
+      "PowerShell(Set-Location C:\\\\project\\\\harness-test\\\\erd-service; $env:BASE_URL = 'http://localhost:8080'; node verify_sidebar_cleanup.mjs)",
+      "WebSearch",
+      "Bash(npx ccstatusline@latest --version)",
+      "Bash(npx ccstatusline@latest --help)",
+      "WebFetch(domain:github.com)",
+      "Bash(echo '{\"model\":{\"display_name\":\"Sonnet 5\"},\"workspace\":{\"current_dir\":\"C:\\\\\\\\project\\\\\\\\harness-test\"},\"context_window\":{\"used_percentage\":42}}')",
+      "Bash(node ~/.claude/statusline.mjs)",
+      "Bash(printf '%s' '{\"model\":{\"display_name\":\"Sonnet 5\"},\"workspace\":{\"current_dir\":\"C:\\\\\\\\project\\\\\\\\harness-test\"},\"context_window\":{\"used_percentage\":42}}')",
+      "Bash(node -e \"process.stdin.on\\('data',d=>console.log\\('RAW:',d.toString\\(\\)\\)\\)\")",
+      "Bash(xargs grep -l \"selectionKeyCode\")"
     ],
     "ask": [
       "Bash(git push:*)"
