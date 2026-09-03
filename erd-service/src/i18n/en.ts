@@ -315,4 +315,8 @@ export const en: Record<MessageKey, string> = {
 
   // ── MCP token placeholder (appears in the copyable command) ──
   'mcp.tokenPlaceholderText': '<YOUR_TOKEN>',
+  'node.collapse': 'Collapse',
+  'node.expand': 'Expand',
+  'canvas.collapseAll': 'Collapse all',
+  'canvas.expandAll': 'Expand all',
 };

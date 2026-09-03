@@ -316,6 +316,10 @@ export const ko = {
 
   // ── MCP 토큰 자리표시자 (복사용 명령에 들어감) ──
   'mcp.tokenPlaceholderText': '<발급한_토큰>',
+  'node.collapse': '접기',
+  'node.expand': '펼치기',
+  'canvas.collapseAll': '모두 접기',
+  'canvas.expandAll': '모두 펼치기',
 } as const;
 
 export type MessageKey = keyof typeof ko;

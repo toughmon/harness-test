@@ -143,7 +143,7 @@
           <li><strong>Click</strong> — opens the <strong>modal</strong> for editing the entity (physical name, logical name, description, color, columns, SubSet).</li>
           <li><strong>Hover</strong> — shows a <strong>read-only preview</strong> you can skim without clicking. It includes information the node body does not show, such as the description and whether a column is UNIQUE.</li>
           <li><strong>Double-click quick edit on the node</strong> — <strong>double-click</strong> an entity's <strong>physical or logical name</strong>, or a column's <strong>name, logical name or data type</strong>, to edit it in place without opening the modal (see 5.1).</li>
-          <li>Clicking the entity body (outside the header) only <strong>selects (highlights)</strong> it; no modal opens. <strong>Right-click → Edit</strong> opens the same modal (see 4.4).</li>
+          <li>Clicking the entity body (outside the header) only <strong>selects (highlights)</strong> it; no modal opens. <strong>Right-click → Edit</strong> opens the same modal (see 4.6).</li>
         </ul>
         <p>What you can edit in the modal:</p>
         <table>
@@ -156,7 +156,22 @@
         <div class="note">The node, the sidebar and the editor modal all show the <strong>physical name and the logical name</strong> together.</div>
         <h3>4.3 Deleting an entity</h3>
         <p>Press the <strong>🗑 (delete)</strong> button in the modal header, <strong>right-click → Delete</strong>, or select the entity and press <strong><code>Delete</code></strong>. After you confirm, the entity is removed along with its relationships and any FK columns that were auto-generated in other entities.</p>
-        <h3>4.4 Right-click context menu</h3>
+        <h3>4.5 Collapsing and expanding an entity</h3>
+        <p>The <strong>collapse icon</strong> on the right of an entity header hides its column list and SubSet
+        region, leaving <strong>only the header</strong>. When vertical space is tight — a small laptop, for
+        instance — keep the two or three tables you are working on expanded and collapse the rest, and the
+        overall structure and the detail fit on one screen together.</p>
+        <ul>
+          <li>A collapsed entity shows a <strong>column-count badge</strong> so you still know how big it is.</li>
+          <li>While collapsed, <strong>drawing relationships, selecting, deleting and the ⓘ editor modal</strong> all keep working.</li>
+          <li>The <strong>Collapse all / Expand all</strong> button in the zoom toolbar switches every entity at once.
+          Collapse everything and then press <strong>Auto layout (🌳)</strong> — the spacing is recomputed for the
+          smaller nodes, so the diagram packs much tighter.</li>
+          <li>Collapsing is a <strong>view setting</strong>, not part of the diagram: it is not saved, and reopening
+          the diagram starts with everything expanded.</li>
+        </ul>
+
+        <h3>4.6 Right-click context menu</h3>
         <p><strong>Right-clicking</strong> an entity (or a relationship or memo) opens a menu with <strong>Edit</strong> and <strong>Delete</strong>. It is an alternative route to the same editor modal as the info and ✎ icons — and for elements without a dedicated icon, such as memos, it is the only way to open the modal.</p>
       </section>
 
@@ -313,6 +328,7 @@
           <tr><td>Zoom level</td><td>Current zoom percentage</td></tr>
           <tr><td>Zoom in 🔍＋</td><td>Zoom in</td></tr>
           <tr><td>Fit view</td><td>Fits every entity on screen</td></tr>
+          <tr><td>Collapse all / Expand all</td><td>Collapses every entity down to its header, or expands them again (see 4.5)</td></tr>
           <tr><td>Auto layout 🌳</td><td>Arranges entities to match the relationship structure (undoable)</td></tr>
           <tr><td>Export PNG 📷</td><td>Saves the diagram as a PNG image</td></tr>
           <tr><td>Export SQL 🗄</td><td>Exports MySQL DDL (<code>.sql</code>)</td></tr>

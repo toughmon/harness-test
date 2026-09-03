@@ -27,7 +27,7 @@
   --color-error-container: #93000a;
   --color-node-header: #1e1e1e;
   --color-node-bg: #121212;
-  --color-node-border: #334155;
+  --color-node-border: #64748b;
   --color-pk-color: #f59e0b;
   --color-fk-color: #6366f1;
   --color-input-bg: #0a0a0a;
@@ -63,7 +63,7 @@ html[data-theme="light"] {
   --color-error-container: #ffdad6;
   --color-node-header: #e9e6f4;
   --color-node-bg: #f2f0f9;
-  --color-node-border: #b0a8d0;
+  --color-node-border: #8b82ab;
   --color-pk-color: #d97706;
   --color-fk-color: #4338ca;
   --color-input-bg: #ffffff;
@@ -96,6 +96,23 @@ html, body {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   user-select: none;
 }
+
+/* 아이콘 크기 복구.
+   Google Fonts의 `.material-symbols-outlined { font-size: 24px }` 는 캐스케이드 레이어 **밖**에 있고,
+   Tailwind v4의 유틸리티는 @layer utilities **안**에 있다. 레이어 밖 선언이 항상 이기므로
+   컴포넌트에 붙인 text-[14px] 류가 전부 무시되고 앱의 아이콘 28개가 모두 24px로 렌더되고 있었다.
+   (컬럼 행 높이가 32px로 고정되던 직접 원인이기도 하다.)
+   같은 '레이어 밖' 규칙으로 실제 사용 중인 크기만 되돌린다 — 컴포넌트는 손대지 않는다. */
+.material-symbols-outlined.text-\[11px\] { font-size: 11px; }
+.material-symbols-outlined.text-\[12px\] { font-size: 12px; }
+.material-symbols-outlined.text-\[13px\] { font-size: 13px; }
+.material-symbols-outlined.text-\[14px\] { font-size: 14px; }
+.material-symbols-outlined.text-\[15px\] { font-size: 15px; }
+.material-symbols-outlined.text-\[16px\] { font-size: 16px; }
+.material-symbols-outlined.text-\[18px\] { font-size: 18px; }
+.material-symbols-outlined.text-\[20px\] { font-size: 20px; }
+.material-symbols-outlined.text-\[40px\] { font-size: 40px; }
+.material-symbols-outlined.text-\[48px\] { font-size: 48px; }
 
 /* 글래스 플로팅 툴바 */
 .glass-toolbar {

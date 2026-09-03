@@ -96,6 +96,10 @@ function EntityNode({ data }: NodeProps) {
   const openPreview = () => { cancelHide(); setShowPreview(true); };
   const scheduleHidePreview = () => { cancelHide(); hideTimerRef.current = window.setTimeout(() => setShowPreview(false), 150); };
 
+  // 접힘 여부만 selector 로 구독 — boolean 이라 값이 바뀔 때만 이 노드가 리렌더된다
+  const collapsed = useERDStore(s => s.collapsedEntityIds.includes(entityData.id));
+  const toggleCollapse = useERDStore(s => s.toggleEntityCollapse);
+
   const pkCols = entityData.columns.filter(c => c.isPK);
   const nonPKCols = entityData.columns.filter(c => !c.isPK);
 
@@ -166,7 +170,7 @@ function EntityNode({ data }: NodeProps) {
     const isEditingType = editingKey === `col-type-${col.id}`;
 
     return (
-      <div key={col.id} className="px-3 py-1 flex items-center justify-between gap-2 hover:bg-surface-variant group">
+      <div key={col.id} className="px-3 py-0.5 leading-[15px] flex items-center justify-between gap-2 hover:bg-surface-variant group">
         <div className={`flex items-center gap-1.5 min-w-0 flex-1 ${!isPK && !col.isFK ? 'pl-5' : ''}`}>
           {isPK && (
             <span className="material-symbols-outlined text-[14px] text-pk-color shrink-0" title="Primary Key">key</span>
@@ -218,14 +222,14 @@ function EntityNode({ data }: NodeProps) {
               {col.logicalName ? (
                 col.logicalName
               ) : (
-                <span className="opacity-0 group-hover:opacity-40 hover:!opacity-100 text-outline text-[9px] italic">
+                <span className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-outline text-[9px] italic">
                   {t('node.addLogical')}
                 </span>
               )}
             </span>
           )}
 
-          {col.isNN && <span className="text-pk-color text-[11px] shrink-0">*</span>}
+          {col.isNN && <span className="text-on-surface-variant text-[11px] font-bold shrink-0" title="NOT NULL">*</span>}
         </div>
 
         {isEditingType ? (
@@ -238,7 +242,7 @@ function EntityNode({ data }: NodeProps) {
           />
         ) : (
           <span
-            className="font-mono text-[11px] text-on-surface-variant opacity-70 group-hover:opacity-100 shrink-0 cursor-pointer hover:text-primary hover:underline"
+            className="font-mono text-[11px] text-on-surface-variant shrink-0 cursor-pointer hover:text-primary hover:underline"
             title={t('node.dblType')}
             data-testid="col-type"
             onDoubleClick={e => {
@@ -335,6 +339,25 @@ function EntityNode({ data }: NodeProps) {
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {/* 접힘일 때만 컬럼 수를 보여줘 정보 손실을 보완한다 */}
+            {collapsed && (
+              <span
+                className="font-mono text-[10px] text-on-surface-variant bg-surface-variant rounded px-1.5 py-px shrink-0"
+                data-testid="entity-column-count"
+              >
+                {entityData.columns.length}
+              </span>
+            )}
+            <button
+              className="text-on-surface-variant hover:text-primary cursor-pointer flex items-center"
+              title={t(collapsed ? 'node.expand' : 'node.collapse')}
+              data-testid="entity-collapse-toggle"
+              onClick={e => { e.stopPropagation(); toggleCollapse(entityData.id); }}
+            >
+              <span className="material-symbols-outlined text-[16px]">
+                {collapsed ? 'unfold_more' : 'unfold_less'}
+              </span>
+            </button>
             <div
               className="flex items-center"
               onMouseEnter={openPreview}
@@ -379,6 +402,9 @@ function EntityNode({ data }: NodeProps) {
           </div>
         )}
 
+        {/* 본문 — 접히면 헤더만 남는다 (핸들·info 아이콘은 유지되므로 연결·편집은 그대로 동작) */}
+        {!collapsed && (
+        <>
         {/* PK Columns */}
         {pkCols.length > 0 && (
           <div className="border-b border-node-border py-1">
@@ -571,6 +597,8 @@ function EntityNode({ data }: NodeProps) {
               ))}
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
 
