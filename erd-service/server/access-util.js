@@ -22,7 +22,8 @@ export async function resolveShareToken(app, token) {
 // 반환: { diagramId, userId|null, guestId|null, role } | null(접근 불가).
 //   - 소유자(JWT로 user 확보 + 소유): role='owner'
 //   - 그 다이어그램에 바인딩된 유효 공유 토큰: role=share.role
-//       · JWT도 있으면 userId로 신원, 없으면 ALLOW_ANON_SHARE일 때만 게스트, 아니면 로그인 필요(null)
+//       · JWT가 있으면 userId로 신원, 없으면 게스트(익명)로 참여
+//       · 단 익명은 **viewer 링크만** — editor 링크는 누가 고쳤는지 남아야 하므로 로그인을 요구한다
 // 공유 토큰이 다른 다이어그램을 열지 못하도록 share.diagramId === id를 강제한다.
 export async function resolveDiagramAccess(app, { diagramId, user, shareToken }) {
   const id = Number(diagramId);
@@ -38,10 +39,12 @@ export async function resolveDiagramAccess(app, { diagramId, user, shareToken })
   const share = await resolveShareToken(app, shareToken);
   if (share && share.diagramId === id) {
     if (user) return { diagramId: id, userId: user.id, guestId: null, role: share.role };
-    if (process.env.ALLOW_ANON_SHARE === '1') {
+    // 비로그인 참여: 보기 전용 링크만 허용한다. editor 링크로 익명이 들어오면 편집자가 되어
+    // 누가 바꿨는지 남지 않으므로(actorId가 매번 새 게스트) 로그인을 요구한다.
+    if (share.role === 'viewer' && process.env.REQUIRE_SHARE_LOGIN !== '1') {
       return { diagramId: id, userId: null, guestId: 'g' + randomUUID(), role: share.role };
     }
-    return null; // 토큰은 유효하나 로그인 필요(MVP 기본)
+    return null; // editor 링크 익명 접근, 또는 REQUIRE_SHARE_LOGIN=1
   }
 
   return null;

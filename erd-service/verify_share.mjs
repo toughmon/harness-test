@@ -63,14 +63,31 @@ try {
   await page.waitForTimeout(300);
 
   // ── 3. 접근제어 (API) ──
-  // 3-1. 익명(쿠키 없음) → 로그인 필요 401 (ALLOW_ANON_SHARE 미설정)
+  // 3-1. 익명(쿠키 없음) → 링크만으로 조회 가능
   const anonCtx = await browser.newContext();
   const anonShared = await anonCtx.request.get(`${BASE}/api/shared/${token}`);
-  check('익명 GET /api/shared/:token → 401(로그인 필요)', anonShared.status() === 401);
+  check('익명 GET /api/shared/:token → 200(로그인 불필요)', anonShared.status() === 200, String(anonShared.status()));
+  check('익명 조회 결과가 다이어그램 A', (await anonShared.json()).id === diagA.id);
   // 3-2. 소유자 전용 라우트는 쿠키 없이는 여전히 비공개
   const anonOwn = await anonCtx.request.get(`${BASE}/api/diagrams/${diagA.id}`);
-  check('익명 GET /api/diagrams/:id → 401', anonOwn.status() === 401);
+  check('익명 GET /api/diagrams/:id → 401(소유자 라우트는 비공개 유지)', anonOwn.status() === 401);
+
+  // 3-3. 익명 브라우저로 실제 공유 페이지 열기 (로그인 모달이 뜨지 않아야 한다)
+  const anonPage = await anonCtx.newPage();
+  await anonPage.setViewportSize({ width: 1400, height: 900 });
+  await anonPage.goto(`${BASE}/d/${token}`, { waitUntil: 'networkidle' });
+  await anonPage.waitForTimeout(2000);
+  check('익명: 로그인 모달이 뜨지 않음', await anonPage.locator('input[placeholder="영문/숫자 3자 이상"]').count() === 0);
+  check('익명: 공유 다이어그램 렌더(노드 1개)', await anonPage.locator('.react-flow__node').count() === 1,
+    String(await anonPage.locator('.react-flow__node').count()));
+  check('익명: 읽기 전용 배지', await anonPage.locator('[data-testid="readonly-badge"]').count() === 1);
+  check('익명: Add Entity 버튼 없음(읽기 전용)', await anonPage.locator('button:has-text("Add Entity")').count() === 0);
+  const anonStatus = await anonPage.locator('[data-testid="collab-status"]').getAttribute('data-status').catch(() => null);
+  check('익명: 협업 연결 live(게스트로 참여)', anonStatus === 'live', String(anonStatus));
+  await anonPage.screenshot({ path: 'ss_share_anon.png' });
+  // presence 카운트가 이후 단계에 영향을 주지 않도록 닫는다
   await anonCtx.close();
+  await page.waitForTimeout(1000);
 
   // ── 4. 뷰어(다른 계정) 가입 후 공유 링크 열기 ──
   const viewerCtx = await browser.newContext();
@@ -104,15 +121,15 @@ try {
   check('소유자: 엔티티 2개', await page.locator('.react-flow__node').count() === 2);
   await page2.waitForFunction(() => document.querySelectorAll('.react-flow__node').length === 2, { timeout: 8000 }).catch(() => {});
   check('뷰어: 실시간으로 엔티티 2개 반영', await page2.locator('.react-flow__node').count() === 2);
-  await page2.screenshot({ path: 'C:/project/harness-test/erd-service/ss_share_viewer.png' });
-  await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_share_owner.png' });
+  await page2.screenshot({ path: 'ss_share_viewer.png' });
+  await page.screenshot({ path: 'ss_share_owner.png' });
 
   // ── 7. 폐기 → 뷰어 재접속 시 거부 ──
   await page.click('[data-testid="share-btn"]');
   await page.waitForTimeout(500);
   await page.click('[data-testid="share-list"] button[aria-label^="Revoke share"]');
   await page.waitForTimeout(700);
-  // 로그인한 뷰어 쿠키로 조회 → 로그인 가드는 통과하고 토큰 검증에서 폐기로 403 (익명이면 401이라 폐기 증명 안 됨)
+  // 폐기된 토큰은 로그인 여부와 무관하게 403 (토큰 검증 단계에서 걸린다)
   const revoked = await page2.request.get(`${BASE}/api/shared/${token}`);
   check('폐기된 토큰 GET /api/shared/:token → 403', revoked.status() === 403);
   await page2.goto(`${BASE}/d/${token}`, { waitUntil: 'networkidle' });
@@ -125,7 +142,7 @@ try {
   process.exitCode = fail === 0 ? 0 : 1;
 } catch (e) {
   console.log('ERROR:', e.message);
-  await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_share_error.png' }).catch(() => {});
+  await page.screenshot({ path: 'ss_share_error.png' }).catch(() => {});
   process.exitCode = 1;
 } finally {
   await browser.close();

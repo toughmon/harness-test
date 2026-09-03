@@ -270,7 +270,7 @@ export const en: Record<MessageKey, string> = {
   'share.saveFirstBefore': 'To share, first',
   'share.saveFirstStrong': 'save the diagram to the DB',
   'share.saveFirstAfter': '.',
-  'share.intro1': '— create a share link. Anyone with the link can sign in and',
+  'share.intro1': '— create a share link. No sign-in needed: anyone with the link can',
   'share.introStrong': 'view it together',
   'share.intro2': 'in real time (read-only). Simultaneous editing is coming in a later step.',
   'share.linkLabel': 'Link name (optional)',
