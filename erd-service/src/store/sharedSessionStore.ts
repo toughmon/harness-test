@@ -31,12 +31,8 @@ export const useSharedSessionStore = create<SharedSessionState>((set) => ({
 
   enter: async (token) => {
     set({ token, error: null, needsLogin: false });
-    // MVP: 로그인 필요 — 비로그인 상태면 로그인 모달을 띄우고, 로그인 후 App에서 재시도한다.
-    if (useAuthStore.getState().status === 'anon') {
-      set({ needsLogin: true });
-      useAuthStore.getState().openModal();
-      return;
-    }
+    // 로그인 없이 바로 연다. 서버가 REQUIRE_SHARE_LOGIN=1로 잠겨 있으면 아래 catch의 401이
+    // 로그인 모달을 띄우고, 로그인 후 App이 재시도한다(잠금 인스턴스용 폴백).
     try {
       const dg = await api.getSharedDiagram(token);
       const { entities, relationships, positions, memos } = fromERDData(dg.data);

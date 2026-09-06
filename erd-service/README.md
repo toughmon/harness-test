@@ -161,6 +161,7 @@ diagrams (id SERIAL PK, user_id INT FK→users ON DELETE CASCADE,
 | `DATABASE_URL` | `postgresql://user:pw@localhost:5432/erd_service` — **미설정 시 pg-mem 인메모리로 동작 (재시작 시 데이터 소실, 개발/QA 전용)** |
 | `JWT_SECRET` | 토큰 서명 키 (`openssl rand -hex 32` 권장). 미설정 시 dev 기본값 + 경고 |
 | `PORT` / `HOST` | 기본 8080 / 0.0.0.0 |
+| `REQUIRE_SHARE_LOGIN` | `1`이면 공유 링크도 로그인해야 열람 가능. **기본값(미설정)은 로그인 없이 열람 허용** — 링크 자체가 그 다이어그램 하나에 대한 읽기 권한이다. 익명은 `viewer` 링크만 허용되고 `editor` 링크는 언제나 로그인을 요구한다(누가 고쳤는지 남아야 하므로) |
 
 ## 실행
 

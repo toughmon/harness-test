@@ -40,6 +40,11 @@ function ZoomToolbar({ isFullscreen, onToggleFullscreen }: { isFullscreen: boole
   const t = useT();
   const { zoomIn, zoomOut, fitView, getNodes } = useReactFlow();
   const { zoom } = useViewport();
+  // 일괄 접기/펼치기 — 작은 화면에서 지금 보는 테이블만 펼쳐 두는 워크플로의 출발점
+  const entityCount = useERDStore(s => s.entities.length);
+  const collapsedCount = useERDStore(s => s.collapsedEntityIds.length);
+  const setAllCollapsed = useERDStore(s => s.setAllEntitiesCollapsed);
+  const allCollapsed = entityCount > 0 && collapsedCount >= entityCount;
   const { entities, relationships, setAllPositions } = useERDStore();
 
   const handleAutoLayout = () => {
@@ -82,6 +87,17 @@ function ZoomToolbar({ isFullscreen, onToggleFullscreen }: { isFullscreen: boole
         <div className="w-px h-5 bg-outline-variant mx-1" />
         <button className={btn} title="Fit View" onClick={() => fitView({ padding: 0.3 })}>
           <span className="material-symbols-outlined text-[18px]">fit_screen</span>
+        </button>
+        <div className="w-px h-5 bg-outline-variant mx-1" />
+        <button
+          className={btn}
+          title={t(allCollapsed ? 'canvas.expandAll' : 'canvas.collapseAll')}
+          data-testid="collapse-all-toggle"
+          onClick={() => setAllCollapsed(!allCollapsed)}
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {allCollapsed ? 'unfold_more' : 'unfold_less'}
+          </span>
         </button>
         <div className="w-px h-5 bg-outline-variant mx-1" />
         <button className={btn} title={t('canvas.autoLayout')} onClick={handleAutoLayout}>

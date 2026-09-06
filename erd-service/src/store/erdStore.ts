@@ -73,6 +73,12 @@ interface ERDStore {
   openMemoEditor: (id: string) => void;
   closeEditor: () => void;
 
+  // 노드 접기 — 작은 화면에서 지금 보는 테이블만 펼쳐 두기 위한 **UI 상태**.
+  // 저장 포맷·types/erd.ts·MCP·협업 op를 건드리지 않으려고 문서가 아닌 스토어에만 둔다(세션 한정).
+  collapsedEntityIds: string[];
+  toggleEntityCollapse: (id: string) => void;
+  setAllEntitiesCollapsed: (collapsed: boolean) => void;
+
   addMemo: (pos?: { x: number; y: number }) => void;
   updateMemo: (id: string, updates: Partial<Omit<Memo, 'id'>>) => void;
   deleteMemo: (id: string) => void;
@@ -168,6 +174,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
     editorOpen: null,
     selectedEntityIds: [],
     selectedMemoIds: [],
+    collapsedEntityIds: [],
     pendingConnection: null,
 
     readOnly: false,
@@ -271,6 +278,15 @@ export const useERDStore = create<ERDStore>((set, get) => {
     openRelationshipEditor: (id) => set({ selectedEdgeId: id, selectedEntityId: null, selectedMemoId: null, editorOpen: 'relationship' }),
     openMemoEditor: (id) => set({ selectedMemoId: id, selectedEntityId: null, selectedEdgeId: null, editorOpen: 'memo' }),
     closeEditor: () => set({ editorOpen: null }),
+
+    toggleEntityCollapse: (id) => set(s => ({
+      collapsedEntityIds: s.collapsedEntityIds.includes(id)
+        ? s.collapsedEntityIds.filter(x => x !== id)
+        : [...s.collapsedEntityIds, id],
+    })),
+    setAllEntitiesCollapsed: (collapsed) => set(s => ({
+      collapsedEntityIds: collapsed ? s.entities.map(e => e.id) : [],
+    })),
 
     addMemo: (pos) => {
       if (get().readOnly) return;
@@ -587,7 +603,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
 
     loadData: (entities, relationships, positions, memos = [], opts) => {
       if (!opts?.silent) pushHistory('loadData');
-      set({ entities, relationships, nodePositions: positions, memos, selectedEntityId: null, selectedEdgeId: null, selectedMemoId: null, selectedEntityIds: [], selectedMemoIds: [] });
+      set({ entities, relationships, nodePositions: positions, memos, selectedEntityId: null, selectedEdgeId: null, selectedMemoId: null, selectedEntityIds: [], selectedMemoIds: [], collapsedEntityIds: [] });
     },
   };
 });

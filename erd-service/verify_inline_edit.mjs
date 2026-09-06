@@ -25,18 +25,12 @@ async function runTest() {
 
   try {
     await page.goto('http://localhost:8099/app');
-    await page.waitForSelector('.react-flow__node');
 
     console.log('1. Adding Entity...');
-    // Add Entity
-    const addBtn = page.locator('button', { hasText: '엔티티 추가' }).or(page.locator('button', { hasText: 'Add Entity' }));
-    if (await addBtn.count() > 0) {
-      await addBtn.click();
-    } else {
-      // 사이드바 또는 toolbar 버튼
-      await page.click('button:has-text("Entity")');
-    }
-
+    // 빈 캔버스에는 노드가 없다 — 먼저 추가한 뒤에 노드를 기다린다
+    await page.waitForSelector('button:has-text("Add Entity")');
+    await page.click('button:has-text("Add Entity")');
+    await page.waitForSelector('.react-flow__node');
     await page.waitForTimeout(500);
 
     // 2. 컬럼 물리명 더블클릭 수정
@@ -44,8 +38,9 @@ async function runTest() {
     const colName = page.locator('[data-testid="col-name"]').first();
     await colName.dblclick();
     
-    await page.waitForSelector('input');
-    await page.keyboard.fill('edited_col_name');
+    const editInput = page.locator('.react-flow__node input:visible');
+    await editInput.waitFor();
+    await editInput.fill('edited_col_name');
     await page.keyboard.press('Enter');
 
     await page.waitForTimeout(300);
@@ -60,8 +55,8 @@ async function runTest() {
     const colType = page.locator('[data-testid="col-type"]').first();
     await colType.dblclick();
     
-    await page.waitForSelector('input');
-    await page.keyboard.fill('DECIMAL(12,2)');
+    await editInput.waitFor();
+    await editInput.fill('DECIMAL(12,2)');
     await page.keyboard.press('Enter');
 
     await page.waitForTimeout(300);
@@ -76,8 +71,8 @@ async function runTest() {
     const colLogical = page.locator('[data-testid="col-logical-name"]').first();
     await colLogical.dblclick();
     
-    await page.waitForSelector('input');
-    await page.keyboard.fill('수정된한글명');
+    await editInput.waitFor();
+    await editInput.fill('수정된한글명');
     await page.keyboard.press('Enter');
 
     await page.waitForTimeout(300);

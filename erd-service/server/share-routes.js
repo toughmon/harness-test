@@ -63,11 +63,12 @@ export default async function shareRoutes(app) {
 
   // 공개 읽기 — 공유 토큰으로 다이어그램 데이터 조회. 소유자 전용 /api/diagrams/:id와 분리해
   // "다이어그램은 소유자 비공개" 불변식을 유지한다(공유는 별도 토큰 표면).
-  // MVP 기본은 로그인 필요(ALLOW_ANON_SHARE=1이면 비로그인도 허용).
+  // 링크를 가진 사람은 **로그인 없이** 볼 수 있다 — 토큰 자체가 그 다이어그램 하나에 대한 읽기 capability다.
+  // 운영상 다시 잠그려면 REQUIRE_SHARE_LOGIN=1 (예: 사내 전용 인스턴스).
   app.get('/api/shared/:token', async (req, reply) => {
     let user = null;
-    try { await req.jwtVerify(); user = req.user; } catch { /* 익명 접근 */ }
-    if (!user && process.env.ALLOW_ANON_SHARE !== '1') {
+    try { await req.jwtVerify(); user = req.user; } catch { /* 익명 접근 — 허용 */ }
+    if (!user && process.env.REQUIRE_SHARE_LOGIN === '1') {
       return reply.code(401).send({ error: 'login_required' });
     }
     const share = await resolveShareToken(app, req.params.token);

@@ -274,7 +274,7 @@ export const ko = {
   'share.saveFirstBefore': '공유하려면 먼저 다이어그램을',
   'share.saveFirstStrong': 'DB에 저장',
   'share.saveFirstAfter': '하세요.',
-  'share.intro1': '다이어그램의 공유 링크를 만듭니다. 링크를 받은 사람이 로그인하면 여러 명이 실시간으로',
+  'share.intro1': '다이어그램의 공유 링크를 만듭니다. 링크만 있으면 로그인 없이 여러 명이 실시간으로',
   'share.introStrong': '함께 볼',
   'share.intro2': '수 있습니다(읽기 전용). 실시간 동시 편집은 다음 단계에서 제공됩니다.',
   'share.linkLabel': '링크 이름 (선택)',
@@ -319,6 +319,10 @@ export const ko = {
 
   // ── MCP 토큰 자리표시자 (복사용 명령에 들어감) ──
   'mcp.tokenPlaceholderText': '<발급한_토큰>',
+  'node.collapse': '접기',
+  'node.expand': '펼치기',
+  'canvas.collapseAll': '모두 접기',
+  'canvas.expandAll': '모두 펼치기',
 } as const;
 
 export type MessageKey = keyof typeof ko;
