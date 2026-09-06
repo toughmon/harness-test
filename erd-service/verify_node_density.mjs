@@ -20,7 +20,7 @@ const node = (i = 0) => page.locator('.react-flow__node').nth(i);
 const colRows = () => page.locator('[data-testid="col-name"]');
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForSelector('button:has-text("Add Entity")');
   await page.click('button:has-text("Add Entity")');
   await page.click('button:has-text("Add Entity")');
