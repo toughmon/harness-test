@@ -18,7 +18,7 @@ const sidebar = () => page.locator('[data-testid="sidebar"]');
 const width = async () => (await sidebar().boundingBox()).width;
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
   // 1. 초기 상태: 펼쳐진 사이드바 (280px), 토글 버튼 존재

@@ -1,18 +1,216 @@
 <!doctype html>
 <html lang="ko" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>YourERD - ERD Workspace</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YourERD — 브라우저에서 바로 그리는 온라인 ERD 작성 도구</title>
+  <meta name="description" content="설치 없이 브라우저에서 ERD를 그리고 MySQL DDL로 내보내는 무료 온라인 ERD 도구. 바커 표기법, 외래키 자동 생성, 배타적 서브타입, 링크 공유, Claude(MCP) 연동을 지원합니다." />
+  <meta name="keywords" content="ERD, 데이터베이스 설계, 개체관계다이어그램, 바커 표기법, ERD 그리기, DDL 생성, 온라인 ERD 툴" />
+  <link rel="canonical" href="https://yourerd.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="YourERD — 브라우저에서 바로 그리는 온라인 ERD 작성 도구" />
+  <meta property="og:description" content="설치 없이 브라우저에서 ERD를 그리고 MySQL DDL로 내보내는 무료 온라인 ERD 도구. 바커 표기법, 외래키 자동 생성, 링크 공유, Claude(MCP) 연동을 지원합니다." />
+  <meta property="og:url" content="https://yourerd.com/" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/" />
+  <link rel="alternate" hreflang="x-default" href="https://yourerd.com/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/landing.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="/">YourERD</a>
+    <nav>
+      <a href="#features">기능</a>
+      <a href="#how">사용법</a>
+      <a href="#ai">Claude 연동</a>
+      <a href="#faq">자주 묻는 질문</a>
+      <a href="/manual.html">사용 설명서</a>
+      <a href="/en/">EN</a>
+      <a class="cta" href="/app?lang=ko">편집기 열기</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+
+  <section class="hero wrap">
+    <h1>데이터베이스 설계를<br /><span class="accent">브라우저에서 바로</span> 그립니다</h1>
+    <p class="sub">
+      YourERD는 설치나 결제 없이 바로 쓰는 온라인 ERD 작성 도구입니다.
+      엔티티와 관계를 그리면 외래키가 자동으로 만들어지고, 완성된 모델은 MySQL DDL로 내보낼 수 있습니다.
+    </p>
+    <div class="btn-row">
+      <a class="btn primary" href="/app?lang=ko">편집기 열기</a>
+      <a class="btn ghost" href="/manual.html">사용 설명서 보기</a>
+    </div>
+    <p class="free">회원가입 없이 바로 그릴 수 있습니다. 작업물을 서버에 보관하려면 로그인하세요.</p>
+  </section>
+
+  <section class="block wrap" id="features">
+    <h2>무엇을 할 수 있나요</h2>
+    <p class="lead">실제 데이터 모델링에 필요한 표기법과 산출물을 갖추고 있습니다.</p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🔗</div>
+        <h3>외래키 자동 생성</h3>
+        <p>엔티티 사이를 연결하면 부모의 기본키를 따라 자식 쪽에 외래키 컬럼이 자동으로 만들어집니다. 관계를 지우거나 종류를 바꾸면 컬럼 정리도 함께 이뤄집니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">📐</div>
+        <h3>바커 표기법</h3>
+        <p>식별·비식별·선택 관계를 점선과 실선, 까마귀발 기호로 구분해 표현합니다. 1:1과 1:M을 지원하며, 관계선의 좌우 절반을 각각 다르게 설정할 수도 있습니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🧩</div>
+        <h3>배타적 서브타입</h3>
+        <p>슈퍼타입 안에 서브타입 박스를 중첩해 그리는 바커식 SubSet 표기를 지원합니다. 특정 서브타입에만 걸리는 관계도 지정할 수 있습니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🗄️</div>
+        <h3>MySQL DDL 내보내기</h3>
+        <p>완성한 다이어그램을 MySQL 8 기준 <code>CREATE TABLE</code> 스크립트로 내려받습니다. 기본키·외래키 제약과 논리명 주석까지 함께 생성됩니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🏷️</div>
+        <h3>물리명과 논리명 병기</h3>
+        <p>영문 물리명과 한글 논리명을 함께 적어 두면 다이어그램과 DDL 주석 양쪽에 표시됩니다. 국내 실무에서 쓰는 산출물 형식에 맞습니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔍</div>
+        <h3>편한 편집</h3>
+        <p>더블클릭으로 이름과 타입을 바로 고치고, 여러 엔티티를 한 번에 골라 옮깁니다. 자동 정렬, 되돌리기·다시 실행, 메모 붙이기를 지원합니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">👥</div>
+        <h3>링크로 공유</h3>
+        <p>공유 링크를 만들면 다른 사람이 같은 다이어그램을 실시간으로 함께 볼 수 있습니다. 링크는 언제든 폐기할 수 있습니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">💾</div>
+        <h3>저장과 내보내기</h3>
+        <p>로그인하면 5초마다 자동 저장되고 여러 다이어그램을 목록으로 관리합니다. JSON 파일이나 PNG 이미지로 내려받을 수도 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap" id="how">
+    <h2>세 단계면 충분합니다</h2>
+    <p class="lead">처음 열고 나서 DDL을 손에 쥐기까지의 흐름입니다.</p>
+
+    <ol class="steps">
+      <li>
+        <h3>엔티티를 추가합니다</h3>
+        <p>왼쪽 사이드바의 Add Entity를 누르면 캔버스에 테이블이 하나 생깁니다. 이름과 컬럼은 노드 위에서 더블클릭해 바로 고칠 수 있습니다.</p>
+      </li>
+      <li>
+        <h3>관계를 연결합니다</h3>
+        <p>엔티티 테두리의 연결점을 끌어다 다른 엔티티에 놓고 관계 종류를 고르면 됩니다. 외래키 컬럼은 이때 자동으로 만들어집니다.</p>
+      </li>
+      <li>
+        <h3>DDL로 내보냅니다</h3>
+        <p>오른쪽 아래 도구막대의 SQL 버튼을 누르면 MySQL DDL 파일이 내려받아집니다. 그림이 필요하면 PNG로도 저장할 수 있습니다.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block wrap" id="ai">
+    <h2>Claude에게 시켜서 그리기</h2>
+    <p class="lead">
+      YourERD는 MCP(Model Context Protocol) 서버를 제공합니다.
+      Claude Code에 연결해 두면 말로 설명한 구조가 그대로 다이어그램이 됩니다.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🤖</div>
+        <h3>자연어로 모델링</h3>
+        <p>"쇼핑몰 주문 도메인 ERD를 그려줘"처럼 요청하면 엔티티와 관계가 만들어집니다. 만들어진 결과는 브라우저에서 그대로 이어서 편집할 수 있습니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">⚡</div>
+        <h3>명령 한 줄로 연결</h3>
+        <p>편집기의 MCP 연결 메뉴에서 개인 토큰을 발급받아 명령 한 줄을 복사해 붙여 넣으면 끝입니다. 별도 설치나 설정 파일 편집이 필요 없습니다.</p>
+      </div>
+      <div class="card">
+        <div class="ico">📘</div>
+        <h3>프롬프트 예시 제공</h3>
+        <p>어떻게 말해야 원하는 모델이 나오는지 <a href="/prompt-guide.html">프롬프트 가이드</a>에 상황별 예시를 모아 두었습니다.</p>
+      </div>
+    </div>
+
+    <p style="text-align:center; margin-top:28px;">
+      <a class="btn ghost" href="/mcp-guide.html">MCP 연결 가이드 보기</a>
+    </p>
+  </section>
+
+  <section class="block wrap narrow faq" id="faq">
+    <h2>자주 묻는 질문</h2>
+
+    <details open>
+      <summary>회원가입을 해야 쓸 수 있나요?</summary>
+      <p>아닙니다. 로그인하지 않아도 다이어그램을 그리고 SQL이나 PNG로 내보낼 수 있습니다. 다만 작업물을 서버에 보관하거나 여러 다이어그램을 목록으로 관리하려면 로그인이 필요합니다. 로그인하지 않은 상태에서는 JSON 파일로 내려받아 보관하세요.</p>
+    </details>
+
+    <details>
+      <summary>어떤 데이터베이스의 DDL을 내보낼 수 있나요?</summary>
+      <p>현재는 MySQL 8 기준 DDL을 지원합니다. UUID는 <code>CHAR(36)</code>으로, VARCHAR·CHAR·DECIMAL 등은 지정한 크기를 반영해 변환하며, 기본키·외래키·NOT NULL·UNIQUE 제약과 논리명 주석이 함께 생성됩니다. 부모 테이블이 먼저 오도록 정렬하고 순환 참조에 대비해 외래키 검사를 잠시 끄는 구문으로 감쌉니다.</p>
+    </details>
+
+    <details>
+      <summary>관계를 연결하면 외래키가 어떻게 만들어지나요?</summary>
+      <p>부모 엔티티의 기본키를 따라 자식 쪽에 컬럼이 생깁니다. 관계 종류에 따라 플래그가 달라집니다. 식별 관계면 자식의 기본키에 포함되면서 NOT NULL이 되고, 비식별 관계면 기본키에서 빠진 채 NOT NULL이 되며, 선택 관계면 NULL을 허용합니다. 관계를 지우거나 부모 엔티티를 삭제하면 따라 만들어졌던 컬럼도 함께 정리됩니다.</p>
+    </details>
+
+    <details>
+      <summary>만든 다이어그램을 다른 사람과 같이 볼 수 있나요?</summary>
+      <p>공유 링크를 발급하면 링크를 받은 사람이 같은 다이어그램을 실시간으로 볼 수 있습니다. 현재 편집은 소유자만 가능하고 링크로 들어온 사람은 읽기 전용입니다. 링크는 언제든 폐기할 수 있으며, 폐기하면 그 링크로는 더 이상 접근할 수 없습니다.</p>
+    </details>
+
+    <details>
+      <summary>비용이 드나요?</summary>
+      <p>무료로 제공합니다. 서비스 운영 비용의 일부는 페이지에 게재되는 광고로 충당합니다.</p>
+    </details>
+
+    <details>
+      <summary>영어로도 쓸 수 있나요?</summary>
+      <p>네. 편집기 상단 바의 🌐 버튼으로 한국어와 영어를 전환할 수 있고, 사용 설명서와 가이드 문서도 <a href="/en/">영문판</a>이 준비되어 있습니다.</p>
+    </details>
+  </section>
+
+  <section class="block wrap" style="text-align:center; padding-top:20px;">
+    <h2>지금 바로 그려 보세요</h2>
+    <p class="lead">설치할 것도, 입력할 카드 정보도 없습니다.</p>
+    <div class="btn-row"><a class="btn primary" href="/app?lang=ko">편집기 열기</a></div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <span class="copy">© 2026 YourERD · 온라인 ERD 작성 서비스</span>
+    <nav>
+      <a href="/manual.html">사용 설명서</a>
+      <a href="/mcp-guide.html">MCP 연결 가이드</a>
+      <a href="/prompt-guide.html">프롬프트 가이드</a>
+      <a href="/privacy.html">개인정보처리방침</a>
+      <a href="/terms.html">이용약관</a>
+      <a href="/en/">English</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
 </html>

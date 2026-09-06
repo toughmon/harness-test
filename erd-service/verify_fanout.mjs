@@ -63,7 +63,7 @@ async function edgeStartPoints() {
 }
 
 try {
-  await page.goto('http://localhost:5174', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:5174/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
   // 엔티티 4개: E1(80,80) E2(340,80) E3(600,80) E4(860,80) — 모두 E1의 오른쪽

@@ -24,7 +24,7 @@ async function runTest() {
   const page = await context.newPage();
 
   try {
-    await page.goto('http://localhost:8099');
+    await page.goto('http://localhost:8099/app');
     await page.waitForSelector('.react-flow__node');
 
     console.log('1. Adding Entity...');

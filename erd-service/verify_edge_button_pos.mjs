@@ -22,7 +22,7 @@ async function runTest() {
   const page = await context.newPage();
 
   try {
-    await page.goto('http://localhost:8098');
+    await page.goto('http://localhost:8098/app');
     // 캔버스는 빈 상태로 시작하므로 노드가 아니라 툴바 버튼을 기다린다
     // (원래 '.react-flow__node'를 기다려 fresh 컨텍스트에서 항상 타임아웃했음)
     await page.waitForSelector('button:has-text("Add Entity")');

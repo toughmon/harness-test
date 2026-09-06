@@ -24,7 +24,7 @@ async function openMemoPanel(memoLocator) {
   await page.waitForTimeout(300);
 }
 
-await page.goto(BASE, { waitUntil: 'networkidle' });
+await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
 await page.waitForTimeout(600);
 
 // 1. 사이드바에 Add Memo 버튼 존재

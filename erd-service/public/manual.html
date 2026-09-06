@@ -4,6 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YourERD 사용자 매뉴얼</title>
+  <meta name="description" content="YourERD 사용자 매뉴얼 — 엔티티와 컬럼 만들기, 관계 연결과 바커 표기법, 배타적 서브타입, MySQL DDL 내보내기, 링크 공유까지 전체 기능 사용법을 설명합니다." />
+  <link rel="canonical" href="https://yourerd.com/manual.html" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/manual.html" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/manual.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="YourERD 사용자 매뉴얼" />
+  <meta property="og:description" content="YourERD 사용자 매뉴얼 — 엔티티와 컬럼 만들기, 관계 연결과 바커 표기법, 배타적 서브타입, MySQL DDL 내보내기, 링크 공유까지 전체 기능 사용법을 설명합니다." />
+  <meta property="og:url" content="https://yourerd.com/manual.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="twitter:card" content="summary" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -41,6 +53,9 @@
       nav.toc { display: none; }
       main { padding: 28px 22px 80px; }
     }
+  
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -75,6 +90,18 @@
         온라인 ERD 작성 서비스입니다.
       </p>
       <div class="note">별도 설치 없이 웹 브라우저만으로 사용하는 일반 사용자를 위한 안내입니다.</div>
+
+      <h2 style="margin-top:30px">접속 주소</h2>
+      <table>
+        <tr><th>주소</th><th>내용</th></tr>
+        <tr><td><code>/</code></td><td>서비스 소개 페이지 — 기능 요약과 자주 묻는 질문</td></tr>
+        <tr><td><code>/app</code></td><td><strong>편집기</strong> — 실제로 ERD를 그리는 화면</td></tr>
+        <tr><td><code>/manual.html</code></td><td>이 매뉴얼</td></tr>
+        <tr><td><code>/privacy.html</code>, <code>/terms.html</code></td><td>개인정보처리방침 · 이용약관</td></tr>
+      </table>
+      <div class="note">소개 페이지의 <strong>편집기 열기</strong> 버튼을 누르면 <code>/app</code>으로 이동합니다.
+      편집기를 자주 쓴다면 <code>/app</code>을 직접 즐겨찾기에 등록해 두면 편합니다.
+      화면 언어를 영어로 두면 소개 페이지와 가이드는 <code>/en/...</code> 판본으로 열립니다.</div>
 
       <section id="layout">
         <h2>1. 화면 구성</h2>
@@ -127,7 +154,7 @@
             <strong>복제</strong>는 이름을 입력(기본값 "원본 이름 사본")하면 현재 캔버스는 그대로 두고 동일한 내용의 새 다이어그램을 목록에 추가합니다.</li>
           <li><strong>Entity List</strong> — 현재 다이어그램의 엔티티 목록. 클릭하면 해당 엔티티가 캔버스에서 선택(하이라이트)됩니다. 색상·논리명(한글)이 함께 표시됩니다.</li>
           <li><strong>접기/펼치기</strong> — 헤더의 패널 접기 버튼(⊟)으로 사이드바를 얇은 막대로 접어 캔버스를 넓게 볼 수 있습니다.</li>
-          <li><strong>하단 메뉴</strong> — <strong>MCP 연결</strong>(로그인 후 개인 토큰을 발급해 Claude Code 연결 명령 한 줄을 복사하는 모달) · <strong>MCP 연결 가이드</strong>(연결 방법 상세, <a href="/mcp-guide.html" style="color:var(--primary)">새 탭</a>) · <strong>Claude 프롬프트 가이드</strong> · <strong>Docs</strong>(이 매뉴얼).</li>
+          <li><strong>하단 메뉴</strong> — <strong>MCP 연결</strong>(로그인 후 개인 토큰을 발급해 Claude Code 연결 명령 한 줄을 복사하는 모달) · <strong>MCP 연결 가이드</strong>(연결 방법 상세, <a href="/mcp-guide.html" style="color:var(--primary)">새 탭</a>) · <strong>Claude 프롬프트 가이드</strong> · <strong>Docs</strong>(이 매뉴얼). 맨 아래 작은 글씨로 <strong>홈</strong> · <strong>개인정보처리방침</strong> · <strong>이용약관</strong> 링크가 있습니다.</li>
         </ul>
       </section>
 
@@ -415,6 +442,10 @@
       <section id="language">
         <h2>15. 화면 언어 (한국어 / English)</h2>
         <p>상단 바의 <strong>🌐 언어 버튼</strong>으로 화면 언어를 한국어(KO)와 영어(EN) 사이에서 전환합니다.</p>
+        <p>소개 페이지(<code>/</code>)의 상단 <strong>EN</strong> 링크를 누르면 영문 소개 페이지(<code>/en/</code>)로
+        이동하고, 거기서 <strong>Open editor</strong>로 들어가면 편집기도 영어로 열립니다(반대 방향도 동일).
+        소개·정책 페이지의 편집기 링크는 <code>/app?lang=en</code>처럼 고른 언어를 함께 넘기며, 적용된 뒤에는
+        주소에서 파라미터가 지워집니다.</p>
         <ul>
           <li>기본값은 <strong>한국어</strong>입니다. 브라우저 언어를 자동 감지하지 않고, 직접 고른 값만 사용합니다.</li>
           <li>선택한 언어는 <strong>이 브라우저에 저장</strong>되어 새로고침·재방문 후에도 유지됩니다.</li>
@@ -433,6 +464,14 @@
 
       <footer>
         YourERD · 온라인 ERD 작성 서비스 — 사용자 매뉴얼
+      
+        <br />
+        <a href="/">홈</a> ·
+        <a href="/manual.html">사용 설명서</a> ·
+        <a href="/mcp-guide.html">MCP 연결 가이드</a> ·
+        <a href="/prompt-guide.html">프롬프트 가이드</a> ·
+        <a href="/privacy.html">개인정보처리방침</a> ·
+        <a href="/terms.html">이용약관</a>
       </footer>
     </main>
   </div>

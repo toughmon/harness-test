@@ -17,7 +17,7 @@ const dialogVisible = () => page.locator('[data-testid="app-dialog"]').count();
 const memoNodes = () => page.locator('[data-testid="memo-node"]');
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
 
   // ───── 0. 선택 없을 때 Delete → 변화 없음 ─────

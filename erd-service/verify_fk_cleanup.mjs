@@ -77,7 +77,7 @@ async function openRelPanel(idx = 0) {
 }
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
 
   // 준비: 엔티티 2개 + 식별 관계 (FK 자동 생성)

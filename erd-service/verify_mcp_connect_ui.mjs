@@ -31,7 +31,7 @@ try {
   });
   await page.setViewportSize({ width: 1600, height: 900 });
   page.on('pageerror', e => console.log('PAGE ERROR:', e.message));
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1000);
 
   // ① 비로그인 상태에서 모달 → 로그인 유도

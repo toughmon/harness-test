@@ -14,7 +14,7 @@ const check = (name, ok, detail = '') => {
 };
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
   await page.click('button:has-text("Add Entity")');

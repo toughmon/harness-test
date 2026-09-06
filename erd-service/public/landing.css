@@ -1,0 +1,233 @@
+/* YourERD 랜딩·정책 페이지 스타일 — guide.css(팔레트 토큰·타이포)를 먼저 로드한 뒤 이 파일을 얹는다.
+   guide.css는 좌측 목차가 있는 문서형 레이아웃을 전제하므로, 여기서는 단일 컬럼 레이아웃과
+   히어로/기능카드/FAQ 같은 랜딩 고유 블록만 정의한다. */
+
+body { line-height: 1.75; }
+
+/* ── 상단 바 ───────────────────────────────────────────── */
+header.site {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(19, 19, 19, .88);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+header.site .inner {
+  max-width: 1080px; margin: 0 auto; padding: 14px 24px;
+  display: flex; align-items: center; gap: 20px;
+}
+
+header.site .brand {
+  font-size: 20px; font-weight: 900; letter-spacing: -.02em;
+  color: var(--primary); text-decoration: none;
+}
+
+header.site nav { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+header.site nav a {
+  color: var(--on-surface-variant); text-decoration: none;
+  font-size: 13.5px; padding: 7px 12px; border-radius: 8px; transition: all .15s;
+}
+
+header.site nav a:hover { background: var(--surface-variant); color: var(--on-surface); }
+
+header.site nav a.cta {
+  background: var(--primary-container); color: #17173a; font-weight: 700;
+}
+
+header.site nav a.cta:hover { background: var(--primary); color: #17173a; }
+
+/* ── 공통 래퍼 ─────────────────────────────────────────── */
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+.narrow { max-width: 780px; }
+
+main.page { padding-bottom: 100px; }
+
+/* ── 히어로 ────────────────────────────────────────────── */
+.hero { padding: 76px 0 56px; text-align: center; }
+
+.hero h1 {
+  font-size: 44px; font-weight: 900; letter-spacing: -.03em;
+  margin: 0 0 18px; line-height: 1.2;
+}
+
+.hero h1 .accent { color: var(--primary); }
+
+.hero p.sub {
+  font-size: 17px; color: var(--on-surface-variant);
+  max-width: 640px; margin: 0 auto 30px;
+}
+
+.btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.btn {
+  display: inline-block; text-decoration: none; font-weight: 700; font-size: 14.5px;
+  padding: 12px 26px; border-radius: 10px; transition: all .15s;
+}
+
+.btn.primary { background: var(--primary-container); color: #17173a; }
+
+.btn.primary:hover { background: var(--primary); }
+
+.btn.ghost { border: 1px solid var(--outline-variant); color: var(--on-surface); }
+
+.btn.ghost:hover { background: var(--surface-variant); }
+
+.hero .free {
+  margin-top: 16px; font-size: 12.5px; color: var(--outline);
+}
+
+/* ── 섹션 ──────────────────────────────────────────────── */
+section.block { padding: 52px 0; scroll-margin-top: 70px; }
+
+section.block > h2 {
+  font-size: 27px; font-weight: 800; letter-spacing: -.02em;
+  margin: 0 0 10px; padding: 0; border: none; text-align: center;
+}
+
+section.block > p.lead { text-align: center; margin: 0 auto 34px; max-width: 620px; }
+
+/* ── 기능 카드 ─────────────────────────────────────────── */
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 18px;
+}
+
+.card {
+  background: var(--surface); border: 1px solid var(--outline-variant);
+  border-radius: 14px; padding: 22px 22px 24px;
+}
+
+.card h3 { margin: 0 0 8px; font-size: 16.5px; }
+
+.card p { margin: 0; font-size: 14px; color: var(--on-surface-variant); }
+
+.card .ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 10px; margin-bottom: 14px;
+  background: rgba(128, 131, 255, .12); font-size: 19px;
+}
+
+/* ── 단계 ──────────────────────────────────────────────── */
+ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+
+ol.steps li {
+  counter-increment: s; position: relative;
+  background: var(--surface-low); border: 1px solid var(--outline-variant);
+  border-radius: 12px; padding: 18px 22px 18px 62px;
+}
+
+ol.steps li::before {
+  content: counter(s); position: absolute; left: 20px; top: 18px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--primary-container); color: #17173a;
+  font-weight: 800; font-size: 13px; font-family: var(--font-mono);
+  display: flex; align-items: center; justify-content: center;
+}
+
+ol.steps li h3 { margin: 0 0 4px; font-size: 15.5px; }
+
+ol.steps li p { margin: 0; font-size: 14px; color: var(--on-surface-variant); }
+
+/* ── FAQ ───────────────────────────────────────────────── */
+.faq details {
+  border: 1px solid var(--outline-variant); border-radius: 12px;
+  padding: 0 20px; margin-bottom: 10px; background: var(--surface-low);
+}
+
+.faq summary {
+  cursor: pointer; padding: 16px 0; font-weight: 700; font-size: 15px;
+  list-style: none;
+}
+
+.faq summary::-webkit-details-marker { display: none; }
+
+.faq summary::after { content: '+'; float: right; color: var(--primary); font-weight: 400; font-size: 19px; line-height: 1; }
+
+.faq details[open] summary::after { content: '−'; }
+
+.faq details > p, .faq details > ul { margin: 0 0 16px; font-size: 14px; color: var(--on-surface-variant); }
+
+/* ── 정책 문서 본문 ────────────────────────────────────── */
+.doc { padding: 48px 0 40px; }
+
+.doc h1 { font-size: 32px; font-weight: 900; letter-spacing: -.02em; margin: 0 0 8px; }
+
+.doc .updated { font-size: 12.5px; color: var(--outline); font-family: var(--font-mono); margin: 0 0 30px; }
+
+.doc h2 {
+  font-size: 19px; margin: 34px 0 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.doc h3 { font-size: 15px; margin: 22px 0 8px; }
+
+.doc ul { padding-left: 20px; }
+
+.doc li { font-size: 14.5px; color: var(--on-surface-variant); }
+
+.doc p { font-size: 14.5px; color: var(--on-surface-variant); }
+
+.doc strong { color: var(--on-surface); }
+
+/* ── 푸터 ──────────────────────────────────────────────── */
+footer.site {
+  border-top: 1px solid var(--outline-variant);
+  padding: 34px 0 48px; margin-top: 0;
+}
+
+footer.site .inner {
+  max-width: 1080px; margin: 0 auto; padding: 0 24px;
+  display: flex; gap: 26px; flex-wrap: wrap; align-items: baseline;
+}
+
+footer.site .copy { font-size: 12.5px; color: var(--outline); }
+
+footer.site nav { margin-left: auto; display: flex; gap: 18px; flex-wrap: wrap; }
+
+footer.site nav a { color: var(--on-surface-variant); text-decoration: none; font-size: 13px; }
+
+footer.site nav a:hover { color: var(--primary); text-decoration: underline; }
+
+/* ── 404 ───────────────────────────────────────────────── */
+.notfound { padding: 110px 0; text-align: center; }
+
+.notfound .code {
+  font-family: var(--font-mono); font-size: 66px; font-weight: 700;
+  color: var(--primary); margin: 0 0 8px; letter-spacing: -.03em;
+}
+
+.notfound h1 { font-size: 24px; margin: 0 0 12px; }
+
+.notfound p { color: var(--on-surface-variant); margin: 0 0 28px; }
+
+@media (max-width: 720px) {
+  .hero { padding: 52px 0 40px; }
+  .hero h1 { font-size: 32px; }
+  header.site .inner { padding: 12px 18px; }
+  header.site nav a { padding: 6px 9px; font-size: 13px; }
+}
+
+/* ── 본문 링크 ─────────────────────────────────────────────
+   guide.css는 목차(nav.toc)의 링크 색만 정의하므로, 랜딩·정책 본문 안의
+   링크는 브라우저 기본색(어두운 자주)으로 떨어져 다크 배경에서 거의 읽히지
+   않았다. 본문 링크는 명시적으로 강조색 + 밑줄로 둔다. */
+main.page a:not(.btn):not(.brand),
+footer.site a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+main.page a:not(.btn):not(.brand):hover,
+footer.site a:hover { color: #fff; }
+
+/* 상단 바·푸터 내비게이션은 밑줄 없이(hover에서만 표시) */
+header.site nav a { text-decoration: none; }
+
+footer.site nav a { text-decoration: none; }
+
+footer.site nav a:hover { text-decoration: underline; }
+
+/* FAQ 요약 줄과 단계 제목은 링크가 아니라 텍스트다 — 상속 방지 */
+.faq summary { color: var(--on-surface); }

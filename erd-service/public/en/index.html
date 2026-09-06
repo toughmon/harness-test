@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YourERD — Draw Entity Relationship Diagrams in Your Browser</title>
+  <meta name="description" content="A free online ERD tool that runs in the browser. Draw entities and relationships, get foreign keys generated for you, and export MySQL DDL. Supports Barker notation, exclusive subtypes, share links, and Claude (MCP) integration." />
+  <meta name="keywords" content="ERD tool, entity relationship diagram, database design, Barker notation, DDL generator, online ERD editor" />
+  <link rel="canonical" href="https://yourerd.com/en/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="YourERD — Draw Entity Relationship Diagrams in Your Browser" />
+  <meta property="og:description" content="A free online ERD tool that runs in the browser. Draw entities and relationships, get foreign keys generated for you, and export MySQL DDL." />
+  <meta property="og:url" content="https://yourerd.com/en/" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="ko_KR" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/" />
+  <link rel="alternate" hreflang="x-default" href="https://yourerd.com/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/landing.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="/en/">YourERD</a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#ai">Claude</a>
+      <a href="#faq">FAQ</a>
+      <a href="/en/manual.html">Manual</a>
+      <a href="/">한국어</a>
+      <a class="cta" href="/app?lang=en">Open editor</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+
+  <section class="hero wrap">
+    <h1>Design your database<br /><span class="accent">right in the browser</span></h1>
+    <p class="sub">
+      YourERD is a free online ERD editor — nothing to install, nothing to pay for.
+      Connect two entities and the foreign keys are written for you. When the model is ready, export it as MySQL DDL.
+    </p>
+    <div class="btn-row">
+      <a class="btn primary" href="/app?lang=en">Open editor</a>
+      <a class="btn ghost" href="/en/manual.html">Read the manual</a>
+    </div>
+    <p class="free">No sign-up needed to start drawing. Create an account only if you want your work stored on the server.</p>
+  </section>
+
+  <section class="block wrap" id="features">
+    <h2>What you get</h2>
+    <p class="lead">The notation and the deliverables that real data modelling actually needs.</p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🔗</div>
+        <h3>Foreign keys, written for you</h3>
+        <p>Draw a relationship and the child entity gets a foreign key column derived from the parent's primary key. Delete the relationship or change its type and the columns are cleaned up to match.</p>
+      </div>
+      <div class="card">
+        <div class="ico">📐</div>
+        <h3>Barker notation</h3>
+        <p>Identifying, non-identifying and optional relationships are drawn with solid and dashed halves plus crow's-foot markers. One-to-one and one-to-many are supported, and each half of a line can be configured on its own.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🧩</div>
+        <h3>Exclusive subtypes</h3>
+        <p>Nest subtype boxes inside a supertype using Barker-style SubSet notation. Relationships can be scoped to a single subtype rather than the whole supertype.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🗄️</div>
+        <h3>MySQL DDL export</h3>
+        <p>Download your diagram as a MySQL 8 <code>CREATE TABLE</code> script, complete with primary and foreign key constraints and comments carried over from your logical names.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🏷️</div>
+        <h3>Physical and logical names</h3>
+        <p>Keep a technical column name and a human-readable one side by side. Both show up on the diagram, and the logical name becomes a comment in the generated DDL.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔍</div>
+        <h3>Editing that stays out of the way</h3>
+        <p>Double-click to rename or retype in place, box-select several entities and move them together. Auto-layout, undo/redo and sticky notes are all built in.</p>
+      </div>
+      <div class="card">
+        <div class="ico">👥</div>
+        <h3>Share with a link</h3>
+        <p>Generate a link and other people can watch the same diagram update in real time. Revoke it whenever you like.</p>
+      </div>
+      <div class="card">
+        <div class="ico">💾</div>
+        <h3>Saving and exporting</h3>
+        <p>Signed in, your work is saved every five seconds and kept in a list of diagrams. You can also download a JSON file or a PNG image at any point.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap" id="how">
+    <h2>Three steps is all it takes</h2>
+    <p class="lead">From an empty canvas to a DDL file.</p>
+
+    <ol class="steps">
+      <li>
+        <h3>Add an entity</h3>
+        <p>Hit <strong>Add Entity</strong> in the left sidebar and a table appears on the canvas. Double-click the name or any column to edit it in place.</p>
+      </li>
+      <li>
+        <h3>Connect them</h3>
+        <p>Drag from a connection point on the entity border to another entity, then pick the relationship type. Foreign key columns are created at that moment.</p>
+      </li>
+      <li>
+        <h3>Export the DDL</h3>
+        <p>Press the SQL button in the toolbar at the bottom right and a MySQL DDL file is downloaded. Need a picture instead? Export a PNG.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block wrap" id="ai">
+    <h2>Let Claude draw it</h2>
+    <p class="lead">
+      YourERD ships an MCP (Model Context Protocol) server.
+      Connect it to Claude Code and a structure you describe in words becomes a diagram.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🤖</div>
+        <h3>Model in plain language</h3>
+        <p>Ask for something like "draw the order domain for an e-commerce site" and the entities and relationships appear. Everything it makes stays fully editable in the browser.</p>
+      </div>
+      <div class="card">
+        <div class="ico">⚡</div>
+        <h3>One command to connect</h3>
+        <p>Issue a personal token from the MCP menu in the editor and paste the single command it gives you. No repository to clone, no config file to hand-edit.</p>
+      </div>
+      <div class="card">
+        <div class="ico">📘</div>
+        <h3>Prompt examples included</h3>
+        <p>The <a href="/en/prompt-guide.html">prompt guide</a> collects worked examples for common situations, so you can see what phrasing produces what model.</p>
+      </div>
+    </div>
+
+    <p style="text-align:center; margin-top:28px;">
+      <a class="btn ghost" href="/en/mcp-guide.html">Read the MCP setup guide</a>
+    </p>
+  </section>
+
+  <section class="block wrap narrow faq" id="faq">
+    <h2>Frequently asked questions</h2>
+
+    <details open>
+      <summary>Do I need an account?</summary>
+      <p>No. You can draw diagrams and export SQL or PNG without signing in. An account is only needed to store diagrams on the server and manage several of them in a list. Without one, export a JSON file to keep your work.</p>
+    </details>
+
+    <details>
+      <summary>Which databases can it generate DDL for?</summary>
+      <p>MySQL 8 today. UUID becomes <code>CHAR(36)</code>, and VARCHAR, CHAR and DECIMAL carry the size you specify. Primary keys, foreign keys, NOT NULL and UNIQUE constraints are emitted along with comments from your logical names. Tables are ordered parents-first and wrapped in a foreign key check toggle to cope with circular references.</p>
+    </details>
+
+    <details>
+      <summary>How are foreign keys generated?</summary>
+      <p>A column is derived from the parent entity's primary key. The flags depend on the relationship type: an identifying relationship puts the column in the child's primary key and marks it NOT NULL, a non-identifying one keeps it out of the primary key but still NOT NULL, and an optional one allows NULL. Deleting the relationship — or the parent entity — cleans the generated columns up again.</p>
+    </details>
+
+    <details>
+      <summary>Can other people see my diagram?</summary>
+      <p>Only if you create a share link. Anyone holding that link can watch the diagram in real time; editing stays with the owner for now, so link visitors are read-only. Revoking a link cuts off access through it immediately.</p>
+    </details>
+
+    <details>
+      <summary>What does it cost?</summary>
+      <p>Nothing. Part of the running cost is covered by ads shown on the site.</p>
+    </details>
+
+    <details>
+      <summary>Is there a Korean version?</summary>
+      <p>Yes. The 🌐 button in the editor's top bar switches between English and Korean, and the manual and guides have <a href="/">Korean editions</a> too.</p>
+    </details>
+  </section>
+
+  <section class="block wrap" style="text-align:center; padding-top:20px;">
+    <h2>Start drawing</h2>
+    <p class="lead">Nothing to install. No card details.</p>
+    <div class="btn-row"><a class="btn primary" href="/app?lang=en">Open editor</a></div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <span class="copy">© 2026 YourERD · Online ERD editor</span>
+    <nav>
+      <a href="/en/manual.html">Manual</a>
+      <a href="/en/mcp-guide.html">MCP guide</a>
+      <a href="/en/prompt-guide.html">Prompt guide</a>
+      <a href="/en/privacy.html">Privacy</a>
+      <a href="/en/terms.html">Terms</a>
+      <a href="/">한국어</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

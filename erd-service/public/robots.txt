@@ -1,0 +1,16 @@
+# YourERD — https://yourerd.com
+# 공개 페이지는 모두 크롤링을 허용하고, 비공개·비콘텐츠 경로만 차단한다.
+
+User-agent: *
+Allow: /
+
+# API 엔드포인트 — 콘텐츠가 아니며 인증이 필요하다
+Disallow: /api/
+
+# 공유 링크 — 이용자의 비공개 다이어그램이므로 색인 대상이 아니다
+Disallow: /d/
+
+# 원격 MCP 전송 엔드포인트
+Disallow: /mcp
+
+Sitemap: https://yourerd.com/sitemap.xml

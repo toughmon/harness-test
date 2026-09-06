@@ -5,7 +5,7 @@ const page = await browser.newPage();
 await page.setViewportSize({ width: 1400, height: 900 });
 
 try {
-  await page.goto('http://localhost:5173');
+  await page.goto('http://localhost:5173/app');
   await page.waitForTimeout(2000);
 
   // Add two entities

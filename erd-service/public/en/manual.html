@@ -4,6 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YourERD User Manual</title>
+  <meta name="description" content="The YourERD user manual — creating entities and columns, drawing relationships in Barker notation, exclusive subtypes, exporting MySQL DDL and sharing your work." />
+  <link rel="canonical" href="https://yourerd.com/en/manual.html" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/manual.html" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/manual.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="YourERD User Manual" />
+  <meta property="og:description" content="The YourERD user manual — creating entities and columns, drawing relationships in Barker notation, exclusive subtypes, exporting MySQL DDL and sharing your work." />
+  <meta property="og:url" content="https://yourerd.com/en/manual.html" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="ko_KR" />
+  <meta name="twitter:card" content="summary" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -42,6 +54,9 @@
       nav.toc { display: none; }
       main { padding: 28px 22px 80px; }
     }
+  
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -76,6 +91,18 @@
         storing them in the cloud.
       </p>
       <div class="note">This guide is written for everyday users working in a web browser, with nothing to install.</div>
+
+      <h2 style="margin-top:30px">Where to find things</h2>
+      <table>
+        <tr><th>Address</th><th>What it is</th></tr>
+        <tr><td><code>/en/</code></td><td>Overview page — feature summary and frequently asked questions</td></tr>
+        <tr><td><code>/app</code></td><td><strong>The editor</strong> — where you actually draw</td></tr>
+        <tr><td><code>/en/manual.html</code></td><td>This manual</td></tr>
+        <tr><td><code>/en/privacy.html</code>, <code>/en/terms.html</code></td><td>Privacy policy · Terms of service</td></tr>
+      </table>
+      <div class="note"><strong>Open editor</strong> on the overview page takes you to <code>/app</code>.
+      If you use the editor often, bookmark <code>/app</code> directly.
+      Switching the interface to Korean opens the Korean editions of the overview page and the guides.</div>
 
       <section id="layout">
         <h2>1. Screen layout</h2>
@@ -129,7 +156,7 @@
             <strong>Duplicate</strong> asks for a name (defaulting to "&lt;original&gt; copy") and adds an identical diagram to the list, leaving your current canvas untouched.</li>
           <li><strong>Entity List</strong> — the entities in the current diagram. Clicking one selects (highlights) it on the canvas. Colors and logical names are shown alongside.</li>
           <li><strong>Collapse / expand</strong> — the collapse button (⊟) in the header shrinks the sidebar to a thin rail so the canvas gets more room.</li>
-          <li><strong>Bottom menu</strong> — <strong>Connect MCP</strong> (a modal that creates a personal token and gives you a one-line Claude Code connection command after you sign in) · <strong>MCP setup guide</strong> (connection details, <a href="/en/mcp-guide.html" style="color:var(--primary)">new tab</a>) · <strong>Claude prompt guide</strong> · <strong>Docs</strong> (this manual).</li>
+          <li><strong>Bottom menu</strong> — <strong>Connect MCP</strong> (a modal that creates a personal token and gives you a one-line Claude Code connection command after you sign in) · <strong>MCP setup guide</strong> (connection details, <a href="/en/mcp-guide.html" style="color:var(--primary)">new tab</a>) · <strong>Claude prompt guide</strong> · <strong>Docs</strong> (this manual). Below them, in small type, are <strong>Home</strong> · <strong>Privacy</strong> · <strong>Terms</strong> links.</li>
         </ul>
       </section>
 
@@ -438,6 +465,14 @@
 
       <footer>
         YourERD · online ERD service — User Manual
+      
+        <br />
+        <a href="/en/">Home</a> ·
+        <a href="/en/manual.html">Manual</a> ·
+        <a href="/en/mcp-guide.html">MCP guide</a> ·
+        <a href="/en/prompt-guide.html">Prompt guide</a> ·
+        <a href="/en/privacy.html">Privacy</a> ·
+        <a href="/en/terms.html">Terms</a>
       </footer>
     </main>
   </div>

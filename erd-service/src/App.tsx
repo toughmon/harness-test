@@ -52,6 +52,20 @@ function App() {
     });
   }, [init]);
 
+  // 랜딩·정책 페이지(정적 HTML)에서 고른 언어를 이어받는다 — `/app?lang=ko|en`.
+  // 정적 페이지는 스토어에 접근할 수 없어 쿼리로 넘기고, 여기서 공개 API로 반영한다
+  // (persist의 localStorage 포맷을 정적 페이지에 복제하지 않기 위함).
+  // 반영 후 파라미터를 지워, 새로고침이나 링크 공유 때 언어가 다시 강제되지 않게 한다.
+  // parseShareToken이 ?share= 를 읽은 뒤에 실행되도록 위 effect 다음에 둔다.
+  useEffect(() => {
+    const lang = new URLSearchParams(window.location.search).get('lang');
+    if (lang !== 'ko' && lang !== 'en') return;
+    useLocaleStore.getState().setLocale(lang);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('lang');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  }, []);
+
   // 로그인 필요로 대기 중이던 공유 세션 — 로그인 완료되면 재시도
   useEffect(() => {
     const ss = useSharedSessionStore.getState();

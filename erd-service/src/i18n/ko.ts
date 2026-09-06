@@ -79,6 +79,9 @@ export const ko = {
   'sidebar.mcpConnect': 'MCP 연결',
   'sidebar.mcpGuide': 'MCP 연결 가이드',
   'sidebar.promptGuide': 'Claude 프롬프트 가이드',
+  'sidebar.home': '홈',
+  'sidebar.privacy': '개인정보처리방침',
+  'sidebar.terms': '이용약관',
   'nav.newTab': '{label} (새 탭)',
   'nav.comingSoon': '{label} (준비 중)',
 

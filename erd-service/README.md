@@ -23,12 +23,34 @@
 
 ```
 브라우저 SPA (React) ──/api/*──> Fastify (server/index.js, :8080) ──> PostgreSQL
-                      └─정적──> dist/ (빌드 결과물, SPA fallback)
+                      └─정적──> dist/ (빌드 결과물)
 ```
 
 - **단일 Node 프로세스**: 정적 서빙과 API가 같은 오리진 → CORS/프록시 불필요 (dev는 vite proxy `/api` → :8080)
 - **비로그인 사용 가능**: 에디터 전체 기능을 익명으로 사용. 로그인하면 DB 저장 기능이 추가 활성화
-- **SPA fallback**: 알 수 없는 경로는 index.html 반환, 단 `/api/*`는 404 JSON
+
+### 공개 경로
+
+Vite 멀티페이지 빌드(`index.html` + `app.html`)라 루트는 정적 HTML, 편집기는 별도 진입점이다.
+검색엔진·광고 심사 크롤러가 루트에서 읽을 실제 콘텐츠가 있어야 하기 때문이다.
+
+| 경로 | 내용 |
+|------|------|
+| `/` | 정적 랜딩 페이지 (`index.html`) — 서비스 소개·기능·FAQ |
+| `/en/` | 영문 랜딩 페이지 |
+| `/app`, `/app/*` | 편집기 SPA (`app.html`) |
+| `/d/:token` | 공유 링크 진입 — 앱 셸로 서빙 |
+| `/manual.html`, `/mcp-guide.html`, `/prompt-guide.html` | 가이드 (각 `/en/` 사본 존재) |
+| `/privacy.html`, `/terms.html` | 개인정보처리방침·이용약관 (각 `/en/` 사본 존재) |
+| `/robots.txt`, `/sitemap.xml`, `/ads.txt` | 크롤러·광고 검증용 정적 파일 |
+| `/api/*` | JSON API. fallback 대상 아님 — 미정의 경로는 404 JSON |
+| 그 외 | **진짜 404** (`dist/404.html`) |
+
+> **앱 셸 fallback 범위는 두 곳을 함께 고쳐야 한다.** 클라이언트 라우트 판정 정규식이
+> `vite.config.ts`(dev)와 `server/index.js`(프로덕션)에 각각 있어서, 한쪽만 넓히면
+> dev에서만 통과하고 배포 후 404가 나는 어긋남이 생긴다.
+> 예전에는 `/api/*`를 뺀 모든 경로가 `index.html`을 200으로 반환해(soft 404)
+> 존재하지 않는 URL이 무한히 유효한 페이지로 보였다.
 
 ### 디렉토리 구조
 
@@ -214,7 +236,8 @@ Claude Code ──stdio──> erd-service/mcp ──https(JWT 쿠키)──> /a
 
 | 스크립트 | 검증 대상 |
 |---|---|
-| verify_server | 프로덕션 서버 — 정적 서빙·SPA fallback·/api 404 |
+| verify_server | 프로덕션 서버 — 정적 서빙·랜딩/앱 라우팅·404 처리·/api 404 |
+| verify_seo | 랜딩·정책 페이지, robots/sitemap, 소프트404 제거, 메타태그 |
 | verify_backend | 가입→DB저장→세션복원→열기·모달·401/409 (24항목) |
 | verify_features | Undo/Redo·관계 타입 변경·자동 정렬·PNG (14항목) |
 | verify_fk_cleanup | 엔티티/관계 삭제 시 FK 정리, 비식별 FK (13항목) |

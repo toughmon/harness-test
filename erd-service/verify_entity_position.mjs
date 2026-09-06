@@ -16,7 +16,7 @@ const check = (name, pass, detail = '') => {
   console.log(`${pass ? 'PASS' : 'FAIL'}: ${name}${detail ? ' — ' + detail : ''}`);
 };
 
-await page.goto(BASE, { waitUntil: 'networkidle' });
+await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
 await page.waitForTimeout(600);
 
 const addEntityBtn = page.locator('button').filter({ hasText: 'Add Entity' }).first();

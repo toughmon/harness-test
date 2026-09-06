@@ -15,7 +15,7 @@ function check(name, ok) {
 }
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
   const header = page.locator('header').first();

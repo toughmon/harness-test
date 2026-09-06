@@ -58,7 +58,7 @@ async function inspectEdge(idx) {
 }
 
 try {
-  await page.goto('http://localhost:5173');
+  await page.goto('http://localhost:5173/app');
   await page.waitForTimeout(1500);
 
   await page.click('button:has-text("엔티티 추가")');

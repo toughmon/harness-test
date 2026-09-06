@@ -47,7 +47,7 @@ async function drawRelationship(srcIdx, tgtIdx, relButtonText) {
 }
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
   // ───── 0. 선택 없을 때는 Delete가 아무 영향 없음 ─────

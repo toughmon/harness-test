@@ -78,6 +78,9 @@ export const en: Record<MessageKey, string> = {
   'sidebar.mcpConnect': 'Connect MCP',
   'sidebar.mcpGuide': 'MCP setup guide',
   'sidebar.promptGuide': 'Claude prompt guide',
+  'sidebar.home': 'Home',
+  'sidebar.privacy': 'Privacy',
+  'sidebar.terms': 'Terms',
   'nav.newTab': '{label} (new tab)',
   'nav.comingSoon': '{label} (coming soon)',
 

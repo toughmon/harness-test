@@ -60,7 +60,7 @@ async function clickEdge(idx) {
 }
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
   await page.click('button:has-text("Add Entity")');

@@ -52,7 +52,7 @@ const childText = () => page.locator('.react-flow__node').last().innerText();
 
 try {
   // ── 시나리오 1: 식별 상속 — 하위 id(PK)가 상위 id(PK)와 이름 충돌 ──
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
 
   await page.click('button:has-text("Add Entity")'); // Entity1 (상위)

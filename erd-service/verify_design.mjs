@@ -47,7 +47,7 @@ async function drawRelationship(srcIdx, tgtIdx, relButtonText) {
 }
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
   // 초기 화면 (빈 캔버스 + 레이아웃)

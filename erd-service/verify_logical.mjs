@@ -37,7 +37,7 @@ async function drawRelationship(srcIdx, tgtIdx, relButtonText) {
 }
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
   // 엔티티 2개 추가
@@ -61,7 +61,7 @@ try {
   // 컬럼(id) 논리명 입력: 컬럼 행 클릭해 확장
   await panel.locator('.font-mono', { hasText: /^id$/ }).first().click();
   await page.waitForTimeout(300);
-  await panel.locator('input[placeholder="논리명 (한글 명칭)"]').fill('아이디');
+  await panel.locator('input[placeholder="논리명 (한글)"]').fill('아이디');
   await page.waitForTimeout(400);
 
   // 노드에 물리/논리 동시 표시 확인

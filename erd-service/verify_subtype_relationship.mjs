@@ -82,7 +82,7 @@ const boxByName = (i, name) => subtypeBoxes(i).filter({ hasText: name });
 const idBox = () => page.locator('[data-testid="rel-identifying"] input[type="checkbox"]');
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
   // ── 준비: Entity1(서브타입 없음) / Entity2(서브타입 Car·Truck) / Entity3(서브타입 없음) ──

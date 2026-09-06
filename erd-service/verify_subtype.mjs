@@ -20,7 +20,7 @@ const subsetRegion = () => node().locator('[data-testid="subset-region"]');
 const subtypeBoxes = () => node().locator('[data-testid="subtype-box"]');
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
   // ───── 준비: 엔티티 1개 (자동 선택, 편집 모달은 info 아이콘으로 오픈) ─────

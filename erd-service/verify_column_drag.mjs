@@ -15,7 +15,7 @@ function check(name, ok) {
 }
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
 
   // 엔티티 추가 → 자동 선택됨. 편집 모달은 info 아이콘으로 별도 오픈.

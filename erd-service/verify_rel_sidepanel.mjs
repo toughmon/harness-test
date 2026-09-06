@@ -82,7 +82,7 @@ const childPk = () => page.locator('.react-flow__node').nth(1).locator('[title="
 const childFk = () => page.locator('.react-flow__node').nth(1).locator('[title="Foreign Key"]').count();
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
   // ── 준비: 엔티티 2개 + 부모 PK명 충돌 회피(id→pid) + 관계 생성 ──

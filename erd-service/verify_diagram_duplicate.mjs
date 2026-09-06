@@ -21,7 +21,7 @@ const nodeCount = () => page.locator('.react-flow__node').count();
 
 try {
   // ── 0. 가입 + 로그인 ──
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
   await page.click('button[aria-label="User"]');
   await page.waitForTimeout(300);

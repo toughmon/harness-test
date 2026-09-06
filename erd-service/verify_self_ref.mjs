@@ -14,7 +14,7 @@ const check = (name, pass, detail = '') => {
 };
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
   // ── 준비: 엔티티 1개 ──

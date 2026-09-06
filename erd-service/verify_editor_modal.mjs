@@ -62,7 +62,7 @@ async function rightClickAt(x, y) {
 }
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
   // ═══ 0. 우측 고정 패널이 완전히 사라졌는지 (풀폭 캔버스) ═══

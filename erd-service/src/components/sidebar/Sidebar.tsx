@@ -215,6 +215,21 @@ export default function Sidebar() {
         <NavItem icon="menu_book" label={t('sidebar.mcpGuide')} href={`${guideBase}/mcp-guide.html`} />
         <NavItem icon="smart_toy" label={t('sidebar.promptGuide')} href={`${guideBase}/prompt-guide.html`} />
         <NavItem icon="description" label="Docs" href={`${guideBase}/manual.html`} />
+        {/* 정책 링크 — 광고를 게재하는 화면에서 한 번의 클릭으로 닿을 수 있어야 한다.
+            NavItem은 대문자·볼드라 시각적 비중이 커서, 여기서는 작은 텍스트 줄로 둔다. */}
+        <div className="flex flex-wrap items-center gap-x-2 px-3 pt-1 text-[10px] text-outline">
+          <a href={`${guideBase}/`} className="hover:text-on-surface-variant no-underline text-inherit">
+            {t('sidebar.home')}
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href={`${guideBase}/privacy.html`} target="_blank" rel="noopener noreferrer" className="hover:text-on-surface-variant no-underline text-inherit">
+            {t('sidebar.privacy')}
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href={`${guideBase}/terms.html`} target="_blank" rel="noopener noreferrer" className="hover:text-on-surface-variant no-underline text-inherit">
+            {t('sidebar.terms')}
+          </a>
+        </div>
       </div>
     </aside>
   );

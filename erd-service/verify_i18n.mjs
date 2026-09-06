@@ -24,7 +24,7 @@ const setLocale = async (target) => {
 
 try {
   // ───── 1. 기본은 한국어 ─────
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-testid="locale-toggle"]');
   check('기본 진입 시 lang="ko"', (await html()) === 'ko', await html());
   check('토글 배지가 KO', (await page.textContent('[data-testid="locale-toggle"]')).includes('KO'));
@@ -118,7 +118,7 @@ try {
   check('가이드 공통 CSS 적용됨',
     (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(19, 19, 19)');
 
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-testid="locale-toggle"]');
   await setLocale('en');
   await page.screenshot({ path: 'ss_i18n_en.png' });

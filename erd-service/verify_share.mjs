@@ -14,7 +14,7 @@ function check(name, ok) {
 }
 
 async function register(page, username) {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
   await page.click('button[aria-label="User"]');
   await page.waitForTimeout(300);

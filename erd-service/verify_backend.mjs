@@ -22,7 +22,7 @@ const username = `user${Math.floor(Date.now() % 1000000)}`;
 
 try {
   // ── 1. 익명 상태: 기존 기능 유지 + DB UI 비노출 ──
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
   check('익명: Save(JSON) 버튼 존재', await page.locator('button:has-text("Save")').count() === 1);
   check('익명: 불러오기 버튼 존재', await page.locator('button[aria-label="Open file"]').count() === 1);
@@ -100,7 +100,7 @@ try {
 
   // ── 6. 중복 가입 → 409 에러 메시지 ──
   const dupPage = await (await browser.newContext()).newPage();
-  await dupPage.goto(BASE, { waitUntil: 'networkidle' });
+  await dupPage.goto(BASE + '/app', { waitUntil: 'networkidle' });
   await dupPage.waitForTimeout(1200);
   await dupPage.click('button[aria-label="User"]');
   await dupPage.click('button:text-is("회원가입")');

@@ -5,6 +5,7 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import fastifyWebsocket from '@fastify/websocket';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { createDb, initSchema } from './db.js';
 import authRoutes from './auth-routes.js';
 import diagramRoutes from './diagram-routes.js';
@@ -118,13 +119,34 @@ await app.register(fastifyStatic, {
   root: path.resolve(import.meta.dirname, '../dist'),
 });
 
-// SPA fallback — 클라이언트 라우트 새로고침 시 404 대신 index.html 반환
-// (/api/*는 제외해 미구현 API 호출이 명확한 404 JSON을 받도록 함)
+// 앱 셸(app.html)로 서빙해야 하는 클라이언트 경로 — vite.config.ts의 APP_SHELL과 동일하게 유지한다.
+// - /app, /app/*  : 편집기
+// - /d/:token     : 공유 링크 진입 (App.tsx의 parseShareToken이 pathname을 읽는다)
+const APP_SHELL = /^\/(?:app(?:\/|$)|d\/[^/]+\/?$)/;
+
+// /app — 편집기 진입점. 정적 서빙의 와일드카드(/*)보다 구체적이라 먼저 매칭된다.
+// 루트(/)는 dist/index.html(정적 랜딩 페이지)이 그대로 서빙된다.
+app.get('/app', (_req, reply) => reply.sendFile('app.html'));
+
+// 404 본문은 기동 시 한 번만 읽어 둔다(요청마다 디스크를 치지 않도록).
+// dist가 아직 없는 상태로 띄우는 경우도 있어 실패 시 최소 마크업으로 폴백한다.
+const notFoundPage = await readFile(
+  path.resolve(import.meta.dirname, '../dist/404.html'),
+  'utf8'
+).catch(() => '<!doctype html><meta charset="utf-8"><title>404</title><h1>404 Not Found</h1>');
+
+// 알려진 클라이언트 경로만 앱 셸로 넘기고 나머지는 진짜 404를 반환한다.
+// 예전에는 /api/* 를 제외한 모든 경로가 index.html을 200으로 받았고(soft 404),
+// 존재하지 않는 URL이 무한히 "유효한 페이지"로 보여 검색엔진 품질 평가에 불리했다.
 app.setNotFoundHandler((req, reply) => {
-  if (req.raw.url?.startsWith('/api/')) {
+  const url = (req.raw.url ?? '').split('?')[0];
+  if (url.startsWith('/api/')) {
     return reply.code(404).send({ error: 'Not Found' });
   }
-  return reply.sendFile('index.html');
+  if (APP_SHELL.test(url)) {
+    return reply.sendFile('app.html');
+  }
+  return reply.code(404).type('text/html; charset=utf-8').send(notFoundPage);
 });
 
 app.listen({ port: PORT, host: HOST }).catch(err => {
