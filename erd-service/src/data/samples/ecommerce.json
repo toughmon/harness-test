@@ -1,0 +1,337 @@
+{
+  "version": "1.0",
+  "entities": [
+    {
+      "entity": {
+        "id": "1789121676554-mln77",
+        "name": "user",
+        "logicalName": "사용자",
+        "description": "",
+        "color": "#3b82f6",
+        "columns": [
+          {
+            "logicalName": "사용자아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": true,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "user_id",
+            "id": "1789121676554-apd6c"
+          },
+          {
+            "logicalName": "이메일(로그인아이디)",
+            "type": "VARCHAR",
+            "size": "255",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": true,
+            "name": "email",
+            "id": "1789121676554-1had9"
+          },
+          {
+            "logicalName": "사용자명",
+            "type": "VARCHAR",
+            "size": "255",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "name",
+            "id": "1789121676554-ktke0"
+          }
+        ]
+      },
+      "position": {
+        "x": -27.867730900798165,
+        "y": 47.953249714937286
+      }
+    },
+    {
+      "entity": {
+        "id": "1789121676554-giuz9",
+        "name": "order",
+        "logicalName": "주문",
+        "description": "",
+        "color": "#3b82f6",
+        "columns": [
+          {
+            "logicalName": "주문아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": true,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "order_id",
+            "id": "1789121676554-xssf1"
+          },
+          {
+            "logicalName": "총주문금액",
+            "type": "BIGINT",
+            "size": "",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "total_price",
+            "id": "1789121676554-pgkpn"
+          },
+          {
+            "logicalName": "주문일시",
+            "type": "DATETIME",
+            "size": "",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "ordered_at",
+            "id": "1789121676554-mzwsi"
+          },
+          {
+            "id": "1789121676554-05mkj",
+            "name": "user_id",
+            "logicalName": "사용자아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": false,
+            "isFK": true,
+            "isNN": true,
+            "isUnique": false,
+            "refEntityId": "1789121676554-mln77",
+            "refColumnId": "1789121676554-apd6c"
+          }
+        ]
+      },
+      "position": {
+        "x": 383.71151653363745,
+        "y": 41.06043329532497
+      }
+    },
+    {
+      "entity": {
+        "id": "1789121676554-3070x",
+        "name": "payment",
+        "logicalName": "결제",
+        "description": "",
+        "color": "#3b82f6",
+        "columns": [
+          {
+            "logicalName": "결제아이디",
+            "type": "BIGINT",
+            "size": "",
+            "isPK": true,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "payment_id",
+            "id": "1789121676554-4kszo"
+          },
+          {
+            "logicalName": "결제금액",
+            "type": "BIGINT",
+            "size": "",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "paid_price",
+            "id": "1789121676554-3s7wa"
+          },
+          {
+            "logicalName": "결제일시",
+            "type": "DATETIME",
+            "size": "",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "paid_at",
+            "id": "1789121676554-uw9mj"
+          },
+          {
+            "id": "1789121676554-il3r9",
+            "name": "order_id",
+            "logicalName": "주문아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": true,
+            "isFK": true,
+            "isNN": true,
+            "isUnique": false,
+            "refEntityId": "1789121676554-giuz9",
+            "refColumnId": "1789121676554-xssf1"
+          }
+        ]
+      },
+      "position": {
+        "x": 720,
+        "y": 40
+      }
+    },
+    {
+      "entity": {
+        "id": "1789121676554-nvzre",
+        "name": "product",
+        "logicalName": "상품",
+        "description": "",
+        "color": "#3b82f6",
+        "columns": [
+          {
+            "logicalName": "상품아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": true,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "product_id",
+            "id": "1789121676554-d2612"
+          },
+          {
+            "logicalName": "상품명",
+            "type": "VARCHAR",
+            "size": "500",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "name",
+            "id": "1789121676554-8zj3t"
+          },
+          {
+            "logicalName": "상품가격",
+            "type": "INT",
+            "size": "",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "price",
+            "id": "1789121676554-s4vg3"
+          },
+          {
+            "logicalName": "재고수량",
+            "type": "INT",
+            "size": "",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "stock",
+            "id": "1789121676554-0rq6s"
+          }
+        ]
+      },
+      "position": {
+        "x": 25.684150513112883,
+        "y": 292.0467502850627
+      }
+    },
+    {
+      "entity": {
+        "id": "1789121676554-ljjsw",
+        "name": "order_product",
+        "logicalName": "주문상품",
+        "description": "",
+        "color": "#3b82f6",
+        "columns": [
+          {
+            "logicalName": "수량",
+            "type": "INT",
+            "size": "",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "quantity",
+            "id": "1789121676554-csw4p"
+          },
+          {
+            "id": "1789121676554-72t5v",
+            "name": "order_id",
+            "logicalName": "주문아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": true,
+            "isFK": true,
+            "isNN": true,
+            "isUnique": false,
+            "refEntityId": "1789121676554-giuz9",
+            "refColumnId": "1789121676554-xssf1"
+          },
+          {
+            "id": "1789121676554-1hdzr",
+            "name": "product_id",
+            "logicalName": "상품아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": true,
+            "isFK": true,
+            "isNN": true,
+            "isUnique": false,
+            "refEntityId": "1789121676554-nvzre",
+            "refColumnId": "1789121676554-d2612"
+          }
+        ]
+      },
+      "position": {
+        "x": 380,
+        "y": 300
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "1789121676554-o00ya",
+      "sourceId": "1789121676554-mln77",
+      "targetId": "1789121676554-giuz9",
+      "type": "ONE_TO_MANY_NON_IDENTIFYING",
+      "parentOptional": true,
+      "childOptional": false,
+      "childCardinality": "many",
+      "identifying": false,
+      "midOffset": {
+        "x": 0,
+        "y": 1.0604332953249695
+      },
+      "sourceAnchor": {
+        "side": "right",
+        "offset": 0.5167436836103944
+      }
+    },
+    {
+      "id": "1789121676554-5lrj6",
+      "sourceId": "1789121676554-giuz9",
+      "targetId": "1789121676554-ljjsw",
+      "type": "ONE_TO_MANY_IDENTIFYING",
+      "parentOptional": true,
+      "childOptional": false,
+      "childCardinality": "many",
+      "identifying": true
+    },
+    {
+      "id": "1789121676554-6tgnh",
+      "sourceId": "1789121676554-nvzre",
+      "targetId": "1789121676554-ljjsw",
+      "type": "ONE_TO_MANY_IDENTIFYING",
+      "parentOptional": true,
+      "childOptional": false,
+      "childCardinality": "many",
+      "identifying": true
+    },
+    {
+      "id": "1789121676554-xcs0i",
+      "sourceId": "1789121676554-giuz9",
+      "targetId": "1789121676554-3070x",
+      "type": "ONE_TO_MANY_IDENTIFYING",
+      "parentOptional": true,
+      "childOptional": false,
+      "childCardinality": "many",
+      "identifying": true
+    }
+  ],
+  "memos": []
+}

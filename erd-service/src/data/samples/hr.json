@@ -1,0 +1,161 @@
+{
+  "version": "1.0",
+  "entities": [
+    {
+      "entity": {
+        "id": "1789121802242-mzvnh",
+        "name": "department",
+        "logicalName": "부서",
+        "description": "",
+        "color": "#3b82f6",
+        "columns": [
+          {
+            "logicalName": "부서아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": true,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "dept_id",
+            "id": "1789121802242-fa4m6"
+          },
+          {
+            "logicalName": "부서명",
+            "type": "VARCHAR",
+            "size": "100",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "name",
+            "id": "1789121802242-0xvdj"
+          },
+          {
+            "logicalName": "위치",
+            "type": "VARCHAR",
+            "size": "100",
+            "isPK": false,
+            "isFK": false,
+            "isNN": false,
+            "isUnique": false,
+            "name": "location",
+            "id": "1789121802242-cigvy"
+          }
+        ]
+      },
+      "position": {
+        "x": -42.595318943593995,
+        "y": -31.378670691994802
+      }
+    },
+    {
+      "entity": {
+        "id": "1789121802242-g7m0l",
+        "name": "employee",
+        "logicalName": "직원",
+        "description": "",
+        "color": "#3b82f6",
+        "columns": [
+          {
+            "logicalName": "직원아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": true,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "emp_id",
+            "id": "1789121802242-ne73u"
+          },
+          {
+            "logicalName": "이름",
+            "type": "VARCHAR",
+            "size": "100",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "name",
+            "id": "1789121802242-q0k66"
+          },
+          {
+            "logicalName": "직급",
+            "type": "VARCHAR",
+            "size": "100",
+            "isPK": false,
+            "isFK": false,
+            "isNN": false,
+            "isUnique": false,
+            "name": "position",
+            "id": "1789121802242-m9kbw"
+          },
+          {
+            "logicalName": "입사일",
+            "type": "DATE",
+            "size": "",
+            "isPK": false,
+            "isFK": false,
+            "isNN": true,
+            "isUnique": false,
+            "name": "hired_at",
+            "id": "1789121802242-pc3xh"
+          },
+          {
+            "id": "1789121802242-xnvnm",
+            "name": "dept_id",
+            "logicalName": "부서아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": false,
+            "isFK": true,
+            "isNN": true,
+            "isUnique": false,
+            "refEntityId": "1789121802242-mzvnh",
+            "refColumnId": "1789121802242-fa4m6"
+          },
+          {
+            "id": "1789121802242-y5whj",
+            "name": "parent_emp_id",
+            "logicalName": "직원아이디",
+            "type": "INT",
+            "size": "",
+            "isPK": false,
+            "isFK": true,
+            "isNN": false,
+            "isUnique": false,
+            "refEntityId": "1789121802242-g7m0l",
+            "refColumnId": "1789121802242-ne73u"
+          }
+        ]
+      },
+      "position": {
+        "x": 348.89929348420225,
+        "y": -59.42029132099276
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "1789121802242-37gio",
+      "sourceId": "1789121802242-mzvnh",
+      "targetId": "1789121802242-g7m0l",
+      "type": "ONE_TO_MANY_NON_IDENTIFYING",
+      "parentOptional": true,
+      "childOptional": false,
+      "childCardinality": "many",
+      "identifying": false
+    },
+    {
+      "id": "1789121802242-7sqtz",
+      "sourceId": "1789121802242-g7m0l",
+      "targetId": "1789121802242-g7m0l",
+      "type": "ONE_TO_MANY_OPTIONAL",
+      "parentOptional": true,
+      "childOptional": true,
+      "childCardinality": "many",
+      "identifying": false
+    }
+  ],
+  "memos": []
+}
