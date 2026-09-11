@@ -27,6 +27,9 @@ function parseShareToken(): string | null {
   return new URLSearchParams(window.location.search).get('share');
 }
 
+// 최초 방문 예제 자동 로드를 "한 번만" 하기 위한 플래그. 값 자체는 의미 없고 존재 여부만 본다.
+const SAMPLE_SEEN_KEY = 'erd_sample_intro_shown';
+
 function App() {
   const { undo, redo } = useERDStore();
   const selectedEntityId = useERDStore(s => s.selectedEntityId);
@@ -72,6 +75,29 @@ function App() {
     if (status === 'authed' && ss.token && ss.needsLogin) {
       ss.enter(ss.token);
     }
+  }, [status]);
+
+  // 진짜 최초 방문자에게만 — 완전히 빈 캔버스 대신 예제 다이어그램을 한 번 보여준다.
+  // status==='anon' 확정(로그인 세션 없음) + 공유 링크 진입 아님 + 이 브라우저에서 한 번도
+  // 보여준 적 없음(SAMPLE_SEEN_KEY) + 캔버스가 실제로 비어 있을 때만 발동. 로그인 사용자는
+  // authStore.init()이 restoreLastOpened()로 마지막 다이어그램을 복원하므로 대상에서 자동 제외되고,
+  // 비로그인 재방문자는 (기존 그대로) 항상 빈 캔버스로 시작 — 플래그 없이 매번 로드하면
+  // "새로 시작하기"로 지운 캔버스에 새로고침할 때마다 샘플이 다시 끼어드는 꼴이 되어 버린다.
+  //
+  // navigator.webdriver 가드: Playwright/Selenium 등 자동화 브라우저는 이 값이 true로
+  // 노출된다(CDP 자동화 컨트롤 활성화 시 Chromium이 표준으로 세팅). 이게 없으면 e2e
+  // 스크립트마다 새 브라우저 컨텍스트(=localStorage 빈 "최초 방문자")로 뜨면서 기존 40여
+  // 개 시나리오가 전제하던 "빈 캔버스"가 깨져 대량 회귀가 났다(실제로 재현·확인함).
+  // 자동화 감지는 실사용자 경험에 영향이 없고(사람은 이 플래그가 false), 온보딩 편의
+  // 기능이 테스트 인프라를 오염시키지 않게 막는 실용적인 경계선이다.
+  useEffect(() => {
+    if (status !== 'anon') return;
+    if (navigator.webdriver) return;
+    if (parseShareToken()) return;
+    if (localStorage.getItem(SAMPLE_SEEN_KEY)) return;
+    if (useERDStore.getState().entities.length > 0) return;
+    localStorage.setItem(SAMPLE_SEEN_KEY, '1');
+    void useDiagramStore.getState().loadSample('ecommerce');
   }, [status]);
 
   // 로그인 상태일 때 5초마다 자동 저장 (currentId 없는 새 다이어그램은 skip)

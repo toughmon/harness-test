@@ -30,6 +30,7 @@ import { exportDiagramPng } from '../../utils/exportImage';
 import { exportDiagramSql } from '../../utils/exportSql';
 import { alertDialog } from '../../store/dialogStore';
 import { confirmDeleteEntity, confirmDeleteRelationship, confirmDeleteMemo } from '../../store/deleteActions';
+import { useDiagramStore } from '../../store/diagramStore';
 import { useT } from '../../i18n';
 
 const nodeTypes = { entity: EntityNode, memo: MemoNode };
@@ -157,6 +158,8 @@ export default function ERDCanvas() {
     openEntityEditor, openRelationshipEditor, openMemoEditor,
   } = useERDStore();
   const readOnly = useERDStore(s => s.readOnly);
+  const activeSampleKey = useDiagramStore(s => s.activeSampleKey);
+  const startNew = useDiagramStore(s => s.startNew);
 
   const [pendingConn, setPendingConn] = useState<Connection | null>(null);
 
@@ -375,6 +378,29 @@ export default function ERDCanvas() {
           maskColor="rgba(14,14,14,0.7)"
         />
       </ReactFlow>
+
+      {/* 예제 샘플 배너 — 사용자가 실제로 편집을 시작하면 diagramStore가 activeSampleKey를
+          꺼서 자동으로 사라진다(erdStore.subscribe 참고). "새로 시작하기"는 캔버스를
+          완전히 비우는 기존 startNew를 그대로 재사용. */}
+      {!readOnly && activeSampleKey && (
+        <div
+          data-testid="sample-banner"
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-surface-container-low border border-outline-variant rounded-full pl-4 pr-2 py-1.5 shadow-lg text-xs text-on-surface-variant"
+        >
+          <span className="material-symbols-outlined text-[16px] text-primary">visibility</span>
+          <span>
+            <strong className="text-on-surface">{t('sample.bannerPrefix')} {t(`sample.${activeSampleKey}`)}</strong>
+            {' — '}{t('sample.bannerHint')}
+          </span>
+          <button
+            data-testid="sample-start-fresh"
+            className="px-3 py-1 rounded-full bg-surface-variant hover:bg-outline-variant text-on-surface font-semibold cursor-pointer transition-colors"
+            onClick={() => startNew()}
+          >
+            {t('sample.startFresh')}
+          </button>
+        </div>
+      )}
 
       {entities.length === 0 && memos.length === 0 && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

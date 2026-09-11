@@ -6,6 +6,7 @@ import { toERDData, fromERDData } from '../utils/erdData';
 import { alertDialog, confirmDialog, promptDialog } from './dialogStore';
 import { getT, type TFunc } from '../i18n';
 import { errorMessage } from '../i18n/errors';
+import { buildSample, type SampleKey } from '../data/sampleDiagrams';
 
 // 스토어는 React 밖이라 훅을 못 쓴다 — 호출 시점의 로케일로 번역한다
 const t: TFunc = (key, params) => getT()(key, params);
@@ -30,6 +31,9 @@ interface DiagramState {
   currentId: number | null;
   dirty: boolean;
   saving: boolean;
+  // 지금 캔버스가 예제 샘플인지(비저장 프리뷰). 저장(currentId 부여)되거나 사용자가
+  // 실제 편집을 시작(dirty)하면 즉시 null로 꺼진다 — 아래 erdStore.subscribe 참고.
+  activeSampleKey: SampleKey | null;
 
   fetchList: () => Promise<void>;
   open: (id: number) => Promise<void>;
@@ -42,6 +46,8 @@ interface DiagramState {
   confirmDiscard: () => Promise<boolean>;
   reset: () => void;
   restoreLastOpened: () => Promise<void>;
+  // 예제 샘플을 캔버스에 로드 — DB 저장·dirty를 유발하지 않는 순수 로컬 프리뷰.
+  loadSample: (key: SampleKey) => Promise<void>;
 }
 
 // loadData(다이어그램 열기)로 인한 스토어 변경은 dirty로 치지 않는다
@@ -52,6 +58,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   currentId: null,
   dirty: false,
   saving: false,
+  activeSampleKey: null,
 
   fetchList: async () => {
     const list = await api.listDiagrams();
@@ -78,7 +85,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     suppressDirty = true;
     useERDStore.getState().loadData(entities, relationships, positions, memos);
     suppressDirty = false;
-    set({ currentId: id, dirty: false });
+    set({ currentId: id, dirty: false, activeSampleKey: null });
     saveLastId(id);
   },
 
@@ -136,7 +143,22 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     suppressDirty = true;
     useERDStore.getState().loadData([], [], {}, []);
     suppressDirty = false;
-    set({ currentId: null, dirty: false });
+    set({ currentId: null, dirty: false, activeSampleKey: null });
+    saveLastId(null);
+  },
+
+  // 예제 샘플 로드 — currentId는 그대로 null(저장물 아님), dirty도 false로 유지해
+  // DB 저장이나 5초 자동저장을 유발하지 않는다. 사용자가 실제로 편집을 시작하면
+  // (entities/relationships 등이 바뀌면) 아래 erdStore.subscribe가 dirty를 true로
+  // 올리면서 activeSampleKey도 함께 꺼 일반 작업물로 자연스럽게 전환된다.
+  loadSample: async (key) => {
+    if (!(await get().confirmDiscard())) return;
+    useCollabStore.getState().disconnect();
+    const sample = buildSample(key);
+    suppressDirty = true;
+    useERDStore.getState().loadData(sample.entities, sample.relationships, sample.nodePositions, sample.memos, { silent: true });
+    suppressDirty = false;
+    set({ currentId: null, dirty: false, activeSampleKey: key });
     saveLastId(null);
   },
 
@@ -189,7 +211,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   reset: () => {
     useCollabStore.getState().disconnect();
     saveLastId(null);
-    set({ list: [], currentId: null, dirty: false, saving: false });
+    set({ list: [], currentId: null, dirty: false, saving: false, activeSampleKey: null });
   },
 
   restoreLastOpened: async () => {
@@ -204,7 +226,10 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 }));
 
-// erdStore 데이터 변경 감지 → dirty 마킹 (undo/redo 포함 모든 변경 포착)
+// erdStore 데이터 변경 감지 → dirty 마킹 (undo/redo 포함 모든 변경 포착).
+// 예제 샘플을 로드한 뒤 사용자가 실제로 뭔가 바꾸면 이 핸들러가 dirty를 true로 올리는
+// 김에 activeSampleKey도 함께 꺼서 "예제" 배너가 사라지고 평범한 작업물로 전환되게 한다
+// (loadSample 자체는 suppressDirty로 감싸여 있어 이 핸들러를 거치지 않는다).
 useERDStore.subscribe((state, prev) => {
   if (suppressDirty) return;
   if (
@@ -214,6 +239,9 @@ useERDStore.subscribe((state, prev) => {
     state.memos !== prev.memos
   ) {
     const dg = useDiagramStore.getState();
-    if (!dg.dirty) useDiagramStore.setState({ dirty: true });
+    const patch: Partial<DiagramState> = {};
+    if (!dg.dirty) patch.dirty = true;
+    if (dg.activeSampleKey) patch.activeSampleKey = null;
+    if (Object.keys(patch).length) useDiagramStore.setState(patch);
   }
 });

@@ -4,6 +4,13 @@ import { useAuthStore } from '../../store/authStore';
 import { useDiagramStore } from '../../store/diagramStore';
 import { useMcpStore } from '../../store/mcpStore';
 import { useT, useLocaleStore } from '../../i18n';
+import { SAMPLE_KEYS, type SampleKey } from '../../data/sampleDiagrams';
+
+const SAMPLE_ICONS: Record<SampleKey, string> = {
+  ecommerce: 'shopping_cart',
+  blog: 'article',
+  hr: 'groups',
+};
 
 // 디자인 시안의 SideNavBar — Add Entity / Entity List는 실제 기능 연결,
 // 로그인 시 "내 다이어그램" 섹션 표시, Help/Docs는 비활성 placeholder
@@ -15,7 +22,7 @@ export default function Sidebar() {
   const { entities, memos, selectedEntityId, selectEntity, addEntity, addMemo } = useERDStore();
   const readOnly = useERDStore(s => s.readOnly);
   const { status } = useAuthStore();
-  const { list, currentId, open, startNew, rename, duplicate, remove } = useDiagramStore();
+  const { list, currentId, open, startNew, rename, duplicate, remove, loadSample } = useDiagramStore();
   const openMcp = useMcpStore(s => s.openModal);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -207,6 +214,32 @@ export default function Sidebar() {
             </div>
           )}
         </div>
+
+        {/* 샘플로 시작 — 캔버스가 비어 있을 때만 노출(엔티티가 생기면 자연히 사라짐).
+            공유 뷰어(읽기 전용)에서는 편집 진입점이라 숨김. */}
+        {!readOnly && entities.length === 0 && (
+          <div className="mt-2" data-testid="sample-diagrams">
+            <div className="mb-2 px-3 text-[11px] font-bold tracking-[0.05em] uppercase text-on-surface-variant opacity-70">
+              {t('sidebar.samplesTitle')}
+            </div>
+            <p className="px-3 mb-2 text-[11px] text-outline">{t('sidebar.samplesHint')}</p>
+            <div className="flex flex-col gap-1 px-1">
+              {SAMPLE_KEYS.map(key => (
+                <button
+                  key={key}
+                  data-testid={`sample-${key}`}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer text-left transition-colors text-xs border border-transparent hover:bg-surface-variant hover:border-outline-variant text-on-surface"
+                  onClick={() => loadSample(key)}
+                >
+                  <span className="material-symbols-outlined text-[16px] shrink-0 text-primary">
+                    {SAMPLE_ICONS[key]}
+                  </span>
+                  <span className="truncate">{t(`sample.${key}`)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Footer */}
