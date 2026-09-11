@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>데이터베이스 정규화 완벽 가이드 — 1NF부터 3NF까지 · YourERD</title>
+  <meta name="description" content="정규화가 왜 필요한지부터 1NF·2NF·3NF를 실제 테이블 예제로 나눠보는 과정, 그리고 실무에서 반정규화를 택하는 기준까지 정리했습니다." />
+  <link rel="canonical" href="https://yourerd.com/articles/normalization-guide.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="데이터베이스 정규화 완벽 가이드 — 1NF부터 3NF까지" />
+  <meta property="og:description" content="정규화가 왜 필요한지부터 1NF·2NF·3NF를 실제 테이블 예제로 나눠보는 과정, 그리고 실무에서 반정규화를 택하는 기준까지 정리했습니다." />
+  <meta property="og:url" content="https://yourerd.com/articles/normalization-guide.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="article:published_time" content="2026-09-11" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <style>
+    nav.toc {
+      position: sticky; top: 0; align-self: flex-start;
+      width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      padding: 28px 16px 40px 24px;
+      border-right: 1px solid var(--outline-variant);
+    }
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--primary); margin-bottom: 4px; }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+    main h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+    .meta { font-size: 12.5px; color: var(--outline); font-family: var(--font-mono); margin: 0 0 20px; }
+    .related { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--outline-variant); }
+    .related h2 { border: none; margin-bottom: 12px; }
+    .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .related a { color: var(--primary); text-decoration: none; }
+    .related a:hover { text-decoration: underline; }
+    @media (max-width: 860px) { nav.toc { display: none; } main { padding: 28px 22px 80px; } }
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="brand">YourERD</div>
+      <div class="sub">아티클</div>
+      <a href="#intro">개요</a>
+      <a href="#why">왜 정규화하는가</a>
+      <a href="#1nf">1. 제1정규형(1NF)</a>
+      <a href="#2nf">2. 제2정규형(2NF)</a>
+      <a href="#3nf">3. 제3정규형(3NF)</a>
+      <a href="#beyond">그 다음: BCNF와 실무</a>
+      <a href="#denorm">반정규화는 언제 하나</a>
+      <a href="#draw">그려보면서 이해하기</a>
+      <a href="/articles/" class="back">← 아티클 목록</a>
+    </nav>
+
+    <main>
+      <h1 id="intro">데이터베이스 정규화 완벽 가이드 — 1NF부터 3NF까지</h1>
+      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="lead">
+        정규화(Normalization)는 테이블을 잘게 쪼개는 규칙처럼 보이지만, 실은 "같은 사실을
+        여러 곳에 중복해서 적어두지 않기 위한" 매우 실용적인 절차입니다. 이 글은 이상현상이
+        실제로 어떻게 생기는지 예제 테이블로 직접 보여주고, 1NF·2NF·3NF를 순서대로 적용하며
+        문제를 해결하는 과정을 따라갑니다.
+      </p>
+
+      <section id="why">
+        <h2>왜 정규화하는가 — 이상현상 직접 보기</h2>
+        <p>
+          다음과 같이 주문 정보를 하나의 테이블에 전부 몰아넣었다고 해봅시다.
+        </p>
+        <table>
+          <tr><th>주문번호</th><th>고객명</th><th>고객이메일</th><th>상품명</th><th>단가</th><th>수량</th></tr>
+          <tr><td>1001</td><td>김민준</td><td>minjun@ex.com</td><td>키보드</td><td>45000</td><td>1</td></tr>
+          <tr><td>1001</td><td>김민준</td><td>minjun@ex.com</td><td>마우스</td><td>25000</td><td>2</td></tr>
+          <tr><td>1002</td><td>이서연</td><td>seoyeon@ex.com</td><td>모니터</td><td>210000</td><td>1</td></tr>
+        </table>
+        <p>
+          작동은 합니다. 하지만 이 구조는 세 가지 이상현상(anomaly)을 안고 있습니다.
+        </p>
+        <ul>
+          <li><strong>갱신 이상</strong> — 김민준 고객의 이메일이 바뀌면 1001번 주문의 두 행을
+            전부 찾아 고쳐야 합니다. 한 행만 고치면 같은 고객의 이메일이 행마다 달라지는
+            모순이 생깁니다.</li>
+          <li><strong>삽입 이상</strong> — 아직 주문을 한 번도 하지 않은 신규 고객의 정보를
+            등록하려면, 주문이 없으므로 이 테이블에는 넣을 방법이 없습니다.</li>
+          <li><strong>삭제 이상</strong> — 1002번 주문이 취소되어 그 행을 지우면, 이서연이라는
+            고객 정보 자체가 시스템에서 통째로 사라집니다.</li>
+        </ul>
+        <p>
+          정규화는 이 세 가지 이상현상을 없애기 위해, "하나의 사실은 하나의 자리에만 저장한다"는
+          원칙에 따라 테이블을 나누는 절차입니다.
+        </p>
+      </section>
+
+      <section id="1nf">
+        <h2>1. 제1정규형(1NF) — 원자값과 반복 그룹 제거</h2>
+        <p>
+          1NF의 규칙은 단순합니다. <strong>모든 컬럼 값이 더 이상 쪼갤 수 없는 원자값이어야
+          하고, 같은 성격의 값을 여러 컬럼에 반복해서 늘어놓지 않아야 합니다.</strong>
+        </p>
+        <p>다음처럼 한 주문에 상품을 여러 개 담으려고 컬럼을 늘린 테이블을 생각해 봅시다.</p>
+        <table>
+          <tr><th>주문번호</th><th>고객명</th><th>상품1</th><th>상품2</th><th>상품3</th></tr>
+          <tr><td>1001</td><td>김민준</td><td>키보드</td><td>마우스</td><td>(없음)</td></tr>
+        </table>
+        <p>
+          상품이 네 개인 주문이 들어오는 순간 컬럼이 모자랍니다. 상품3, 상품4를 계속 추가하는
+          방식은 확장에 한계가 있고, "상품이 몇 개인지" 조회하는 SQL도 지저분해집니다. 이런
+          반복 그룹은 행으로 풀어내야 합니다.
+        </p>
+        <table>
+          <tr><th>주문번호</th><th>고객명</th><th>상품명</th></tr>
+          <tr><td>1001</td><td>김민준</td><td>키보드</td></tr>
+          <tr><td>1001</td><td>김민준</td><td>마우스</td></tr>
+        </table>
+        <p>
+          한 셀에 여러 값을 콤마로 이어붙이는 것("키보드,마우스")도 1NF 위반입니다. 원자값이
+          아니기 때문에 특정 상품이 포함된 주문을 찾으려면 문자열을 파싱해야 하고, 인덱스도
+          제대로 걸리지 않습니다.
+        </p>
+      </section>
+
+      <section id="2nf">
+        <h2>2. 제2정규형(2NF) — 부분 함수 종속 제거</h2>
+        <p>
+          2NF는 <strong>1NF를 만족하면서, 기본키가 복합키일 때 비주요 속성이 기본키 전체가
+          아니라 일부에만 종속되는 경우(부분 함수 종속)를 없애는 것</strong>입니다. 기본키가
+          단일 컬럼이면 2NF는 자동으로 만족되므로, 이 규칙은 복합키를 쓸 때만 의미가 있습니다.
+        </p>
+        <p>수강신청 테이블을 예로 들어 보겠습니다. 기본키는 (학번, 과목코드)입니다.</p>
+        <table>
+          <tr><th>학번</th><th>과목코드</th><th>성적</th><th>학생이름</th><th>담당교수</th></tr>
+          <tr><td>2024001</td><td>DB301</td><td>A+</td><td>박지훈</td><td>최교수</td></tr>
+          <tr><td>2024001</td><td>OS201</td><td>B0</td><td>박지훈</td><td>정교수</td></tr>
+        </table>
+        <p>
+          여기서 <code>성적</code>은 (학번, 과목코드) 조합 전체에 종속됩니다 — 같은 학생이라도
+          과목이 다르면 성적이 다를 수 있으니 정상입니다. 문제는 <code>학생이름</code>과
+          <code>담당교수</code>입니다. <code>학생이름</code>은 학번만으로 정해지고,
+          <code>담당교수</code>는 과목코드만으로 정해집니다. 즉 기본키의 <em>일부</em>에만
+          종속되는 부분 함수 종속이 있는 것입니다. 이 상태에서는 같은 학생의 정보가 수강한
+          과목 수만큼 중복되고, 담당교수 정보도 그 과목을 수강하는 학생 수만큼 중복됩니다.
+        </p>
+        <p>부분 종속을 제거하려면 세 테이블로 분리합니다.</p>
+        <pre><code>CREATE TABLE students (
+  student_id   VARCHAR(9)   PRIMARY KEY,
+  name         VARCHAR(50)  NOT NULL
+);
+
+CREATE TABLE courses (
+  course_code  VARCHAR(10)  PRIMARY KEY,
+  professor    VARCHAR(50)  NOT NULL
+);
+
+CREATE TABLE enrollments (
+  student_id   VARCHAR(9)  NOT NULL REFERENCES students(student_id),
+  course_code  VARCHAR(10) NOT NULL REFERENCES courses(course_code),
+  grade        VARCHAR(2),
+  PRIMARY KEY (student_id, course_code)
+);</code></pre>
+        <p>
+          이제 <code>학생이름</code>은 students에, <code>담당교수</code>는 courses에 딱 한
+          자리씩만 존재합니다. 학생 이름이 바뀌어도 한 행만 고치면 됩니다.
+        </p>
+      </section>
+
+      <section id="3nf">
+        <h2>3. 제3정규형(3NF) — 이행 함수 종속 제거</h2>
+        <p>
+          3NF는 <strong>2NF를 만족하면서, 비주요 속성이 기본키가 아니라 다른 비주요 속성을
+          통해서 간접적으로 종속되는 경우(이행 함수 종속)를 없애는 것</strong>입니다. 이번엔
+          기본키가 단일 컬럼인 직원 테이블을 예로 들어 보겠습니다.
+        </p>
+        <table>
+          <tr><th>사번</th><th>이름</th><th>부서코드</th><th>부서명</th><th>부서위치</th></tr>
+          <tr><td>E001</td><td>한소희</td><td>D10</td><td>개발팀</td><td>3층</td></tr>
+          <tr><td>E002</td><td>오지환</td><td>D10</td><td>개발팀</td><td>3층</td></tr>
+        </table>
+        <p>
+          <code>부서명</code>과 <code>부서위치</code>는 <code>사번</code>에 직접 종속되는 게
+          아니라, <code>사번 → 부서코드 → 부서명·부서위치</code>처럼 <code>부서코드</code>를
+          거쳐서 간접적으로 정해집니다. 이게 이행 함수 종속입니다. 그 결과 같은 부서에 속한
+          직원 수만큼 부서명·부서위치가 중복되고, 부서 위치가 바뀌면 그 부서 직원 전원의
+          행을 찾아 고쳐야 합니다.
+        </p>
+        <p>부서 정보를 별도 테이블로 분리하면 이 문제가 사라집니다.</p>
+        <pre><code>CREATE TABLE departments (
+  dept_code  VARCHAR(5)   PRIMARY KEY,
+  name       VARCHAR(50)  NOT NULL,
+  location   VARCHAR(50)
+);
+
+CREATE TABLE employees (
+  emp_id     VARCHAR(5)  PRIMARY KEY,
+  name       VARCHAR(50) NOT NULL,
+  dept_code  VARCHAR(5)  NOT NULL REFERENCES departments(dept_code)
+);</code></pre>
+        <p>
+          이제 부서 위치가 바뀌면 departments 테이블의 딱 한 행만 고치면 되고, 그 부서
+          소속 직원 전체에 자동으로 반영됩니다(조인으로 조회하니까요).
+        </p>
+      </section>
+
+      <section id="beyond">
+        <h2>그 다음: BCNF와 실무 기준</h2>
+        <p>
+          이론적으로는 BCNF(보이스-코드 정규형), 4NF, 5NF까지 이어지지만, 이들은 후보키가
+          여러 개 겹치거나 다치 종속(multivalued dependency)이 있는 특수한 상황에서만
+          의미가 갈립니다. 실무 데이터 모델링에서는 <strong>3NF까지 정규화하는 것이 사실상의
+          표준</strong>입니다. 3NF를 만족하는 테이블 집합은 이상현상 없이 안전하게 갱신할 수
+          있고, 대부분의 업무 도메인은 그 이상의 정규형이 주는 이득이 거의 없습니다.
+        </p>
+      </section>
+
+      <section id="denorm">
+        <h2>반정규화는 언제 하나</h2>
+        <p>
+          정규화가 갱신 안정성을 위한 것이라면, 반정규화(denormalization)는 <strong>조회
+          성능</strong>을 위한 의도적인 타협입니다. 정규화된 구조는 조인이 늘어나고, 조인이
+          늘어나면 대량 데이터에서 조회가 느려질 수 있습니다.
+        </p>
+        <ul>
+          <li><strong>집계 컬럼 미리 저장</strong> — 예를 들어 주문 테이블에 주문상세를
+            합산한 <code>총액</code> 컬럼을 미리 저장해 두면, 매번 주문상세를 합산하는 조인
+            쿼리를 피할 수 있습니다. 대신 주문상세가 바뀔 때마다 총액을 함께 갱신해야 하는
+            책임이 생깁니다.</li>
+          <li><strong>자주 함께 조회되는 정보의 복사</strong> — 게시글 목록에 작성자
+            이름을 매번 사용자 테이블과 조인하는 대신, 게시 시점의 작성자 이름을
+            게시글 테이블에 함께 저장하는 경우입니다(작성자가 나중에 닉네임을 바꿔도
+            과거 게시글에는 옛 이름이 남아야 하는 게시판이라면 오히려 이쪽이 정답입니다).</li>
+          <li><strong>보고용 요약 테이블</strong> — 원본은 정규화된 채로 두고, 통계·리포트용
+            테이블만 따로 비정규화된 형태로 별도 생성·갱신하는 방식입니다.</li>
+        </ul>
+        <div class="note">
+          반정규화는 "정규화를 몰라서 안 한 것"과 결과물이 똑같아 보일 수 있습니다.
+          차이는 <strong>의도와 문서화</strong>에 있습니다 — 어떤 이상현상 위험을 감수하고
+          어떤 성능을 얻는지 알고 선택했는지가 기준입니다.
+        </div>
+      </section>
+
+      <section id="draw">
+        <h2>그려보면서 이해하기</h2>
+        <p>
+          정규화는 글로 읽는 것보다 직접 테이블을 쪼개 보면서 익히는 게 빠릅니다.
+          <a href="/app?lang=ko">YourERD 편집기</a>에서 위 예제의 엔티티를 그려보면, 관계를
+          연결할 때마다 외래키가 자동으로 만들어지는 과정을 통해 "부모 키가 자식에 어떻게
+          전파되는지"를 눈으로 확인할 수 있습니다.
+        </p>
+      </section>
+
+      <div class="related">
+        <h2>관련 아티클</h2>
+        <ul>
+          <li><a href="/articles/identifying-vs-non-identifying.html">식별 관계 vs 비식별 관계, 언제 무엇을 써야 할까</a></li>
+          <li><a href="/articles/surrogate-vs-natural-key.html">대리키 vs 자연키, 기본키는 무엇으로 잡아야 할까</a></li>
+          <li><a href="/articles/erd-antipatterns.html">ERD 설계 안티패턴 8가지</a></li>
+        </ul>
+      </div>
+
+      <footer>
+        YourERD 아티클 · 데이터베이스 정규화 완벽 가이드
+        <br />
+        <a href="/">홈</a> · <a href="/articles/">아티클 목록</a> · <a href="/manual.html">사용 설명서</a> ·
+        <a href="/about.html">소개</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

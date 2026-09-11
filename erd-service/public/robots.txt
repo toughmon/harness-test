@@ -10,7 +10,8 @@ Disallow: /api/
 # 공유 링크 — 이용자의 비공개 다이어그램이므로 색인 대상이 아니다
 Disallow: /d/
 
-# 원격 MCP 전송 엔드포인트
-Disallow: /mcp
+# 원격 MCP 전송 엔드포인트 — $ 없이 쓰면 접두사 매칭이라 /mcp-guide.html 같은
+# 콘텐츠 페이지까지 차단해버린다(실제로 그랬던 버그). 정확히 /mcp 하나만 차단.
+Disallow: /mcp$
 
 Sitemap: https://yourerd.com/sitemap.xml

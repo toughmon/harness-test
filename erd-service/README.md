@@ -38,9 +38,11 @@ Vite 멀티페이지 빌드(`index.html` + `app.html`)라 루트는 정적 HTML,
 |------|------|
 | `/` | 정적 랜딩 페이지 (`index.html`) — 서비스 소개·기능·FAQ |
 | `/en/` | 영문 랜딩 페이지 |
-| `/app`, `/app/*` | 편집기 SPA (`app.html`) |
+| `/app`, `/app/*` | 편집기 SPA (`app.html`, `noindex` — sitemap 대상 아님) |
 | `/d/:token` | 공유 링크 진입 — 앱 셸로 서빙 |
+| `/articles/`, `/articles/*.html` | 데이터 모델링 아티클 7편 + 목록 (한국어 전용, 영문은 후속) |
 | `/manual.html`, `/mcp-guide.html`, `/prompt-guide.html` | 가이드 (각 `/en/` 사본 존재) |
+| `/about.html`, `/contact.html` | 소개·문의 (각 `/en/` 사본 존재) |
 | `/privacy.html`, `/terms.html` | 개인정보처리방침·이용약관 (각 `/en/` 사본 존재) |
 | `/robots.txt`, `/sitemap.xml`, `/ads.txt` | 크롤러·광고 검증용 정적 파일 |
 | `/api/*` | JSON API. fallback 대상 아님 — 미정의 경로는 404 JSON |
@@ -51,6 +53,12 @@ Vite 멀티페이지 빌드(`index.html` + `app.html`)라 루트는 정적 HTML,
 > dev에서만 통과하고 배포 후 404가 나는 어긋남이 생긴다.
 > 예전에는 `/api/*`를 뺀 모든 경로가 `index.html`을 200으로 반환해(soft 404)
 > 존재하지 않는 URL이 무한히 유효한 페이지로 보였다.
+
+> **`robots.txt`의 `Disallow`는 접두사 매칭이다 — `$`를 빼먹으면 옆 페이지까지 막는다.**
+> `/mcp`(원격 MCP 전송 엔드포인트)를 차단하려고 `Disallow: /mcp`라고만 쓰면
+> `/mcp-guide.html`(콘텐츠 페이지, sitemap에도 등록됨)까지 접두사 매칭으로 함께
+> 차단된다. 반드시 `Disallow: /mcp$`처럼 끝을 고정해야 한다. 실제로 이 버그 때문에
+> 색인 요청한 콘텐츠 페이지 하나가 통째로 크롤링 차단된 적이 있다.
 
 ### 디렉토리 구조
 
@@ -239,6 +247,7 @@ Claude Code ──stdio──> erd-service/mcp ──https(JWT 쿠키)──> /a
 |---|---|
 | verify_server | 프로덕션 서버 — 정적 서빙·랜딩/앱 라우팅·404 처리·/api 404 |
 | verify_seo | 랜딩·정책 페이지, robots/sitemap, 소프트404 제거, 메타태그 |
+| verify_seo2 | robots.txt `/mcp$` 규칙, `/app` noindex+noscript, About/Contact, 아티클 7편 |
 | verify_backend | 가입→DB저장→세션복원→열기·모달·401/409 (24항목) |
 | verify_features | Undo/Redo·관계 타입 변경·자동 정렬·PNG (14항목) |
 | verify_fk_cleanup | 엔티티/관계 삭제 시 FK 정리, 비식별 FK (13항목) |

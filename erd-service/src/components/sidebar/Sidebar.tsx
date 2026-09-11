@@ -222,6 +222,14 @@ export default function Sidebar() {
             {t('sidebar.home')}
           </a>
           <span aria-hidden="true">·</span>
+          <a href={`${guideBase}/about.html`} target="_blank" rel="noopener noreferrer" className="hover:text-on-surface-variant no-underline text-inherit">
+            {t('sidebar.about')}
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href={`${guideBase}/contact.html`} target="_blank" rel="noopener noreferrer" className="hover:text-on-surface-variant no-underline text-inherit">
+            {t('sidebar.contact')}
+          </a>
+          <span aria-hidden="true">·</span>
           <a href={`${guideBase}/privacy.html`} target="_blank" rel="noopener noreferrer" className="hover:text-on-surface-variant no-underline text-inherit">
             {t('sidebar.privacy')}
           </a>

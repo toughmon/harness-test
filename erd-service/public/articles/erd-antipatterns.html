@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERD 설계 안티패턴 8가지 · YourERD</title>
+  <meta name="description" content="EAV 남용부터 순환 참조, 소프트 삭제 누락까지 — ERD와 데이터베이스 설계에서 반복되는 안티패턴 8가지를 사례와 함께 정리했습니다." />
+  <link rel="canonical" href="https://yourerd.com/articles/erd-antipatterns.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="ERD 설계 안티패턴 8가지" />
+  <meta property="og:description" content="EAV 남용부터 순환 참조, 소프트 삭제 누락까지 — ERD와 데이터베이스 설계에서 반복되는 안티패턴 8가지를 사례와 함께 정리했습니다." />
+  <meta property="og:url" content="https://yourerd.com/articles/erd-antipatterns.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="article:published_time" content="2026-09-11" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <style>
+    nav.toc { position: sticky; top: 0; align-self: flex-start; width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto; padding: 28px 16px 40px 24px; border-right: 1px solid var(--outline-variant); }
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--primary); margin-bottom: 4px; }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+    main h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+    .meta { font-size: 12.5px; color: var(--outline); font-family: var(--font-mono); margin: 0 0 20px; }
+    .num { display: inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--primary-container); color:#17173a; font-weight:800; font-size:13px; font-family: var(--font-mono); margin-right:8px; }
+    .related { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--outline-variant); }
+    .related h2 { border: none; margin-bottom: 12px; }
+    .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .related a { color: var(--primary); text-decoration: none; }
+    .related a:hover { text-decoration: underline; }
+    @media (max-width: 860px) { nav.toc { display: none; } main { padding: 28px 22px 80px; } }
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="brand">YourERD</div>
+      <div class="sub">아티클</div>
+      <a href="#intro">개요</a>
+      <a href="#eav">1. EAV 남용</a>
+      <a href="#stringly">2. 모든 걸 문자열로</a>
+      <a href="#null">3. NULL 허용 남발</a>
+      <a href="#cyclic">4. 무심코 만든 순환 참조</a>
+      <a href="#longpk">5. 끝없이 길어지는 복합키</a>
+      <a href="#m2m">6. 다대다를 억지로 표현</a>
+      <a href="#csv">7. 콤마로 여러 값 저장</a>
+      <a href="#genericname">8. 이름만 봐선 알 수 없는 테이블</a>
+      <a href="/articles/" class="back">← 아티클 목록</a>
+    </nav>
+
+    <main>
+      <h1 id="intro">ERD 설계 안티패턴 8가지</h1>
+      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="lead">
+        데이터 모델링 실수는 대부분 "당장은 편해서" 벌어집니다. 급하게 컬럼 하나만 추가하면
+        되는 줄 알았던 결정이 몇 달 뒤 마이그레이션 지옥으로 돌아오는 경우가 많습니다.
+        자주 반복되는 안티패턴 8가지를 정리했습니다. 지금 그리고 있는 모델에도 하나쯤은
+        있을 겁니다.
+      </p>
+
+      <section id="eav">
+        <h2><span class="num">1</span>만능키(EAV) 남용</h2>
+        <p>
+          EAV(Entity-Attribute-Value)는 <code>entity_id, attribute_name, value</code> 세
+          컬럼만으로 어떤 종류의 속성이든 저장할 수 있게 만든 구조입니다. "상품마다 속성이
+          제각각이라 컬럼을 미리 정할 수 없다"는 이유로 자주 채택되지만, 대가가 큽니다.
+        </p>
+        <pre><code>-- EAV로 상품 속성을 저장한 경우
+CREATE TABLE product_attributes (
+  product_id  BIGINT,
+  attr_name   VARCHAR(50),
+  attr_value  VARCHAR(255)
+);
+-- "색상이 빨강이고 가격이 3만원 이상인 상품"을 찾으려면
+-- attr_name='color' 조건과 attr_name='price' 조건을
+-- 각각 자기 조인해서 합쳐야 합니다.</code></pre>
+        <p>
+          타입 제약이 사라지고(모든 값이 문자열), 인덱스 효율이 떨어지고, 조건 하나 추가할
+          때마다 자기 조인이 하나씩 늘어납니다. 속성이 진짜 동적이어야 한다면 JSON 컬럼
+          하나로 담거나, 상품 카테고리별로 실제 컬럼을 가진 별도 테이블을 두는 편이 대개
+          더 낫습니다.
+        </p>
+      </section>
+
+      <section id="stringly">
+        <h2><span class="num">2</span>모든 것을 문자열로 저장</h2>
+        <p>
+          날짜를 <code>VARCHAR</code>로, 금액을 <code>VARCHAR</code>로, 참/거짓을
+          <code>VARCHAR(1)</code>("Y"/"N")로 저장하는 경우입니다. 당장은 유연해 보이지만
+          DB가 해줄 수 있는 검증을 전부 애플리케이션 책임으로 떠넘기게 됩니다 — 날짜 형식이
+          잘못 들어와도 DB는 막지 못하고, 금액 컬럼에 정렬·집계 함수를 쓰려면 매번 형변환이
+          필요합니다. 데이터 성격에 맞는 실제 타입(DATE, DECIMAL, BOOLEAN)을 쓰는 것만으로
+          이런 문제 대부분이 원천적으로 사라집니다.
+        </p>
+      </section>
+
+      <section id="null">
+        <h2><span class="num">3</span>NULL 허용 남발</h2>
+        <p>
+          "일단 NULL 허용으로 만들어 두면 나중에 문제 될 일이 없다"는 생각으로 거의 모든
+          컬럼을 NULL 허용으로 여는 경우입니다. 문제는 그 순간부터 모든 쿼리가 "이 값이
+          없을 수도 있다"는 경우의 수를 떠안게 된다는 점입니다. 집계 함수가 NULL을 조용히
+          건너뛰거나, 조인 조건에서 NULL이 매칭되지 않아 예상보다 행이 줄어드는 식으로
+          버그가 숨어듭니다. 실제로 값이 없을 수 없는 컬럼(주문의 주문일시, 회원의 아이디
+          등)은 처음부터 NOT NULL로 선언해야 합니다.
+        </p>
+      </section>
+
+      <section id="cyclic">
+        <h2><span class="num">4</span>무심코 만든 순환 참조</h2>
+        <p>
+          A가 B를 참조하고 B가 다시 A를 참조하는 구조입니다. 예를 들어 <code>orders</code>
+          테이블에 "가장 최근 배송 상태"를 빠르게 조회하려고 <code>latest_shipment_id</code>를
+          두고, <code>shipments</code> 테이블은 자기가 어느 주문 소속인지 알려고
+          <code>order_id</code>를 두면 순환 참조가 생깁니다. 이 상태에서는 둘 중 어느
+          테이블도 먼저 만들 수 없고(상대가 먼저 있어야 참조할 수 있으니), 삭제도 순서를
+          잘못 잡으면 실패합니다. 대개는 한쪽 방향의 참조가 불필요합니다 — 위 예제라면
+          "가장 최근 배송"은 <code>shipments</code>를 주문번호로 조회해 정렬하는 것으로
+          충분하고, <code>orders</code> 쪽에 역참조 컬럼을 둘 필요가 없습니다.
+        </p>
+      </section>
+
+      <section id="longpk">
+        <h2><span class="num">5</span>식별 관계를 연쇄로 쌓아 끝없이 길어지는 복합키</h2>
+        <p>
+          식별 관계를 3~4단계 연속으로 쌓으면 맨 아래 자식 테이블의 기본키에 조상 전체의
+          키가 줄줄이 포함됩니다. 예를 들어 회사 → 부서 → 팀 → 팀원까지 전부 식별 관계로
+          이으면, 팀원 테이블의 PK가 (회사코드, 부서코드, 팀코드, 팀원번호) 네 개 컬럼짜리
+          복합키가 됩니다. 이 키를 참조하는 자식이 또 생기면 다섯, 여섯 개로 계속 불어납니다.
+          모든 계층이 정말로 "부모 없이는 의미가 없는" 약한 개체인지 다시 확인하고, 아니라면
+          대리키(surrogate key) 도입을 고려할 시점입니다. 자세한 판단 기준은
+          <a href="/articles/surrogate-vs-natural-key.html">대리키 vs 자연키</a> 글에서
+          다룹니다.
+        </p>
+      </section>
+
+      <section id="m2m">
+        <h2><span class="num">6</span>다대다 관계를 중간 테이블 없이 억지로 표현</h2>
+        <p>
+          학생과 과목처럼 서로 여러 개씩 연결되는 다대다(N:M) 관계를, 한쪽 테이블에
+          "과목1, 과목2, 과목3" 컬럼을 늘어놓거나 콤마로 이어붙인 문자열로 표현하려는
+          시도입니다. 관계형 데이터베이스는 다대다를 직접 표현하지 못하므로, 반드시
+          교차 테이블(연결 테이블)로 풀어야 합니다.
+        </p>
+        <pre><code>CREATE TABLE enrollments (
+  student_id  BIGINT NOT NULL REFERENCES students(student_id),
+  course_id   BIGINT NOT NULL REFERENCES courses(course_id),
+  PRIMARY KEY (student_id, course_id)
+);</code></pre>
+        <p>
+          교차 테이블을 만들면 부수적으로 좋은 점이 있습니다 — "언제 수강신청했는지",
+          "성적이 몇 점인지"처럼 관계 자체에 속하는 추가 정보를 자연스럽게 담을 자리가
+          생깁니다.
+        </p>
+      </section>
+
+      <section id="csv">
+        <h2><span class="num">7</span>한 컬럼에 콤마로 여러 값 저장</h2>
+        <p>
+          <code>tags</code> 컬럼에 "전자기기,할인,인기상품"처럼 콤마로 이어붙여 저장하는
+          경우입니다. 1NF를 위반할 뿐 아니라, 특정 태그가 붙은 행을 찾으려면
+          <code>LIKE '%할인%'</code> 같은 패턴 매칭을 써야 해서 인덱스가 사실상 무력화되고,
+          "할인"과 "대할인"을 문자열 수준에서 구분하지 못하는 오탐도 생깁니다. 태그처럼
+          다대다 성격의 값은 별도 태그 테이블과 교차 테이블로 분리하는 것이 정석입니다.
+        </p>
+      </section>
+
+      <section id="genericname">
+        <h2><span class="num">8</span>이름만 봐선 무엇인지 알 수 없는 테이블</h2>
+        <p>
+          <code>data</code>, <code>info</code>, <code>misc</code>, <code>common</code>
+          같은 이름의 테이블은 급하게 뭔가를 저장할 곳이 필요할 때 만들어지고, 시간이
+          지나면서 서로 관련 없는 온갖 정보가 그 안에 계속 쌓입니다. 반년 뒤 이 테이블을
+          마주친 사람은 이름만으로는 용도를 전혀 짐작할 수 없고, 코드 전체를 뒤져서야
+          간신히 이해하게 됩니다. 테이블은 그 자체로 "이게 무엇을 저장하는 곳인지"를
+          설명할 수 있는 구체적인 이름을 가져야 합니다. 네이밍 규칙 전반은
+          <a href="/articles/column-naming-convention.html">컬럼 네이밍 컨벤션 가이드</a>에서
+          더 자세히 다룹니다.
+        </p>
+      </section>
+
+      <div class="note">
+        여덟 가지 모두 공통점이 있습니다 — 처음엔 "당장 편하려고" 선택했지만, 데이터가
+        쌓일수록 되돌리기 비용이 기하급수적으로 커진다는 점입니다. ERD를 그리는 단계에서
+        미리 점검하는 게 마이그레이션보다 훨씬 쌉니다. <a href="/app?lang=ko">YourERD</a>로
+        먼저 구조를 그려보고 관계와 키를 눈으로 확인해 보세요.
+      </div>
+
+      <div class="related">
+        <h2>관련 아티클</h2>
+        <ul>
+          <li><a href="/articles/normalization-guide.html">데이터베이스 정규화 완벽 가이드</a></li>
+          <li><a href="/articles/surrogate-vs-natural-key.html">대리키 vs 자연키</a></li>
+          <li><a href="/articles/column-naming-convention.html">데이터베이스 컬럼 네이밍 컨벤션 가이드</a></li>
+        </ul>
+      </div>
+
+      <footer>
+        YourERD 아티클 · ERD 설계 안티패턴 8가지
+        <br />
+        <a href="/">홈</a> · <a href="/articles/">아티클 목록</a> · <a href="/manual.html">사용 설명서</a> ·
+        <a href="/about.html">소개</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

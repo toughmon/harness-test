@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ERD 편집기 · YourERD</title>
     <meta name="description" content="YourERD 편집기 — 브라우저에서 바로 엔티티와 관계를 그리고 MySQL DDL로 내보내는 ERD 작업 화면입니다." />
+    <!-- 편집기는 로그인 상태·다이어그램 내용에 따라 완전히 달라지는 도구 화면이라
+         검색 결과에 노출될 콘텐츠가 아니다(색인 대상은 랜딩 페이지 쪽). sitemap.xml에도
+         올리지 않는다 — 올려두면 "본문 없는 페이지에 광고를 붙이려는 사이트"로 보일 수 있다. -->
+    <meta name="robots" content="noindex, follow" />
     <link rel="canonical" href="https://yourerd.com/app" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="YourERD" />
@@ -21,6 +25,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="max-width:640px;margin:80px auto;padding:0 24px;font-family:system-ui,sans-serif;color:#e5e2e1;text-align:center;">
+        <h1 style="font-size:22px;">JavaScript가 꺼져 있습니다</h1>
+        <p style="color:#c7c4d7;line-height:1.7;">
+          YourERD 편집기는 브라우저에서 실행되는 도구라 JavaScript가 필요합니다.
+          브라우저 설정에서 JavaScript를 켠 뒤 새로고침해 주세요.
+          서비스 소개는 <a href="/" style="color:#c0c1ff;">홈</a>에서, 사용법은
+          <a href="/manual.html" style="color:#c0c1ff;">사용 설명서</a>에서 JavaScript 없이도 읽을 수 있습니다.
+        </p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

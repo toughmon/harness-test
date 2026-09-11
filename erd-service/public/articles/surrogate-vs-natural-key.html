@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대리키 vs 자연키, 기본키는 무엇으로 잡아야 할까 · YourERD</title>
+  <meta name="description" content="실세계 값을 그대로 쓰는 자연키와 인위적으로 부여하는 대리키의 장단점, 그리고 실무에서 널리 쓰이는 절충안을 정리했습니다." />
+  <link rel="canonical" href="https://yourerd.com/articles/surrogate-vs-natural-key.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="대리키 vs 자연키, 기본키는 무엇으로 잡아야 할까" />
+  <meta property="og:description" content="실세계 값을 그대로 쓰는 자연키와 인위적으로 부여하는 대리키의 장단점, 그리고 실무에서 널리 쓰이는 절충안을 정리했습니다." />
+  <meta property="og:url" content="https://yourerd.com/articles/surrogate-vs-natural-key.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="article:published_time" content="2026-09-11" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <style>
+    nav.toc { position: sticky; top: 0; align-self: flex-start; width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto; padding: 28px 16px 40px 24px; border-right: 1px solid var(--outline-variant); }
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--primary); margin-bottom: 4px; }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+    main h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+    .meta { font-size: 12.5px; color: var(--outline); font-family: var(--font-mono); margin: 0 0 20px; }
+    .related { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--outline-variant); }
+    .related h2 { border: none; margin-bottom: 12px; }
+    .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .related a { color: var(--primary); text-decoration: none; }
+    .related a:hover { text-decoration: underline; }
+    @media (max-width: 860px) { nav.toc { display: none; } main { padding: 28px 22px 80px; } }
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="brand">YourERD</div>
+      <div class="sub">아티클</div>
+      <a href="#intro">개요</a>
+      <a href="#natural">자연키란</a>
+      <a href="#surrogate">대리키란</a>
+      <a href="#practice">실무 절충안</a>
+      <a href="#example">예제</a>
+      <a href="#identifying">식별 관계와의 상호작용</a>
+      <a href="#lookup">자연키가 더 나은 경우</a>
+      <a href="#uuid">UUID vs Auto Increment</a>
+      <a href="/articles/" class="back">← 아티클 목록</a>
+    </nav>
+
+    <main>
+      <h1 id="intro">대리키 vs 자연키, 기본키는 무엇으로 잡아야 할까</h1>
+      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="lead">
+        기본키(Primary Key)를 무엇으로 잡을지는 테이블을 만드는 순간 가장 먼저 마주치는
+        결정이면서, 나중에 가장 바꾸기 어려운 결정이기도 합니다. 실세계에 이미 존재하는
+        값을 쓸지, 시스템이 새로 발급하는 값을 쓸지 — 이 글에서 기준을 정리합니다.
+      </p>
+
+      <section id="natural">
+        <h2>자연키(Natural Key)란</h2>
+        <p>
+          업무 도메인에 이미 존재하는, 비즈니스적으로 의미 있는 값을 그대로 기본키로 쓰는
+          방식입니다. 주민등록번호, 이메일, 학번, 사업자등록번호 같은 값이 여기에 해당합니다.
+        </p>
+        <ul>
+          <li><strong>장점</strong> — 값 자체가 의미를 가지고 있어 별도 조회 없이도 "이게
+            무엇인지" 알 수 있습니다. 중복 데이터가 시스템에 들어오는 것을 자연스럽게
+            막아주기도 합니다(같은 이메일로 두 번 가입할 수 없다는 제약이 그 자체로
+            비즈니스 규칙과 일치).</li>
+          <li><strong>단점</strong> — 실세계 값은 바뀔 수 있습니다. 이메일은 변경되고,
+            사업자등록번호도 법인 사정에 따라 달라질 수 있습니다. 기본키가 바뀐다는 건
+            그 값을 참조하는 모든 외래키까지 연쇄적으로 갱신해야 한다는 뜻이라 파급 범위가
+            큽니다. 여러 컬럼을 합쳐야 유일성이 보장되는 경우(예: 이름+생년월일)라면 복합키가
+            되어 외래키로 전파될 때마다 컬럼 수가 늘어나는 부담도 있습니다. 개인정보에 해당하는
+            값(주민등록번호 등)을 기본키로 쓰면 그 값이 여러 테이블에 외래키로 퍼지면서
+            개인정보 관리 범위가 의도치 않게 넓어지는 문제도 있습니다.</li>
+        </ul>
+      </section>
+
+      <section id="surrogate">
+        <h2>대리키(Surrogate Key)란</h2>
+        <p>
+          비즈니스 의미가 전혀 없이, 시스템이 순전히 식별 목적으로만 발급하는 값입니다.
+          auto-increment 정수나 UUID가 대표적입니다.
+        </p>
+        <ul>
+          <li><strong>장점</strong> — 비즈니스 규칙이 바뀌어도 절대 바뀔 일이 없습니다
+            (애초에 비즈니스와 무관한 값이므로). 정수형이면 크기가 작고 조인 성능도
+            좋습니다. 복합키를 만들 필요 없이 항상 단일 컬럼으로 끝납니다.</li>
+          <li><strong>단점</strong> — 값 자체에 아무 의미가 없어서, 예를 들어
+            <code>customer_id = 8821</code>이 어느 고객인지 값만 보고는 알 수 없습니다.
+            URL에 순차 정수 ID를 그대로 노출하면(<code>/orders/1024</code>) 전체 주문
+            건수를 유추당할 수 있다는 부수적인 단점도 있습니다.</li>
+        </ul>
+      </section>
+
+      <section id="practice">
+        <h2>실무 절충안 — 기본키는 대리키로, 자연키는 UNIQUE로</h2>
+        <p>
+          두 방식의 장점만 취하는 가장 널리 쓰이는 패턴은 <strong>기본키는 대리키로 두고,
+          비즈니스적으로 유일해야 하는 자연값은 UNIQUE 제약으로 별도 보존</strong>하는
+          것입니다.
+        </p>
+      </section>
+
+      <section id="example">
+        <h2>예제</h2>
+        <pre><code>CREATE TABLE customers (
+  customer_id  BIGINT       PRIMARY KEY AUTO_INCREMENT,  -- 대리키: 절대 안 바뀜
+  email        VARCHAR(255) NOT NULL UNIQUE,              -- 자연키: 비즈니스 유일성 보장
+  business_no  VARCHAR(20)  UNIQUE                        -- 사업자번호도 같은 방식
+);</code></pre>
+        <p>
+          이렇게 하면 외래키는 전부 안정적인 <code>customer_id</code>를 참조하고,
+          "이메일 중복 가입 방지" 같은 비즈니스 규칙은 UNIQUE 제약이 그대로 지켜줍니다.
+          이메일이 바뀌어도 <code>customers</code> 테이블의 한 행만 갱신하면 되고, 그
+          고객을 참조하는 수십 개의 외래키는 전혀 영향받지 않습니다.
+        </p>
+      </section>
+
+      <section id="identifying">
+        <h2>식별 관계와의 상호작용</h2>
+        <p>
+          자연키를 기본키로 쓰면서 식별 관계를 여러 단계 이어가면, 자식의 기본키가 조상의
+          자연키를 계속 이어붙인 형태로 길어집니다. 대리키를 도입하면 각 테이블의 기본키가
+          항상 단일 컬럼으로 유지되어, 식별 관계를 몇 단계를 쌓든 자식 기본키가 무한정
+          길어지는 문제를 피할 수 있습니다. 이 문제는
+          <a href="/articles/erd-antipatterns.html">ERD 설계 안티패턴 8가지</a>의 "끝없이
+          길어지는 복합키" 항목에서도 다룹니다. 식별·비식별 관계 자체의 판단 기준이
+          궁금하다면 <a href="/articles/identifying-vs-non-identifying.html">이 글</a>도
+          참고하세요.
+        </p>
+      </section>
+
+      <section id="lookup">
+        <h2>자연키가 오히려 더 나은 경우</h2>
+        <p>
+          모든 테이블에 무조건 대리키를 붙여야 하는 건 아닙니다. <strong>거의 바뀌지
+          않고, 값 자체가 이미 표준화되어 있는 참조 코드 테이블(lookup table)</strong>은
+          자연키가 더 실용적일 때가 많습니다.
+        </p>
+        <pre><code>CREATE TABLE countries (
+  country_code CHAR(2) PRIMARY KEY,  -- ISO 3166 국가코드(KR, US, JP...)
+  name         VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE currencies (
+  currency_code CHAR(3) PRIMARY KEY,  -- ISO 4217 통화코드(KRW, USD...)
+  symbol        VARCHAR(5)
+);</code></pre>
+        <p>
+          국가코드나 통화코드처럼 이미 국제 표준으로 고정되어 있고 사실상 변경될 일이
+          없는 값이라면, 별도 대리키를 두는 것보다 표준 코드 자체를 기본키로 쓰는 편이
+          조인 결과를 읽을 때도 <code>country_code = 'KR'</code>처럼 바로 눈에 들어와
+          디버깅이 쉬워집니다. 다만 이런 선택은 "이 값이 정말로 외부 표준에 묶여
+          안정적인가"를 먼저 확인한 뒤에 해야 합니다 — 사내에서 임의로 정한 코드값이라면
+          나중에 체계가 바뀔 수 있으므로 이 예외에 해당하지 않습니다.
+        </p>
+        <div class="note">
+          복합 자연키를 그대로 기본키로 쓰는 경우도 주의가 필요합니다. 예를 들어
+          (연도, 학기, 학번)을 기본키로 삼으면 이 값을 참조하는 모든 자식 테이블에
+          세 컬럼이 함께 복사되어야 합니다. 자연키가 복합키가 되는 순간, 대리키 도입을
+          한 번 더 검토해 볼 가치가 있습니다.
+        </div>
+      </section>
+
+      <section id="uuid">
+        <h2>UUID vs Auto Increment</h2>
+        <p>
+          대리키 안에서도 정수 auto-increment와 UUID 중 선택이 남아 있습니다.
+        </p>
+        <table>
+          <tr><th>기준</th><th>Auto Increment 정수</th><th>UUID</th></tr>
+          <tr><td>크기</td><td>작음(4~8바이트)</td><td>큼(16바이트, 문자열로는 36자)</td></tr>
+          <tr><td>생성 시점</td><td>DB에 INSERT되는 시점(서버 왕복 필요)</td><td>애플리케이션 코드에서 미리 생성 가능</td></tr>
+          <tr><td>분산 환경</td><td>여러 서버가 동시에 발급하면 충돌 위험(시퀀스 분리 필요)</td><td>서버 간 조율 없이도 충돌 확률이 사실상 0</td></tr>
+          <tr><td>순차 노출</td><td>값 자체가 순번이라 규모가 유추됨</td><td>무작위라 추측 불가</td></tr>
+          <tr><td>인덱스 지역성</td><td>순차 증가라 인덱스 뒤쪽에 계속 쌓여 효율적</td><td>완전 무작위(v4)라 인덱스 여기저기 흩어져 쓰기 성능에 불리할 수 있음</td></tr>
+        </table>
+        <p>
+          단일 서버, 단일 데이터베이스로 충분한 대부분의 서비스에서는 auto-increment
+          정수로 충분합니다. 여러 지역·여러 서버에서 동시에 키를 발급해야 하거나, 키를
+          외부에 노출해도 규모를 유추당하면 안 되는 경우에 UUID를 검토하면 됩니다.
+        </p>
+        <p>
+          다만 순수 무작위 UUID(버전 4)의 인덱스 지역성 문제를 보완하기 위해, 앞부분에
+          타임스탬프를 포함해 시간순으로 정렬되는 <strong>UUIDv7</strong> 같은 최신
+          표준도 등장했습니다. UUID의 "충돌 걱정 없는 분산 발급"이라는 장점은 그대로
+          유지하면서, auto-increment처럼 새로 생성된 값이 인덱스 뒤쪽에 순차적으로
+          쌓이게 해 쓰기 성능 저하를 줄여줍니다. 분산 환경에서 UUID가 필요하지만 인덱스
+          성능도 포기하기 어렵다면 검토해 볼 만한 선택지입니다.
+        </p>
+        <p>
+          <a href="/app?lang=ko">YourERD</a>에서 데이터 타입을 고를 때 UUID를 선택하면
+          MySQL DDL에는 <code>CHAR(36)</code>으로 매핑되어 내보내집니다.
+        </p>
+      </section>
+
+      <div class="related">
+        <h2>관련 아티클</h2>
+        <ul>
+          <li><a href="/articles/identifying-vs-non-identifying.html">식별 관계 vs 비식별 관계</a></li>
+          <li><a href="/articles/erd-antipatterns.html">ERD 설계 안티패턴 8가지</a></li>
+          <li><a href="/articles/normalization-guide.html">데이터베이스 정규화 완벽 가이드</a></li>
+        </ul>
+      </div>
+
+      <footer>
+        YourERD 아티클 · 대리키 vs 자연키
+        <br />
+        <a href="/">홈</a> · <a href="/articles/">아티클 목록</a> · <a href="/manual.html">사용 설명서</a> ·
+        <a href="/about.html">소개</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

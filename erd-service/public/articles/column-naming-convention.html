@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>데이터베이스 컬럼 네이밍 컨벤션 가이드 · YourERD</title>
+  <meta name="description" content="테이블·컬럼 이름을 어떻게 지어야 나중에 고생하지 않는지 — 기본키·외래키·불리언·날짜 컬럼별 관행과 예약어 함정까지 정리했습니다." />
+  <link rel="canonical" href="https://yourerd.com/articles/column-naming-convention.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="데이터베이스 컬럼 네이밍 컨벤션 가이드" />
+  <meta property="og:description" content="테이블·컬럼 이름을 어떻게 지어야 나중에 고생하지 않는지 — 기본키·외래키·불리언·날짜 컬럼별 관행과 예약어 함정까지 정리했습니다." />
+  <meta property="og:url" content="https://yourerd.com/articles/column-naming-convention.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="article:published_time" content="2026-09-11" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <style>
+    nav.toc { position: sticky; top: 0; align-self: flex-start; width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto; padding: 28px 16px 40px 24px; border-right: 1px solid var(--outline-variant); }
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--primary); margin-bottom: 4px; }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+    main h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+    .meta { font-size: 12.5px; color: var(--outline); font-family: var(--font-mono); margin: 0 0 20px; }
+    .related { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--outline-variant); }
+    .related h2 { border: none; margin-bottom: 12px; }
+    .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .related a { color: var(--primary); text-decoration: none; }
+    .related a:hover { text-decoration: underline; }
+    @media (max-width: 860px) { nav.toc { display: none; } main { padding: 28px 22px 80px; } }
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="brand">YourERD</div>
+      <div class="sub">아티클</div>
+      <a href="#intro">개요</a>
+      <a href="#tables">테이블명 규칙</a>
+      <a href="#pk">기본키 이름</a>
+      <a href="#fk">외래키 이름</a>
+      <a href="#bool">불리언 컬럼</a>
+      <a href="#date">날짜·시간 컬럼</a>
+      <a href="#reserved">예약어·모호한 이름</a>
+      <a href="#logical">물리명·논리명 병기</a>
+      <a href="#checklist">체크리스트</a>
+      <a href="/articles/" class="back">← 아티클 목록</a>
+    </nav>
+
+    <main>
+      <h1 id="intro">데이터베이스 컬럼 네이밍 컨벤션 가이드</h1>
+      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="lead">
+        이름은 스키마에서 가장 값싸게 바꿀 수 있어 보이지만 실제로는 가장 바꾸기 어려운
+        부분입니다. 컬럼명 하나가 애플리케이션 코드, ORM 매핑, API 응답, 리포트 쿼리
+        곳곳에 퍼지기 때문입니다. 처음부터 일관된 규칙을 정해 두는 것이 결국 가장 저렴한
+        선택입니다.
+      </p>
+
+      <section id="tables">
+        <h2>테이블명 규칙</h2>
+        <ul>
+          <li><strong>스네이크 케이스(snake_case)</strong> — <code>order_items</code>처럼
+            소문자와 언더스코어를 씁니다. MySQL·PostgreSQL 모두 대소문자를 구분하는 환경이
+            운영체제에 따라 갈리기 때문에, 아예 소문자로 통일하면 이 함정을 피할 수 있습니다.</li>
+          <li><strong>복수형 vs 단수형</strong> — 정답은 없지만 팀 안에서는 반드시 통일하세요.
+            복수형(<code>users</code>, <code>orders</code>)은 "이 테이블은 여러 행의 집합"이라는
+            느낌을 직관적으로 주고, 단수형(<code>user</code>, <code>order</code>)은 ORM에서
+            모델 클래스명과 1:1로 대응시키기 편합니다. 둘 다 널리 쓰이는 관행이니, 새 프로젝트를
+            시작한다면 첫 테이블을 만들 때 팀 규칙으로 명시해 두세요.</li>
+          <li><strong>접두어 남용 자제</strong> — <code>tbl_user</code>, <code>t_order</code>
+            처럼 테이블이라는 사실을 이름에 반복하는 접두어는 대부분 불필요합니다. 스키마
+            안에서 테이블이라는 건 이미 자명하기 때문입니다.</li>
+        </ul>
+      </section>
+
+      <section id="pk">
+        <h2>기본키 이름</h2>
+        <p>흔히 쓰이는 두 가지 패턴이 있습니다.</p>
+        <table>
+          <tr><th>패턴</th><th>예</th><th>장점</th><th>단점</th></tr>
+          <tr><td><code>id</code> 고정</td><td><code>users.id</code></td><td>어느 테이블이든 PK 컬럼명이 항상 같아 예측 가능. ORM 기본값과 잘 맞음</td><td>조인 후 SELECT * 결과에서 여러 <code>id</code>가 뒤섞여 구분이 안 됨</td></tr>
+          <tr><td><code>{table}_id</code></td><td><code>users.user_id</code></td><td>조인 결과에서도 어느 테이블의 id인지 바로 구분됨</td><td>테이블명이 바뀌면 PK 컬럼명도 같이 바꿔야 하는 부담</td></tr>
+        </table>
+        <p>
+          어느 쪽이든 팀 전체에서 예외 없이 통일하는 게 중요합니다. 절반은 <code>id</code>,
+          절반은 <code>{table}_id</code>를 쓰면 새 테이블을 만들 때마다 "이번엔 어느 쪽이지"를
+          매번 찾아봐야 합니다.
+        </p>
+      </section>
+
+      <section id="fk">
+        <h2>외래키 이름</h2>
+        <p>
+          기본 원칙은 <strong>참조하는 테이블의 PK 이름을 그대로 따르는 것</strong>입니다.
+          <code>orders</code> 테이블이 <code>customers.customer_id</code>를 참조한다면,
+          <code>orders.customer_id</code>로 이름 짓습니다. 이렇게 하면 컬럼명만 보고도
+          어느 테이블을 참조하는지 바로 알 수 있습니다.
+        </p>
+        <p>
+          예외는 <strong>한 테이블이 같은 부모를 여러 역할로 참조할 때</strong>입니다.
+          배송지 주소와 청구지 주소를 둘 다 <code>addresses</code> 테이블에서 참조한다면
+          그대로 이름을 따라 짓는 게 불가능합니다. 이때는 역할을 나타내는 접두어를 붙입니다.
+        </p>
+        <pre><code>CREATE TABLE orders (
+  order_id            BIGINT PRIMARY KEY,
+  shipping_address_id BIGINT NOT NULL REFERENCES addresses(address_id),
+  billing_address_id  BIGINT NOT NULL REFERENCES addresses(address_id)
+);</code></pre>
+        <p>
+          자기 자신을 참조하는 재귀 관계(예: 조직도의 상위 부서, 댓글의 부모 댓글)도 같은
+          원칙을 씁니다 — <code>employees.manager_id</code>처럼 역할 이름을 접두어로 붙여
+          그냥 <code>employee_id</code>를 또 쓰는 혼란을 피합니다.
+        </p>
+      </section>
+
+      <section id="bool">
+        <h2>불리언 컬럼</h2>
+        <p>
+          <code>is_</code>, <code>has_</code> 접두어로 참/거짓을 묻는 형태의 이름을 짓습니다.
+          <code>active</code>보다 <code>is_active</code>가, <code>coupon</code>보다
+          <code>has_coupon</code>이 값의 성격을 이름만 보고 바로 알 수 있게 해줍니다.
+          <code>status</code>처럼 값이 여러 개일 수 있는 컬럼과 불리언 컬럼을 이름 규칙으로
+          구분해 두면, 나중에 "이거 true/false 컬럼인가 enum인가"를 코드를 열어보지 않고도
+          알 수 있습니다.
+        </p>
+      </section>
+
+      <section id="date">
+        <h2>날짜·시간 컬럼</h2>
+        <ul>
+          <li><code>_at</code> 접미어 — 시각(타임스탬프)을 나타냅니다. <code>created_at</code>,
+            <code>updated_at</code>, <code>deleted_at</code>처럼 "언제 그 일이 일어났는가"를
+            기록합니다. 대부분의 프레임워크·ORM이 <code>created_at</code>/<code>updated_at</code>
+            이름을 기본 관행으로 채택하고 있어 그대로 따르는 게 여러모로 유리합니다.</li>
+          <li><code>_date</code> 접미어 — 시각이 아니라 순수한 날짜(연-월-일)를 나타냅니다.
+            <code>birth_date</code>, <code>due_date</code>처럼 시간 정보가 의미 없는 값에
+            씁니다.</li>
+        </ul>
+        <p>
+          이 둘을 구분해 두면 컬럼명만 보고도 타입이 TIMESTAMP인지 DATE인지 짐작할 수 있어
+          쿼리를 짤 때 실수를 줄여줍니다.
+        </p>
+      </section>
+
+      <section id="reserved">
+        <h2>예약어·모호한 이름 피하기</h2>
+        <p>
+          <code>order</code>, <code>group</code>, <code>user</code>, <code>key</code>,
+          <code>desc</code> 같은 이름은 여러 DBMS에서 예약어와 충돌하거나 충돌 직전까지
+          갑니다. 이런 이름을 쓰면 쿼리를 짤 때마다 매번 백틱이나 따옴표로 감싸야 하고,
+          어느 순간 감싸는 걸 깜빡해 문법 오류가 나는 식으로 계속 발목을 잡습니다.
+          <code>orders</code>처럼 복수형으로 짓거나 <code>user_groups</code>처럼 조금 더
+          구체적인 이름으로 바꾸는 것만으로 이런 문제 대부분이 사라집니다.
+        </p>
+        <p>
+          <code>data</code>, <code>info</code>, <code>misc</code>, <code>value</code>처럼
+          범용적이라 아무 의미도 전달하지 못하는 이름도 피하세요. 급하게 만든 컬럼일수록
+          이런 이름이 붙기 쉬운데, 반년 뒤에 그 컬럼이 정확히 뭘 담고 있었는지 이름만으로는
+          전혀 알 수 없게 됩니다.
+        </p>
+      </section>
+
+      <section id="logical">
+        <h2>물리명·논리명 병기 — 국내 실무 관행</h2>
+        <p>
+          국내 데이터베이스 설계 산출물에서는 컬럼의 <strong>물리명(영문, 실제 DB 컬럼명)</strong>과
+          <strong>논리명(한글, 사람이 읽는 설명)</strong>을 함께 적는 관행이 널리 쓰입니다.
+          예를 들어 물리명 <code>cust_grade_cd</code>에 논리명 "고객등급코드"를 나란히
+          붙여두는 식입니다. 영문 이름만으로는 축약이 많아 읽기 어렵고, 한글 이름만으로는
+          실제 쿼리를 짤 수 없기 때문에 둘을 함께 관리하는 게 실용적입니다.
+        </p>
+        <div class="note">
+          <a href="/app?lang=ko">YourERD</a>는 엔티티와 컬럼마다 물리명·논리명을 함께
+          입력할 수 있고, 두 값 모두 다이어그램과 MySQL DDL 주석에 반영됩니다.
+        </div>
+      </section>
+
+      <section id="checklist">
+        <h2>체크리스트</h2>
+        <ul>
+          <li>테이블명·컬럼명 모두 소문자 스네이크 케이스로 통일했는가</li>
+          <li>기본키 이름 패턴(<code>id</code> 또는 <code>{table}_id</code>)을 팀 전체가 같은 규칙으로 쓰는가</li>
+          <li>외래키가 참조하는 테이블의 PK 이름을 그대로 따르는가(역할이 겹치면 접두어로 구분했는가)</li>
+          <li>불리언 컬럼에 <code>is_</code>/<code>has_</code>를 붙였는가</li>
+          <li>타임스탬프는 <code>_at</code>, 날짜는 <code>_date</code>로 구분했는가</li>
+          <li>DBMS 예약어와 <code>data</code>류 범용 이름을 피했는가</li>
+        </ul>
+      </section>
+
+      <div class="related">
+        <h2>관련 아티클</h2>
+        <ul>
+          <li><a href="/articles/erd-antipatterns.html">ERD 설계 안티패턴 8가지</a></li>
+          <li><a href="/articles/surrogate-vs-natural-key.html">대리키 vs 자연키</a></li>
+        </ul>
+      </div>
+
+      <footer>
+        YourERD 아티클 · 데이터베이스 컬럼 네이밍 컨벤션 가이드
+        <br />
+        <a href="/">홈</a> · <a href="/articles/">아티클 목록</a> · <a href="/manual.html">사용 설명서</a> ·
+        <a href="/about.html">소개</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

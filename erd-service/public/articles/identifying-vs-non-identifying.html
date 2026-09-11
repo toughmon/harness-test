@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>식별 관계 vs 비식별 관계, 언제 무엇을 써야 할까 · YourERD</title>
+  <meta name="description" content="바커 표기법의 식별 관계와 비식별 관계를 개념부터 판단 기준, 표기법, SQL 차이까지 실제 예제로 정리했습니다." />
+  <link rel="canonical" href="https://yourerd.com/articles/identifying-vs-non-identifying.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="식별 관계 vs 비식별 관계, 언제 무엇을 써야 할까" />
+  <meta property="og:description" content="바커 표기법의 식별 관계와 비식별 관계를 개념부터 판단 기준, 표기법, SQL 차이까지 실제 예제로 정리했습니다." />
+  <meta property="og:url" content="https://yourerd.com/articles/identifying-vs-non-identifying.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="article:published_time" content="2026-09-11" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <style>
+    nav.toc { position: sticky; top: 0; align-self: flex-start; width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto; padding: 28px 16px 40px 24px; border-right: 1px solid var(--outline-variant); }
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--primary); margin-bottom: 4px; }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+    main h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+    .meta { font-size: 12.5px; color: var(--outline); font-family: var(--font-mono); margin: 0 0 20px; }
+    .related { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--outline-variant); }
+    .related h2 { border: none; margin-bottom: 12px; }
+    .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .related a { color: var(--primary); text-decoration: none; }
+    .related a:hover { text-decoration: underline; }
+    @media (max-width: 860px) { nav.toc { display: none; } main { padding: 28px 22px 80px; } }
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="brand">YourERD</div>
+      <div class="sub">아티클</div>
+      <a href="#intro">개요</a>
+      <a href="#identifying">식별 관계란</a>
+      <a href="#non-identifying">비식별 관계란</a>
+      <a href="#checklist">판단 기준 체크리스트</a>
+      <a href="#notation">표기법 차이</a>
+      <a href="#mistakes">흔한 실수</a>
+      <a href="#sql">SQL로 보는 차이</a>
+      <a href="#faq">자주 하는 질문</a>
+      <a href="/articles/" class="back">← 아티클 목록</a>
+    </nav>
+
+    <main>
+      <h1 id="intro">식별 관계 vs 비식별 관계, 언제 무엇을 써야 할까</h1>
+      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="lead">
+        ERD를 처음 그릴 때 가장 자주 멈칫하는 지점이 바로 이것입니다 — "이 관계, 실선으로
+        그려야 하나 점선으로 그려야 하나?" 바커 표기법에서 이 선택은 단순한 그림 스타일이
+        아니라 <strong>자식 엔티티의 기본키가 무엇으로 구성되는지</strong>를 결정합니다.
+      </p>
+
+      <section id="identifying">
+        <h2>식별 관계(Identifying Relationship)란</h2>
+        <p>
+          식별 관계는 <strong>자식 엔티티가 부모 없이는 자신을 식별할 수 없는 경우</strong>에
+          씁니다. 자식의 기본키 안에 부모의 기본키가 그대로 포함됩니다. 이런 자식을 흔히
+          "약한 개체(weak entity)"라고 부릅니다.
+        </p>
+        <p>주문과 주문상세를 예로 들어 보겠습니다.</p>
+        <table>
+          <tr><th>엔티티</th><th>기본키</th><th>설명</th></tr>
+          <tr><td>주문(Order)</td><td>주문번호</td><td>독립적으로 존재. 고유 번호로 스스로 식별됨</td></tr>
+          <tr><td>주문상세(OrderItem)</td><td>(주문번호, 순번)</td><td>어떤 주문에 속하는지 없이는 의미가 없음</td></tr>
+        </table>
+        <p>
+          "3번째 줄 상품"이라는 정보는 어떤 주문의 3번째 줄인지를 모르면 아무 의미가 없습니다.
+          그래서 주문상세의 기본키는 자기 혼자만의 값(순번)이 아니라 부모의 기본키(주문번호)를
+          포함한 (주문번호, 순번) 복합키가 됩니다. 부모가 사라지면 자식도 존재 이유가 사라지므로,
+          보통 부모 삭제 시 자식도 함께 삭제(CASCADE)되는 게 자연스럽습니다.
+        </p>
+      </section>
+
+      <section id="non-identifying">
+        <h2>비식별 관계(Non-identifying Relationship)란</h2>
+        <p>
+          비식별 관계는 <strong>자식이 부모와 관계 없이도 스스로 식별 가능한 고유 키를 이미
+          가지고 있는 경우</strong>에 씁니다. 외래키는 그냥 일반 컬럼으로 들어가고, 기본키의
+          일부가 되지 않습니다.
+        </p>
+        <table>
+          <tr><th>엔티티</th><th>기본키</th><th>설명</th></tr>
+          <tr><td>고객(Customer)</td><td>고객번호</td><td>독립적으로 존재</td></tr>
+          <tr><td>주문(Order)</td><td>주문번호</td><td>고객번호를 참조하지만, 정체성은 주문번호 자체로 이미 완성됨</td></tr>
+        </table>
+        <p>
+          주문은 어떤 고객이 냈는지와 무관하게 "1002번 주문"이라는 것만으로 이미 특정됩니다.
+          고객번호(FK)는 "누가 냈는가"라는 부가 정보일 뿐, 주문의 정체성을 구성하는 값이
+          아닙니다. 그래서 비식별 관계로 그리고, 주문 테이블의 기본키는 여전히 주문번호
+          하나입니다.
+        </p>
+      </section>
+
+      <section id="checklist">
+        <h2>판단 기준 체크리스트</h2>
+        <p>둘 중 헷갈릴 때는 아래 세 질문을 순서대로 물어보세요.</p>
+        <ul>
+          <li><strong>부모 없이 이 자식 레코드가 "무엇"인지 말할 수 있나요?</strong>
+            말할 수 없다면(예: "3번째 줄") 식별 관계입니다.</li>
+          <li><strong>부모가 바뀌면 이 자식의 정체성도 바뀌어야 하나요?</strong>
+            예를 들어 주문상세를 다른 주문으로 옮기면 그건 사실상 새로운 레코드입니다 —
+            식별 관계. 반면 주문을 다른 고객 명의로 옮겨도 "그 주문"이라는 사실 자체는
+            안 바뀝니다 — 비식별 관계.</li>
+          <li><strong>이 자식이 부모 없이 혼자 조회·참조될 일이 있나요?</strong>
+            "주문상세 3213번" 자체를 부모 없이 찾을 일은 거의 없지만, "주문 1002번"은
+            그 자체로 조회·환불·배송 추적의 대상이 됩니다.</li>
+        </ul>
+      </section>
+
+      <section id="notation">
+        <h2>표기법 차이</h2>
+        <p>
+          바커 표기법에서는 관계선의 <strong>부모 쪽</strong>이 항상 점선이고, <strong>자식
+          쪽</strong>의 실선/점선 여부로 식별·비식별을 구분합니다.
+        </p>
+        <ul>
+          <li><strong>식별 관계</strong> — 자식 쪽 선이 실선입니다. 자식 엔티티 박스도
+            보통 각진 사각형(강한 개체와 시각적으로 구분하기 위해 둥근 모서리 없이)으로
+            그립니다.</li>
+          <li><strong>비식별 관계</strong> — 자식 쪽 선도 점선입니다(필수 참여인지 선택
+            참여인지에 따라 또 나뉘지만, 식별 여부와는 별개의 축입니다).</li>
+        </ul>
+        <p>
+          까마귀발(crow's foot) 기호는 식별·비식별과 무관하게 "다(many)"쪽에 붙어 다중성을
+          나타냅니다 — 이 부분이 헷갈리는 경우가 많은데, 다중성과 식별 여부는 서로 독립적인
+          두 가지 정보라는 점을 기억해 두면 정리가 쉽습니다. 표기법 자체를 더 깊이 비교하고
+          싶다면 <a href="/articles/barker-vs-ie-notation.html">바커 표기법과 IE 표기법 비교</a>
+          글도 참고해 보세요.
+        </p>
+      </section>
+
+      <section id="mistakes">
+        <h2>흔한 실수</h2>
+        <ul>
+          <li><strong>모든 관계를 습관적으로 비식별로만 그리는 경우</strong> — 특히 도구가
+            기본값을 비식별로 주면 그대로 두기 쉽습니다. 하지만 주문상세처럼 명백히 약한
+            개체인데 비식별로 그리면, 그 자식이 부모 없이도 독립적으로 존재할 수 있는 것처럼
+            모델이 거짓말을 하게 됩니다.</li>
+          <li><strong>반대로 전부 식별로 그려서 복합키가 계속 길어지는 경우</strong> — 식별
+            관계를 3~4단계 연쇄로 쌓으면 맨 아래 자식의 기본키에 조상 전체의 키가 줄줄이
+            포함됩니다. 이럴 때는 대리키(surrogate key) 도입을 고려할 시점입니다 — 자세한
+            내용은 <a href="/articles/surrogate-vs-natural-key.html">대리키 vs 자연키</a>
+            글에서 다룹니다.</li>
+          <li><strong>다대다 관계를 식별/비식별 고민 없이 그냥 연결하는 경우</strong> — 다대다는
+            보통 교차 테이블(연결 테이블)로 풀어야 하고, 그 교차 테이블은 대개 두 부모 모두에
+            대해 식별 관계를 갖습니다(교차 테이블 자체가 두 부모의 조합이 곧 정체성이므로).</li>
+        </ul>
+      </section>
+
+      <section id="sql">
+        <h2>SQL로 보는 차이</h2>
+        <p>실제 DDL에서는 세 가지가 갈립니다 — 기본키 포함 여부, NOT NULL 여부, 그리고 참조 무결성 처리 방식.</p>
+        <pre><code>-- 식별 관계: FK가 자식 PK의 일부
+CREATE TABLE order_items (
+  order_id    BIGINT NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
+  line_no     INT    NOT NULL,
+  product_id  BIGINT NOT NULL,
+  quantity    INT    NOT NULL,
+  PRIMARY KEY (order_id, line_no)
+);
+
+-- 비식별 관계: FK는 일반 컬럼, 자식은 자기 PK를 이미 가짐
+CREATE TABLE orders (
+  order_id     BIGINT PRIMARY KEY,
+  customer_id  BIGINT NOT NULL REFERENCES customers(customer_id),
+  ordered_at   TIMESTAMP NOT NULL
+);</code></pre>
+        <p>
+          식별 관계의 FK는 언제나 자식의 PK에 포함되므로 NOT NULL이어야 하고(PK 컬럼은
+          NULL을 허용할 수 없으니까요), 비식별 관계의 FK는 관계가 선택 참여인지에 따라
+          NULL을 허용할 수도 있습니다. <a href="/app?lang=ko">YourERD 편집기</a>에서 관계
+          종류를 고르면 이 규칙에 맞춰 외래키 컬럼과 제약조건이 자동으로 만들어집니다.
+        </p>
+      </section>
+
+      <section id="faq">
+        <h2>자주 하는 질문</h2>
+        <p>
+          <strong>Q. 다대다 관계를 풀어주는 교차 테이블은 식별 관계인가요, 비식별
+          관계인가요?</strong><br />
+          보통은 두 부모 모두에 대해 식별 관계입니다. (학번, 과목코드)가 교차 테이블의
+          기본키를 이루는 경우가 대표적입니다 — 그 조합 자체가 "이 학생이 이 과목을
+          수강한다"는 사실의 정체성이기 때문입니다. 다만 교차 테이블에 별도의 대리키를
+          두고 (학번, 과목코드)는 UNIQUE 제약으로만 보존하는 절충도 흔히 씁니다.
+        </p>
+        <p>
+          <strong>Q. 관계를 비식별로 그렸는데 나중에 식별로 바꿔야 한다는 걸 알게 되면
+          어떻게 하나요?</strong><br />
+          자식 테이블의 기본키를 다시 정의해야 하므로 이미 저장된 데이터가 있다면
+          마이그레이션이 필요합니다. 그래서 애초에 "이 자식이 부모 없이 독립적인 의미를
+          가지는가"라는 질문을 설계 초기에 답해 두는 게 훨씬 저렴합니다.
+        </p>
+        <p>
+          <strong>Q. 선택(Optional) 참여와 식별 관계는 함께 쓸 수 있나요?</strong><br />
+          아니요. 식별 관계의 외래키는 자식 기본키의 일부이고, 기본키는 정의상 NULL을
+          허용하지 않습니다. 따라서 자식 쪽이 선택 참여(점선)라면 그 관계는 자동으로
+          비식별이 되어야 합니다 — 두 속성을 동시에 만족시킬 수 없다는 게 표기법 자체의
+          불변식입니다.
+        </p>
+      </section>
+
+      <div class="related">
+        <h2>관련 아티클</h2>
+        <ul>
+          <li><a href="/articles/normalization-guide.html">데이터베이스 정규화 완벽 가이드</a></li>
+          <li><a href="/articles/barker-vs-ie-notation.html">바커 표기법과 IE 표기법 비교</a></li>
+          <li><a href="/articles/surrogate-vs-natural-key.html">대리키 vs 자연키</a></li>
+        </ul>
+      </div>
+
+      <footer>
+        YourERD 아티클 · 식별 관계 vs 비식별 관계
+        <br />
+        <a href="/">홈</a> · <a href="/articles/">아티클 목록</a> · <a href="/manual.html">사용 설명서</a> ·
+        <a href="/about.html">소개</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

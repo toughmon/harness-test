@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>개념적·논리적·물리적 데이터 모델의 차이 · YourERD</title>
+  <meta name="description" content="같은 '고객'이라는 개념이 개념적·논리적·물리적 모델을 거치며 어떻게 구체화되는지 하나의 예제로 끝까지 따라가 봅니다." />
+  <link rel="canonical" href="https://yourerd.com/articles/data-model-levels.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="개념적·논리적·물리적 데이터 모델의 차이" />
+  <meta property="og:description" content="같은 '고객'이라는 개념이 개념적·논리적·물리적 모델을 거치며 어떻게 구체화되는지 하나의 예제로 끝까지 따라가 봅니다." />
+  <meta property="og:url" content="https://yourerd.com/articles/data-model-levels.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="article:published_time" content="2026-09-11" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <style>
+    nav.toc { position: sticky; top: 0; align-self: flex-start; width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto; padding: 28px 16px 40px 24px; border-right: 1px solid var(--outline-variant); }
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--primary); margin-bottom: 4px; }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+    main h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+    .meta { font-size: 12.5px; color: var(--outline); font-family: var(--font-mono); margin: 0 0 20px; }
+    .related { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--outline-variant); }
+    .related h2 { border: none; margin-bottom: 12px; }
+    .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .related a { color: var(--primary); text-decoration: none; }
+    .related a:hover { text-decoration: underline; }
+    @media (max-width: 860px) { nav.toc { display: none; } main { padding: 28px 22px 80px; } }
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="brand">YourERD</div>
+      <div class="sub">아티클</div>
+      <a href="#intro">개요</a>
+      <a href="#why">왜 세 단계로 나누는가</a>
+      <a href="#conceptual">개념적 모델</a>
+      <a href="#logical">논리적 모델</a>
+      <a href="#physical">물리적 모델</a>
+      <a href="#example">하나의 예제로 끝까지</a>
+      <a href="#skip">단계를 건너뛰면 생기는 일</a>
+      <a href="#yourerd">YourERD는 어느 단계인가</a>
+      <a href="/articles/" class="back">← 아티클 목록</a>
+    </nav>
+
+    <main>
+      <h1 id="intro">개념적·논리적·물리적 데이터 모델의 차이</h1>
+      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="lead">
+        "ERD 그려주세요"라는 요청 하나에도 실은 세 가지 서로 다른 결과물이 숨어 있을 수
+        있습니다. 데이터 모델링은 흔히 개념적(Conceptual) → 논리적(Logical) → 물리적
+        (Physical) 세 단계를 거치며 점점 구체화됩니다. 이 글은 "고객"이라는 하나의
+        개념이 세 단계를 지나며 어떻게 달라지는지 끝까지 따라가 봅니다.
+      </p>
+
+      <section id="why">
+        <h2>왜 세 단계로 나누는가</h2>
+        <p>
+          세 단계를 나누는 이유는 <strong>관심사를 분리</strong>하기 위해서입니다. 요구사항을
+          논의하는 자리에서 갑자기 "VARCHAR(255)로 할까요 TEXT로 할까요"라는 이야기가
+          나오면 비즈니스 담당자는 대화에서 밀려납니다. 반대로 실제 테이블을 만드는
+          단계에서 "고객이라는 개념이 존재한다" 수준의 추상적인 이야기만 하고 있으면
+          개발이 진행되지 않습니다. 단계를 나누면 각 단계에 맞는 사람이, 맞는 수준의
+          디테일로 논의에 참여할 수 있습니다.
+        </p>
+      </section>
+
+      <section id="conceptual">
+        <h2>개념적 모델(Conceptual Model)</h2>
+        <p>
+          업무 용어로 <strong>어떤 대상(엔티티)들이 있고 서로 어떻게 관련되는지</strong>만
+          표현합니다. 데이터 타입, 키, 심지어 속성 목록조차 생략하는 경우가 많습니다.
+          이 단계의 청중은 비즈니스 담당자·기획자이고, 목표는 "우리가 다루는 도메인을
+          제대로 이해했는가"를 확인하는 것입니다.
+        </p>
+        <pre><code>고객 ── 주문 ── 상품
+(주문은 한 명의 고객이 내고, 여러 상품을 담을 수 있다)</code></pre>
+        <p>
+          이 단계에서는 "고객에 이메일이 있는가, 전화번호가 있는가"조차 아직 확정하지
+          않아도 됩니다. 핵심은 엔티티와 관계 자체가 비즈니스를 정확히 반영하는지입니다.
+        </p>
+      </section>
+
+      <section id="logical">
+        <h2>논리적 모델(Logical Model)</h2>
+        <p>
+          개념적 모델에 <strong>속성(attribute), 기본키, 정규화 규칙</strong>을 더합니다.
+          여전히 <strong>특정 DBMS에 종속되지 않습니다</strong> — "정수형"이라고는 하지만
+          MySQL의 INT인지 PostgreSQL의 INTEGER인지는 아직 신경 쓰지 않습니다. 이 단계의
+          청중은 데이터 모델러·아키텍트이고, 목표는 정규화된 구조와 관계(식별/비식별,
+          카디널리티)를 정확히 정의하는 것입니다.
+        </p>
+        <table>
+          <tr><th>엔티티</th><th>속성</th><th>기본키</th></tr>
+          <tr><td>고객</td><td>고객번호, 이름, 이메일, 가입일</td><td>고객번호</td></tr>
+          <tr><td>주문</td><td>주문번호, 고객번호(FK), 주문일시, 상태</td><td>주문번호</td></tr>
+        </table>
+        <p>
+          이 단계에서 이미 <a href="/articles/normalization-guide.html">정규화</a>와
+          <a href="/articles/identifying-vs-non-identifying.html">식별·비식별 관계</a>
+          판단이 끝나 있어야 합니다.
+        </p>
+      </section>
+
+      <section id="physical">
+        <h2>물리적 모델(Physical Model)</h2>
+        <p>
+          논리적 모델을 <strong>실제 DBMS 문법으로 구체화</strong>합니다. 정확한 데이터
+          타입과 길이, 인덱스, 파티션, NOT NULL·CHECK 같은 제약조건, 그리고
+          <a href="/articles/column-naming-convention.html">실제 컬럼 네이밍 규칙</a>이
+          전부 이 단계에서 확정됩니다. 이 단계의 청중은 DBA·백엔드 개발자이고, 산출물은
+          곧바로 실행 가능한 DDL입니다.
+        </p>
+        <pre><code>CREATE TABLE customers (
+  customer_id  BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  name         VARCHAR(50)  NOT NULL,
+  email        VARCHAR(255) NOT NULL UNIQUE,
+  joined_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE orders (
+  order_id     BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  customer_id  BIGINT       NOT NULL REFERENCES customers(customer_id),
+  ordered_at   TIMESTAMP    NOT NULL,
+  status       VARCHAR(20)  NOT NULL DEFAULT 'pending'
+);</code></pre>
+      </section>
+
+      <section id="example">
+        <h2>하나의 예제로 끝까지 — "고객"의 여정</h2>
+        <table>
+          <tr><th>단계</th><th>"고객"은 무엇인가</th></tr>
+          <tr><td>개념적</td><td>주문을 내는 주체. 존재한다는 사실과 주문과의 관계만 확정</td></tr>
+          <tr><td>논리적</td><td>고객번호(PK), 이름, 이메일, 가입일이라는 속성을 가진 엔티티. 이메일은 유일해야 한다는 규칙까지 정의됨</td></tr>
+          <tr><td>물리적</td><td><code>customers</code> 테이블. <code>customer_id BIGINT AUTO_INCREMENT</code>, <code>email VARCHAR(255) UNIQUE</code> 등 정확한 타입·제약까지 확정된 실행 가능한 DDL</td></tr>
+        </table>
+        <p>
+          같은 "고객"이지만 단계마다 다루는 디테일의 수준이 완전히 다릅니다. 개념적 단계의
+          논의를 건너뛰고 바로 물리적 모델부터 시작하면, 나중에 "사실 이건 고객이 아니라
+          법인 고객과 개인 고객으로 나뉘어야 했다"는 걸 뒤늦게 발견하고 테이블 구조 전체를
+          갈아엎어야 하는 일이 생깁니다.
+        </p>
+      </section>
+
+      <section id="skip">
+        <h2>단계를 건너뛰면 생기는 일</h2>
+        <p>
+          현실에서는 세 단계를 늘 순서대로, 따로따로 진행하지는 않습니다. 특히 소규모
+          프로젝트에서는 개념적 모델 없이 바로 논리적·물리적 모델부터 시작하는 경우가
+          흔합니다. 그 자체가 잘못은 아니지만, 건너뛴 단계의 질문이 사라지는 건 아니라는
+          점을 알아둘 필요가 있습니다.
+        </p>
+        <p>
+          게시판을 예로 들어 보겠습니다. 개념적 논의 없이 바로 <code>posts</code>,
+          <code>comments</code> 테이블부터 만들면, "댓글에 또 댓글을 달 수 있는가(대댓글)",
+          "삭제된 게시글의 댓글은 어떻게 되는가" 같은 질문이 개념 단계에서 미리 정리되지
+          않은 채로 물리적 설계에 넘어옵니다. 결국 테이블을 만들고 나서야 "아, 대댓글도
+          지원해야 하는구나"를 깨닫고 <code>comments.parent_comment_id</code>를 뒤늦게
+          추가하는 식으로 되돌아가게 됩니다. 개념 단계의 질문은 사라지는 게 아니라
+          나중에 더 비싼 형태(테이블 구조 변경)로 돌아올 뿐입니다.
+        </p>
+        <p>
+          그래서 실무적인 절충안은 "세 단계를 반드시 별도 문서로 나눠라"가 아니라,
+          <strong>테이블을 만들기 전에 최소한 개념 단계의 질문만큼은 의식적으로 던져
+          보라</strong>는 것입니다 — "이 엔티티가 정말 하나인가, 둘로 나뉘어야 하는가",
+          "이 관계가 정말 이런 카디널리티가 맞는가"를 컬럼 타입을 고민하기 전에 먼저
+          확인하는 것만으로 충분합니다.
+        </p>
+      </section>
+
+      <section id="yourerd">
+        <h2>YourERD는 어느 단계인가</h2>
+        <p>
+          <a href="/app?lang=ko">YourERD</a>는 물리적 모델에 가깝게 동작합니다 — 실제
+          데이터 타입, 기본키·외래키 제약을 다루고 MySQL DDL을 바로 내보낼 수 있습니다.
+          동시에 컬럼마다 논리명(한글 설명)을 함께 적을 수 있어, 논리적 모델이 담아야 할
+          "이 속성이 비즈니스적으로 무엇을 의미하는지"라는 정보도 물리 모델 위에 함께
+          기록할 수 있습니다.
+        </p>
+      </section>
+
+      <div class="related">
+        <h2>관련 아티클</h2>
+        <ul>
+          <li><a href="/articles/normalization-guide.html">데이터베이스 정규화 완벽 가이드</a></li>
+          <li><a href="/articles/barker-vs-ie-notation.html">바커 표기법과 IE 표기법 비교</a></li>
+        </ul>
+      </div>
+
+      <footer>
+        YourERD 아티클 · 개념적·논리적·물리적 데이터 모델의 차이
+        <br />
+        <a href="/">홈</a> · <a href="/articles/">아티클 목록</a> · <a href="/manual.html">사용 설명서</a> ·
+        <a href="/about.html">소개</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

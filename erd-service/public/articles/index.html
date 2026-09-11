@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>아티클 · YourERD</title>
+  <meta name="description" content="정규화, 식별·비식별 관계, 바커 표기법, 네이밍 컨벤션, 안티패턴 등 데이터 모델링 자체를 다루는 글 모음입니다. 도구 사용법이 아니라 ERD 설계 원리를 설명합니다." />
+  <link rel="canonical" href="https://yourerd.com/articles/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="아티클 · YourERD" />
+  <meta property="og:description" content="정규화, 식별·비식별 관계, 바커 표기법, 네이밍 컨벤션, 안티패턴 등 데이터 모델링 자체를 다루는 글 모음입니다." />
+  <meta property="og:url" content="https://yourerd.com/articles/" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/landing.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <style>
+    .article-card { display: flex; flex-direction: column; height: 100%; }
+    .article-card .tag {
+      display: inline-block; font-family: var(--font-mono); font-size: 11px;
+      color: var(--primary); background: rgba(128,131,255,.12);
+      padding: 3px 9px; border-radius: 999px; margin-bottom: 12px; width: fit-content;
+    }
+    .article-card h3 { margin-bottom: 10px; }
+    .article-card p { flex: 1; }
+    .article-card .read { margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="/">YourERD</a>
+    <nav>
+      <a href="/">홈</a>
+      <a href="/manual.html">사용 설명서</a>
+      <a href="/about.html">소개</a>
+      <a class="cta" href="/app?lang=ko">편집기 열기</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+
+  <section class="hero wrap" style="padding-bottom:30px;">
+    <h1 style="font-size:36px;">아티클</h1>
+    <p class="sub" style="max-width:680px;">
+      YourERD 사용법이 아니라 데이터 모델링 자체를 다루는 글 모음입니다.
+      정규화, 관계 설계, 표기법, 네이밍, 흔한 실수까지 — ERD를 그릴 때 실제로 판단이 필요한
+      지점들을 실무 예제와 함께 정리했습니다.
+    </p>
+  </section>
+
+  <section class="block wrap" style="padding-top:0;">
+    <div class="grid">
+
+      <a href="/articles/normalization-guide.html" class="card article-card" style="text-decoration:none;color:inherit;">
+        <span class="tag">정규화</span>
+        <h3>데이터베이스 정규화 완벽 가이드</h3>
+        <p>1NF부터 3NF까지, 갱신 이상이 생기는 테이블을 직접 예제로 쪼개 가며 정규화가
+        해결하는 문제와 그 한계를 설명합니다.</p>
+        <span class="read">읽어보기 →</span>
+      </a>
+
+      <a href="/articles/identifying-vs-non-identifying.html" class="card article-card" style="text-decoration:none;color:inherit;">
+        <span class="tag">관계 설계</span>
+        <h3>식별 관계 vs 비식별 관계, 언제 무엇을 써야 할까</h3>
+        <p>두 관계의 개념적 차이부터 판단 기준 체크리스트, 표기법과 SQL 차이까지 —
+        헷갈리기 쉬운 지점을 정리했습니다.</p>
+        <span class="read">읽어보기 →</span>
+      </a>
+
+      <a href="/articles/barker-vs-ie-notation.html" class="card article-card" style="text-decoration:none;color:inherit;">
+        <span class="tag">표기법</span>
+        <h3>바커 표기법과 IE 표기법 비교</h3>
+        <p>같은 관계를 두 표기법으로 각각 그려보며 필수/선택, 다중성을 표현하는
+        방식의 차이와 각각의 장단점을 비교합니다.</p>
+        <span class="read">읽어보기 →</span>
+      </a>
+
+      <a href="/articles/column-naming-convention.html" class="card article-card" style="text-decoration:none;color:inherit;">
+        <span class="tag">네이밍</span>
+        <h3>데이터베이스 컬럼 네이밍 컨벤션 가이드</h3>
+        <p>테이블·컬럼 이름을 어떻게 지어야 나중에 고생하지 않는지 — 기본키·외래키·불리언·
+        날짜 컬럼 각각의 관행을 정리했습니다.</p>
+        <span class="read">읽어보기 →</span>
+      </a>
+
+      <a href="/articles/erd-antipatterns.html" class="card article-card" style="text-decoration:none;color:inherit;">
+        <span class="tag">안티패턴</span>
+        <h3>ERD 설계 안티패턴 8가지</h3>
+        <p>자주 반복되는 설계 실수 8가지를 사례와 함께 정리했습니다. 하나쯤은
+        지금 만들고 있는 모델에도 있을 겁니다.</p>
+        <span class="read">읽어보기 →</span>
+      </a>
+
+      <a href="/articles/surrogate-vs-natural-key.html" class="card article-card" style="text-decoration:none;color:inherit;">
+        <span class="tag">기본키</span>
+        <h3>대리키 vs 자연키, 기본키는 무엇으로 잡아야 할까</h3>
+        <p>실세계 값을 그대로 쓸지 인위적인 번호를 새로 만들지 — 실무에서 가장 널리
+        쓰이는 절충안까지 함께 설명합니다.</p>
+        <span class="read">읽어보기 →</span>
+      </a>
+
+      <a href="/articles/data-model-levels.html" class="card article-card" style="text-decoration:none;color:inherit;">
+        <span class="tag">모델링 단계</span>
+        <h3>개념적·논리적·물리적 데이터 모델의 차이</h3>
+        <p>같은 "고객"이라는 개념이 세 단계를 거치며 어떻게 구체화되는지 하나의
+        예제로 끝까지 따라가 봅니다.</p>
+        <span class="read">읽어보기 →</span>
+      </a>
+
+    </div>
+  </section>
+
+  <section class="block wrap narrow" style="text-align:center;">
+    <p class="lead">글을 읽고 나서 바로 그려보고 싶다면</p>
+    <div class="btn-row"><a class="btn primary" href="/app?lang=ko">편집기 열기</a></div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <span class="copy">© 2026 YourERD · 온라인 ERD 작성 서비스</span>
+    <nav>
+      <a href="/">홈</a>
+      <a href="/manual.html">사용 설명서</a>
+      <a href="/about.html">소개</a>
+      <a href="/contact.html">문의</a>
+      <a href="/privacy.html">개인정보처리방침</a>
+      <a href="/terms.html">이용약관</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
