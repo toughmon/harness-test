@@ -3,7 +3,6 @@ import { deriveSides, type RelationshipSides } from '../../core/relationshipSide
 import { labelForSides } from '../../i18n/labels';
 import { useT } from '../../i18n';
 import EditorModal from '../common/EditorModal';
-import type { Subtype } from '../../types/erd';
 import { confirmDeleteRelationship } from '../../store/deleteActions';
 
 // 관계선 편집 모달 — ✎ 아이콘 클릭 / 우클릭 "편집"으로 연다 (editorOpen === 'relationship').
@@ -11,7 +10,7 @@ import { confirmDeleteRelationship } from '../../store/deleteActions';
 export default function RelationshipEditPanel() {
   const {
     relationships, entities, selectedEdgeId, editorOpen,
-    closeEditor, updateRelationshipSides, updateRelationshipSubtypeScope,
+    closeEditor, updateRelationshipSides,
     updateRelationshipMidOffset,
   } = useERDStore();
 
@@ -20,8 +19,6 @@ export default function RelationshipEditPanel() {
   const sides = rel ? deriveSides(rel) : null;
   const parent = rel ? entities.find(e => e.id === rel.sourceId) : undefined;
   const child = rel ? entities.find(e => e.id === rel.targetId) : undefined;
-  const parentSubtype = parent?.subtypes?.find(st => st.id === rel?.sourceSubtypeId);
-  const childSubtype = child?.subtypes?.find(st => st.id === rel?.targetSubtypeId);
 
   if (editorOpen !== 'relationship' || !rel || !sides) return null;
 
@@ -45,7 +42,7 @@ export default function RelationshipEditPanel() {
               title={parent?.name}
               data-testid="rel-parent-label"
             >
-              {parent?.name ?? '?'}{parentSubtype ? ` · ${parentSubtype.name}` : ''}
+              {parent?.name ?? '?'}
             </span>
             <span className="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
             <span
@@ -53,7 +50,7 @@ export default function RelationshipEditPanel() {
               title={child?.name}
               data-testid="rel-child-label"
             >
-              {child?.name ?? '?'}{childSubtype ? ` · ${childSubtype.name}` : ''}
+              {child?.name ?? '?'}
             </span>
           </div>
           <div className="rounded border border-outline-variant bg-input-bg p-3 flex items-center justify-center" data-testid="rel-preview">
@@ -71,14 +68,6 @@ export default function RelationshipEditPanel() {
           <label className="font-mono text-[11px] text-primary tracking-wider flex items-baseline gap-1.5">
             {t('relEdit.parentSide')} <span className="text-on-surface-variant normal-case truncate">· {parent?.name ?? '?'}</span>
           </label>
-          {!!parent?.subtypes?.length && (
-            <SubtypeScopeSelect
-              testid="rel-parent-subtype"
-              subtypes={parent.subtypes}
-              value={rel.sourceSubtypeId ?? ''}
-              onChange={v => updateRelationshipSubtypeScope(rel.id, 'source', v || null)}
-            />
-          )}
           <SegToggle
             label={t('relEdit.participation')}
             value={sides.parentOptional ? 'optional' : 'mandatory'}
@@ -97,14 +86,6 @@ export default function RelationshipEditPanel() {
           <label className="font-mono text-[11px] text-primary tracking-wider flex items-baseline gap-1.5">
             {t('relEdit.childSide')} <span className="text-on-surface-variant normal-case truncate">· {child?.name ?? '?'}</span>
           </label>
-          {!!child?.subtypes?.length && (
-            <SubtypeScopeSelect
-              testid="rel-child-subtype"
-              subtypes={child.subtypes}
-              value={rel.targetSubtypeId ?? ''}
-              onChange={v => updateRelationshipSubtypeScope(rel.id, 'target', v || null)}
-            />
-          )}
           <SegToggle
             label={t('relEdit.participation')}
             value={sides.childOptional ? 'optional' : 'mandatory'}
@@ -125,7 +106,7 @@ export default function RelationshipEditPanel() {
           />
           <label
             className={`flex items-center gap-2 bg-input-bg border border-outline-variant rounded px-3 py-2 ${
-              sides.childOptional || rel.targetSubtypeId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+              sides.childOptional ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
             }`}
             data-testid="rel-identifying"
           >
@@ -133,15 +114,13 @@ export default function RelationshipEditPanel() {
               type="checkbox"
               className="rounded border-outline-variant accent-[#8083ff] w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
               checked={sides.identifying}
-              disabled={sides.childOptional || !!rel.targetSubtypeId}
+              disabled={sides.childOptional}
               onChange={e => set({ identifying: e.target.checked })}
             />
             <span className="font-mono text-[11px] text-on-surface-variant">{t('relEdit.identifying')}</span>
           </label>
           <p className="text-[10px] text-outline italic m-0">
-            {rel.targetSubtypeId
-              ? t('relEdit.identHintSubtype')
-              : sides.childOptional
+            {sides.childOptional
               ? t('relEdit.identHintOptional')
               : sides.identifying
               ? t('relEdit.identHintOn')
@@ -181,34 +160,6 @@ export default function RelationshipEditPanel() {
         </button>
       </div>
     </EditorModal>
-  );
-}
-
-// 이 관계가 어느 서브타입 전용인지 지정하는 드롭다운 ("(엔티티 전체)" + 서브타입 목록)
-function SubtypeScopeSelect({
-  testid, subtypes, value, onChange,
-}: {
-  testid: string;
-  subtypes: Subtype[];
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const t = useT();
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">{t('relEdit.scopeLabel')}</label>
-      <select
-        data-testid={testid}
-        className="bg-input-bg border border-outline-variant rounded px-2 py-1.5 text-on-surface font-mono text-[11px] focus:outline-none focus:border-primary appearance-none cursor-pointer"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-      >
-        <option value="">{t('relEdit.scopeAll')}</option>
-        {subtypes.map(st => (
-          <option key={st.id} value={st.id}>{st.name}{st.logicalName ? ` · ${st.logicalName}` : ''}</option>
-        ))}
-      </select>
-    </div>
   );
 }
 

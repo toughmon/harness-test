@@ -1,13 +1,13 @@
 import { create } from 'zustand';
-import { Entity, Column, Memo, Relationship, RelationshipType, Subtype, EndpointAnchor, MidOffset } from '../types/erd';
+import { Entity, Column, Memo, Relationship, RelationshipType, EndpointAnchor, MidOffset } from '../types/erd';
 import * as erdOps from '../core/erdOps';
-import { genId, DEFAULT_COLUMN, type NodePosition, type ErdDoc } from '../core/erdOps';
+import { genId, type NodePosition, type ErdDoc } from '../core/erdOps';
 import { applyOp, type OpName } from '../core/opDispatch';
 import type { RelationshipSides } from '../core/relationshipSides';
 
 // 변형 로직은 ../core/erdOps(순수 함수, MCP 서버·협업 릴레이와 공유)에 있고, 여기서는 히스토리·
 // 선택 상태·dirty 추적 같은 UI 관심사만 감싼다. erdOps.fn(docOf(s), ...)을 호출해 결과
-// 문서를 set으로 머지한다. 서브타입/위치/undo·redo/loadData는 UI 전용이라 인라인 유지.
+// 문서를 set으로 머지한다. 위치/undo·redo/loadData는 UI 전용이라 인라인 유지.
 
 // ── 실시간 협업: 로컬 변형을 op로 내보내는 에미터(collabStore가 등록). 순환 import를 피하려
 //    erdStore는 collabStore를 import하지 않고, 등록된 콜백만 호출한다. applyRemote는 내보내지 않는다.
@@ -89,26 +89,15 @@ interface ERDStore {
   deleteColumn: (entityId: string, columnId: string) => void;
   moveColumn: (entityId: string, fromIdx: number, toIdx: number) => void;
 
-  // 배타적 서브타입(SubSet)
-  addSubtype: (entityId: string) => void;
-  removeSubtype: (entityId: string, subtypeId: string) => void;
-  updateSubtype: (entityId: string, subtypeId: string, updates: Partial<Pick<Subtype, 'name' | 'logicalName'>>) => void;
-  updateSubsetMeta: (entityId: string, updates: Partial<Pick<Entity, 'subsetName' | 'subtypeExclusive' | 'subtypeComplete'>>) => void;
-  addSubtypeColumn: (entityId: string, subtypeId: string) => void;
-  updateSubtypeColumn: (entityId: string, subtypeId: string, columnId: string, updates: Partial<Column>) => void;
-  deleteSubtypeColumn: (entityId: string, subtypeId: string, columnId: string) => void;
-
   addRelationship: (
     sourceId: string,
     targetId: string,
     type: RelationshipType,
-    scope?: { sourceSubtypeId?: string; targetSubtypeId?: string },
   ) => void;
   updateRelationshipType: (id: string, type: RelationshipType) => void;
   updateRelationshipSides: (id: string, partial: Partial<RelationshipSides>) => void;
   updateRelationshipAnchor: (id: string, end: 'source' | 'target', anchor: EndpointAnchor | null) => void;
   updateRelationshipMidOffset: (id: string, offset: MidOffset | null) => void;
-  updateRelationshipSubtypeScope: (id: string, side: 'source' | 'target', subtypeId: string | null) => void;
   deleteRelationship: (id: string) => void;
 
   // 엔티티/메모 위치 일괄 이동(그룹 드래그) — 여러 개를 한 번에 옮겨도 Undo 1회로 전체 복원됨
@@ -355,119 +344,7 @@ export const useERDStore = create<ERDStore>((set, get) => {
       emit('moveColumn', [entityId, fromIdx, toIdx]);
     },
 
-    // ── 배타적 서브타입(SubSet) — UI 전용, 인라인 유지. op 어휘 밖이라 협업 시 스냅샷 백스톱으로 전파 ──
-    addSubtype: (entityId) => {
-      if (get().readOnly) return;
-      pushHistory('addSubtype');
-      set(s => ({
-        entities: s.entities.map(e => {
-          if (e.id !== entityId) return e;
-          const subtypes = e.subtypes ?? [];
-          const newSub: Subtype = {
-            id: genId(),
-            name: `SubType${subtypes.length + 1}`,
-            logicalName: '',
-            columns: [],
-          };
-          return {
-            ...e,
-            // 첫 서브타입 추가 시 그룹 기본값 세팅 (배타·불완전)
-            subsetName: e.subsetName ?? 'SubSet',
-            subtypeExclusive: e.subtypeExclusive ?? true,
-            subtypeComplete: e.subtypeComplete ?? false,
-            subtypes: [...subtypes, newSub],
-          };
-        }),
-      }));
-    },
-
-    removeSubtype: (entityId, subtypeId) => {
-      if (get().readOnly) return;
-      pushHistory('removeSubtype');
-      set(s => {
-        // 이 서브타입을 스코프로 참조하는 관계/FK 먼저 정리(erdOps.deleteEntity와 대칭되는 캐스케이드)
-        const cascaded = erdOps.removeSubtypeCascade(docOf(s), entityId, subtypeId);
-        return {
-          ...cascaded,
-          entities: cascaded.entities.map(e =>
-            e.id === entityId
-              ? { ...e, subtypes: (e.subtypes ?? []).filter(st => st.id !== subtypeId) }
-              : e
-          ),
-        };
-      });
-    },
-
-    updateSubtype: (entityId, subtypeId, updates) => {
-      if (get().readOnly) return;
-      pushHistory(`updateSubtype:${subtypeId}:${Object.keys(updates).join(',')}`);
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === entityId
-            ? { ...e, subtypes: (e.subtypes ?? []).map(st => st.id === subtypeId ? { ...st, ...updates } : st) }
-            : e
-        ),
-      }));
-    },
-
-    updateSubsetMeta: (entityId, updates) => {
-      if (get().readOnly) return;
-      pushHistory(`subsetMeta:${entityId}:${Object.keys(updates).join(',')}`);
-      set(s => ({
-        entities: s.entities.map(e => e.id === entityId ? { ...e, ...updates } : e),
-      }));
-    },
-
-    addSubtypeColumn: (entityId, subtypeId) => {
-      if (get().readOnly) return;
-      pushHistory('addSubtypeColumn');
-      const newCol: Column = { ...DEFAULT_COLUMN, id: genId(), name: 'column' };
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === entityId
-            ? { ...e, subtypes: (e.subtypes ?? []).map(st => st.id === subtypeId ? { ...st, columns: [...st.columns, newCol] } : st) }
-            : e
-        ),
-      }));
-    },
-
-    updateSubtypeColumn: (entityId, subtypeId, columnId, updates) => {
-      if (get().readOnly) return;
-      pushHistory(`updateSubtypeColumn:${columnId}:${Object.keys(updates).join(',')}`);
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === entityId
-            ? {
-                ...e,
-                subtypes: (e.subtypes ?? []).map(st =>
-                  st.id === subtypeId
-                    ? { ...st, columns: st.columns.map(c => c.id === columnId ? { ...c, ...updates } : c) }
-                    : st
-                ),
-              }
-            : e
-        ),
-      }));
-    },
-
-    deleteSubtypeColumn: (entityId, subtypeId, columnId) => {
-      if (get().readOnly) return;
-      pushHistory('deleteSubtypeColumn');
-      set(s => ({
-        entities: s.entities.map(e =>
-          e.id === entityId
-            ? {
-                ...e,
-                subtypes: (e.subtypes ?? []).map(st =>
-                  st.id === subtypeId ? { ...st, columns: st.columns.filter(c => c.id !== columnId) } : st
-                ),
-              }
-            : e
-        ),
-      }));
-    },
-
-    addRelationship: (sourceId, targetId, type, scope) => {
+    addRelationship: (sourceId, targetId, type) => {
       if (get().readOnly) return;
       const { entities } = get();
       // 엔티티가 모두 존재할 때만 히스토리를 남긴다 (erdOps도 동일하게 no-op 처리)
@@ -478,8 +355,8 @@ export const useERDStore = create<ERDStore>((set, get) => {
       const fkColumnIds = source.columns.filter(c => c.isPK).map(() => genId());
       const ids = { relationshipId, fkColumnIds };
       pushHistory('addRelationship');
-      set(s => erdOps.addRelationship(docOf(s), sourceId, targetId, type, undefined, ids, scope).doc);
-      emit('addRelationship', [sourceId, targetId, type, undefined, ids, scope]);
+      set(s => erdOps.addRelationship(docOf(s), sourceId, targetId, type, undefined, ids).doc);
+      emit('addRelationship', [sourceId, targetId, type, undefined, ids]);
     },
 
     updateRelationshipType: (id, newType) => {
@@ -523,16 +400,6 @@ export const useERDStore = create<ERDStore>((set, get) => {
       pushHistory(`relMid:${id}`);
       set(st => erdOps.updateRelationshipMidOffset(docOf(st), id, offset));
       emit('updateRelationshipMidOffset', [id, offset]);
-    },
-
-    // 관계의 부모/자식 side를 특정 서브타입으로 스코프 지정(subtypeId=null이면 엔티티 전체로 해제)
-    updateRelationshipSubtypeScope: (id, side, subtypeId) => {
-      if (get().readOnly) return;
-      const s = get();
-      if (!s.relationships.find(r => r.id === id)) return;
-      pushHistory(`relSubtypeScope:${id}:${side}`);
-      set(st => erdOps.updateRelationshipSubtypeScope(docOf(st), id, side, subtypeId).doc);
-      emit('updateRelationshipSubtypeScope', [id, side, subtypeId]);
     },
 
     deleteRelationship: (id) => {

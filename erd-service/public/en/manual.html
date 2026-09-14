@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YourERD User Manual</title>
-  <meta name="description" content="The YourERD user manual — creating entities and columns, drawing relationships in Barker notation, exclusive subtypes, exporting MySQL DDL and sharing your work." />
+  <meta name="description" content="The YourERD user manual — creating entities and columns, drawing relationships in Barker notation, exporting MySQL DDL and sharing your work." />
   <link rel="canonical" href="https://yourerd.com/en/manual.html" />
   <link rel="alternate" hreflang="ko" href="https://yourerd.com/manual.html" />
   <link rel="alternate" hreflang="en" href="https://yourerd.com/en/manual.html" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="YourERD" />
   <meta property="og:title" content="YourERD User Manual" />
-  <meta property="og:description" content="The YourERD user manual — creating entities and columns, drawing relationships in Barker notation, exclusive subtypes, exporting MySQL DDL and sharing your work." />
+  <meta property="og:description" content="The YourERD user manual — creating entities and columns, drawing relationships in Barker notation, exporting MySQL DDL and sharing your work." />
   <meta property="og:url" content="https://yourerd.com/en/manual.html" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:locale:alternate" content="ko_KR" />
@@ -71,15 +71,14 @@
       <a href="#entity">4. Creating entities</a>
       <a href="#columns">5. Managing columns</a>
       <a href="#relationship">6. Relationships</a>
-      <a href="#subtype">7. Subtypes (SubSet)</a>
-      <a href="#memo">8. Memos (sticky notes)</a>
-      <a href="#canvas">9. Working on the canvas</a>
-      <a href="#save">10. Saving &amp; loading</a>
-      <a href="#export">11. Exporting</a>
-      <a href="#shortcuts">12. Keyboard shortcuts</a>
-      <a href="#quickstart">13. Quick start</a>
-      <a href="#faq">14. FAQ</a>
-      <a href="#language">15. Interface language</a>
+      <a href="#memo">7. Memos (sticky notes)</a>
+      <a href="#canvas">8. Working on the canvas</a>
+      <a href="#save">9. Saving &amp; loading</a>
+      <a href="#export">10. Exporting</a>
+      <a href="#shortcuts">11. Keyboard shortcuts</a>
+      <a href="#quickstart">12. Quick start</a>
+      <a href="#faq">13. FAQ</a>
+      <a href="#language">14. Interface language</a>
       <a href="/manual.html" class="back">🌐 한국어</a>
     </nav>
 
@@ -110,7 +109,7 @@
         <h2>1. Screen layout</h2>
         <p>The screen has three main areas. Detailed editing of entities, relationships and memos happens
         in an <strong>editor modal</strong> you open when you need it, rather than in a panel permanently
-        pinned to one side (see 4.2, 6.3 and 8.2).</p>
+        pinned to one side (see 4.2, 6.3 and 7.2).</p>
         <pre>┌─────────────────────────────────────────────────────────────┐
 │  ① Top bar (YourERD · undo/redo · save · account)            │
 ├──────────┬──────────────────────────────────────────────────┤
@@ -170,7 +169,7 @@
         <h3>4.2 Selecting, previewing and editing an entity</h3>
         <p>Every entity header carries an <strong>ⓘ (info) icon</strong>.</p>
         <ul>
-          <li><strong>Click</strong> — opens the <strong>modal</strong> for editing the entity (physical name, logical name, description, color, columns, SubSet).</li>
+          <li><strong>Click</strong> — opens the <strong>modal</strong> for editing the entity (physical name, logical name, description, color and columns).</li>
           <li><strong>Hover</strong> — shows a <strong>read-only preview</strong> you can skim without clicking. It includes information the node body does not show, such as the description and whether a column is UNIQUE.</li>
           <li><strong>Double-click quick edit on the node</strong> — <strong>double-click</strong> an entity's <strong>physical or logical name</strong>, or a column's <strong>name, logical name or data type</strong>, to edit it in place without opening the modal (see 5.1).</li>
           <li>Clicking the entity body (outside the header) only <strong>selects (highlights)</strong> it; no modal opens. <strong>Right-click → Edit</strong> opens the same modal (see 4.6).</li>
@@ -187,7 +186,7 @@
         <h3>4.3 Deleting an entity</h3>
         <p>Press the <strong>🗑 (delete)</strong> button in the modal header, <strong>right-click → Delete</strong>, or select the entity and press <strong><code>Delete</code></strong>. After you confirm, the entity is removed along with its relationships and any FK columns that were auto-generated in other entities.</p>
         <h3>4.5 Collapsing and expanding an entity</h3>
-        <p>The <strong>collapse icon</strong> on the right of an entity header hides its column list and SubSet
+        <p>The <strong>collapse icon</strong> on the right of an entity header hides its column list
         region, leaving <strong>only the header</strong>. When vertical space is tight — a small laptop, for
         instance — keep the two or three tables you are working on expanded and collapse the rest, and the
         overall structure and the detail fit on one screen together.</p>
@@ -214,7 +213,7 @@
           <li><strong>Column name (physical)</strong>: double-click the name, edit, press <code>Enter</code> (e.g. <code>coupon_id</code>)</li>
           <li><strong>Logical name</strong>: double-click the logical name text (when there is none, hover reveals a <code>+Logical</code> hint you can double-click to add one)</li>
           <li><strong>Data type and size</strong>: double-click the type, edit, press <code>Enter</code> (typing <code>VARCHAR(200)</code> or <code>DECIMAL(12,2)</code> automatically splits the type name and the size)</li>
-          <li><strong>Entity name / subtypes</strong>: the entity header's physical and logical names, and attributes inside subtype boxes, are editable the same way.</li>
+          <li><strong>Entity name</strong>: the entity header's physical and logical names are editable the same way.</li>
         </ul>
         <h3>5.2 Editing in the modal</h3>
         <p>The <strong>Columns</strong> section of the entity editor modal manages the detailed properties (PK/FK, NOT NULL, UNIQUE, ordering) in one place — open it with the entity's ⓘ icon. Use <strong>Add</strong> to add a column; click a row to expand it for detailed editing.</p>
@@ -291,56 +290,32 @@
           <li><strong>Double-click the line</strong> or press <strong>Clear detour (back to automatic routing)</strong> in the relationship editor modal to reset it. <code>Ctrl+Z</code> works too. <em>(Self-referencing relationships do not support detours.)</em></li>
         </ul>
 
-        <h3>6.5 Scoping a relationship to a specific subtype</h3>
-        <p>When the parent or child entity has <a href="#subtype">subtypes</a>, you can create a relationship that applies to just one of them, in two ways.</p>
-        <p><strong>Option A — drag straight from the subtype box (recommended)</strong> — drag from the small connection point on the right of a subtype box to another entity (or another subtype). As soon as you pick the relationship type, the subtype scope is set for you. There is nothing to adjust afterwards.</p>
-        <p><strong>Option B — set it in the panel afterwards</strong> — a <strong>Specific target</strong> dropdown appears under the matching half in the relationship editor. Choosing a subtype there marks the relationship as applying only to that subtype. (Relationships made with option A can also be re-scoped or checked from this dropdown.)</p>
-        <ul>
-          <li><strong>Scoping the child side to a subtype</strong> moves the auto-generated FK column into that subtype box instead of the entity as a whole. On SQL export it rolls up as a nullable column that can only hold a value for that subtype, and it is included in the exclusivity CHECK constraint automatically. Such a relationship <strong>cannot be identifying</strong> (subtype columns are conditional and therefore cannot be part of the PK — the checkbox clears itself and is disabled).</li>
-          <li><strong>Scoping the parent side</strong> has no effect on the panel or on FK creation; it simply labels the relationship "entity · subtype" so the intent is recorded.</li>
-          <li>Choosing <strong>(whole entity)</strong> in the dropdown clears the scope again.</li>
-        </ul>
-        <div class="note">Deleting a subtype that is the child-side scope of a relationship removes that relationship (and its FK) too. Deleting a subtype used only as a parent-side scope keeps the relationship and simply clears the scope.</div>
-      </section>
-
-      <section id="subtype">
-        <h2>7. Exclusive subtypes (SubSet)</h2>
-        <p>Use this to express a group of mutually exclusive child entities inside one supertype (for example <code>Payment</code> containing <code>CardPayment</code> / <code>BankTransfer</code>).</p>
-        <p>They are managed in the <strong>SubSet (subtypes)</strong> section at the bottom of the entity editor modal.</p>
-        <ul>
-          <li><strong>Add Subtype</strong> — adds a subtype</li>
-          <li><strong>SubSet name</strong> — the name of the group (also used as the discriminator)</li>
-          <li><strong>Exclusive</strong> — when checked, the subtypes never overlap</li>
-          <li><strong>Complete</strong> — when checked, every row must belong to one of the subtypes</li>
-          <li>Each subtype card manages its <strong>physical and logical names</strong> and its <strong>own attributes (columns)</strong>.</li>
-        </ul>
-        <div class="note">Subtypes share the supertype's PK, so they carry <strong>only their own attributes</strong> and no PK of their own. On SQL export they roll up into a <strong>single table</strong>, with the discriminator column and CHECK constraints generated automatically.</div>
       </section>
 
       <section id="memo">
-        <h2>8. Memos (sticky notes)</h2>
+        <h2>7. Memos (sticky notes)</h2>
         <p>Stick a free-form note anywhere on the canvas to record design intent, caveats or TODOs. Memos sit independently of entities and are kept when you save and reload.</p>
 
-        <h3>8.1 Adding a memo</h3>
+        <h3>7.1 Adding a memo</h3>
         <ul>
           <li><strong>Sidebar button</strong> — click <strong>Add Memo</strong> in the left sidebar (created at the center of the canvas)</li>
           <li><strong>Double-click the canvas</strong> — double-clicking empty canvas creates a memo where you clicked</li>
         </ul>
-        <div class="note">A new memo is selected automatically (the modal does not open on its own — see 8.2).</div>
+        <div class="note">A new memo is selected automatically (the modal does not open on its own — see 7.2).</div>
 
-        <h3>8.2 Editing a memo</h3>
+        <h3>7.2 Editing a memo</h3>
         <ul>
           <li><strong>Textarea on the node</strong> — click the memo and type directly. This is the quickest way and needs no modal.</li>
           <li><strong>Editor modal</strong> — memos have no dedicated icon, so open the modal with <strong>right-click → Edit</strong>. It gives you a larger editing area and lets you pick one of six background colors.</li>
         </ul>
 
-        <h3>8.3 Changing the color</h3>
+        <h3>7.3 Changing the color</h3>
         <p>Click the color dots in the memo's header to change it immediately, or use the <strong>Color</strong> section of the modal you opened with <strong>right-click → Edit</strong> to pick one of six colors (yellow, green, blue, red, purple, orange).</p>
 
-        <h3>8.4 Resizing</h3>
+        <h3>7.4 Resizing</h3>
         <p>Click a memo to select it and <strong>resize handles</strong> appear on its border. Drag a handle to resize it freely.</p>
 
-        <h3>8.5 Deleting a memo</h3>
+        <h3>7.5 Deleting a memo</h3>
         <ul>
           <li><strong>× button on the node</strong> — click the <strong>×</strong> at the right of the memo header (deletes immediately, no confirmation)</li>
           <li><strong>Right-click → Delete</strong> — deletes after you confirm</li>
@@ -351,7 +326,7 @@
       </section>
 
       <section id="canvas">
-        <h2>9. Working on the canvas (bottom zoom toolbar)</h2>
+        <h2>8. Working on the canvas (bottom zoom toolbar)</h2>
         <table>
           <tr><th>Button</th><th>What it does</th></tr>
           <tr><td>Zoom out 🔍−</td><td>Zoom out</td></tr>
@@ -364,17 +339,17 @@
           <tr><td>Export SQL 🗄</td><td>Exports MySQL DDL (<code>.sql</code>)</td></tr>
           <tr><td>Fullscreen ⛶</td><td>Expands the canvas to fill the browser window</td></tr>
         </table>
-        <h3>9.1 Fullscreen mode</h3>
+        <h3>8.1 Fullscreen mode</h3>
         <p>Press the fullscreen button and the top bar and sidebar disappear so <strong>the canvas fills the screen</strong>. The zoom toolbar, the minimap and the editor modals all keep working. Leave with <code>Esc</code> or the exit button.</p>
-        <h3>9.2 Minimap</h3>
+        <h3>8.2 Minimap</h3>
         <p>The minimap in the bottom-right corner gives you an overview of the whole structure and lets you jump around quickly. Minimap blocks use each entity's color.</p>
-        <h3>9.3 Panning and zooming</h3>
+        <h3>8.3 Panning and zooming</h3>
         <ul>
           <li><strong>Pan</strong> — drag empty canvas</li>
           <li><strong>Zoom</strong> — mouse wheel or the zoom toolbar</li>
           <li><strong>Move an entity</strong> — drag the entity</li>
         </ul>
-        <h3>9.4 Selecting and moving several items at once</h3>
+        <h3>8.4 Selecting and moving several items at once</h3>
         <p>Hold <strong><code>Shift</code></strong> and drag on empty canvas to draw a selection box. Every entity and memo fully inside it is selected.</p>
         <ul>
           <li><strong>Dragging</strong> one selected item moves the rest with it, keeping their relative positions.</li>
@@ -386,20 +361,20 @@
       </section>
 
       <section id="save">
-        <h2>10. Saving &amp; loading</h2>
-        <h3>10.1 JSON files (no sign-in required)</h3>
+        <h2>9. Saving &amp; loading</h2>
+        <h3>9.1 JSON files (no sign-in required)</h3>
         <ul>
           <li><strong>Save</strong> — downloads the current diagram as a <code>.json</code> file.</li>
           <li><strong>Open (📂)</strong> — reopens a <code>.json</code> file you saved.</li>
         </ul>
-        <h3>10.2 Cloud (DB) storage (sign-in required)</h3>
+        <h3>9.2 Cloud (DB) storage (sign-in required)</h3>
         <ul>
           <li>Use the <strong>account (👤)</strong> button in the top right to sign up or sign in with a username and password.</li>
           <li>Press <strong>DB Save</strong> in the top bar to store the diagram in your account.</li>
           <li>Saved diagrams can be switched, renamed and deleted from the <strong>My diagrams</strong> list on the left.</li>
         </ul>
         <div class="note">The dot (●) next to the diagram name marks unsaved changes. You are warned about unsaved work when switching diagrams or signing out.</div>
-        <h3>10.3 Sharing and viewing together in real time (sign-in required)</h3>
+        <h3>9.3 Sharing and viewing together in real time (sign-in required)</h3>
         <p>A diagram saved to the database can be <strong>shared by link</strong> so several people watch it live.</p>
         <ul>
           <li>Open the diagram and press <strong>Share</strong> in the top bar. (Only diagrams saved to the database can be shared.)</li>
@@ -412,18 +387,18 @@
       </section>
 
       <section id="export">
-        <h2>11. Exporting</h2>
+        <h2>10. Exporting</h2>
         <table>
           <tr><th>Format</th><th>How</th><th>Contents</th></tr>
           <tr><td>PNG</td><td>Zoom toolbar 📷</td><td>Saves the current diagram as an image</td></tr>
           <tr><td>SQL (MySQL)</td><td>Zoom toolbar 🗄</td><td>Converts entities, columns and FKs into MySQL 8.x <code>CREATE TABLE</code> DDL. Logical names and descriptions become COMMENTs; PK/UNIQUE/NOT NULL and composite FK constraints are included, ordered parents first</td></tr>
           <tr><td>JSON</td><td>Save in the top bar</td><td>The working file format (for reopening later)</td></tr>
         </table>
-        <div class="note">Comments that YourERD generates itself (the file header and the subtype discriminator) follow the interface language at the time of export. Logical names and descriptions you wrote are exported as-is.</div>
+        <div class="note">Comments that YourERD generates itself (the file header) follow the interface language at the time of export. Logical names and descriptions you wrote are exported as-is.</div>
       </section>
 
       <section id="shortcuts">
-        <h2>12. Keyboard shortcuts</h2>
+        <h2>11. Keyboard shortcuts</h2>
         <table>
           <tr><th>Key</th><th>Action</th></tr>
           <tr><td><code>Ctrl + Z</code></td><td>Undo</td></tr>
@@ -436,7 +411,7 @@
       </section>
 
       <section id="quickstart">
-        <h2>13. Quick start (tutorial)</h2>
+        <h2>12. Quick start (tutorial)</h2>
         <ul>
           <li>Add an entity with <strong>Add Entity</strong>.</li>
           <li>Click the entity's <strong>ⓘ icon</strong> to open the editor modal and fill in the <strong>physical and logical names</strong> (for example <code>user</code> / <code>User</code>).</li>
@@ -449,7 +424,7 @@
       </section>
 
       <section id="faq">
-        <h2>14. Frequently asked questions</h2>
+        <h2>13. Frequently asked questions</h2>
         <h3>Q. Can I use it without signing in?</h3>
         <p>Yes. Editing entities and relationships, exporting PNG and SQL, and saving/loading JSON files all work without an account. Only <strong>cloud (DB) storage</strong> requires signing in.</p>
         <h3>Q. I picked the wrong relationship type.</h3>
@@ -464,7 +439,7 @@
 
 
       <section id="language">
-        <h2>15. Interface language (한국어 / English)</h2>
+        <h2>14. Interface language (한국어 / English)</h2>
         <p>Use the <strong>🌐 language button</strong> in the top bar to switch the interface between Korean (KO) and English (EN).</p>
         <ul>
           <li>The default is <strong>Korean</strong>. The browser language is not auto-detected — only your explicit choice is used.</li>
@@ -475,9 +450,9 @@
         <table>
           <tr><th>Kind</th><th>Examples</th><th>On language switch</th></tr>
           <tr><td>Values you typed</td><td>Physical/logical names of entities and columns, descriptions, memo text, diagram names</td><td>Unchanged</td></tr>
-          <tr><td>Defaults the app inserts</td><td><code>Entity1</code>, <code>id</code>, <code>column</code>, <code>SubType1</code>, <code>SubSet</code>, the <code>parent_</code> prefix on self-referencing FKs</td><td>Unchanged (always English)</td></tr>
+          <tr><td>Defaults the app inserts</td><td><code>Entity1</code>, <code>id</code>, <code>column</code>, the <code>parent_</code> prefix on self-referencing FKs</td><td>Unchanged (always English)</td></tr>
           <tr><td>Prefilled text when creating something</td><td>"New diagram" when saving, "&lt;name&gt; copy" when duplicating</td><td>Follows the language at creation time</td></tr>
-          <tr><td>Tool-generated comments in SQL export</td><td>File header, subtype discriminator COMMENT</td><td>Follows the language at export time</td></tr>
+          <tr><td>Tool-generated comments in SQL export</td><td>File header</td><td>Follows the language at export time</td></tr>
         </table>
         <div class="note">Diagram names you already saved are never rewritten when you switch language.</div>
       </section>

@@ -20,15 +20,6 @@ export interface Column {
   refColumnId?: string;
 }
 
-// 배타적 서브타입 — 슈퍼타입(Entity) 안에 중첩되는 하위 엔티티.
-// PK는 슈퍼타입과 공유하므로 자체 PK는 두지 않고 고유 속성 컬럼만 가진다.
-export interface Subtype {
-  id: string;
-  name: string;           // 물리명 (영문)
-  logicalName?: string;   // 논리명 (한글 명칭)
-  columns: Column[];      // 서브타입 고유 속성
-}
-
 export interface Entity {
   id: string;
   name: string;           // 물리명 (영문 테이블명)
@@ -36,11 +27,6 @@ export interface Entity {
   description?: string;   // 설명/메모
   color: string;
   columns: Column[];
-  // ── 배타적 서브타입(SubSet) — 모두 optional이라 기존 저장 파일과 호환 ──
-  subsetName?: string;        // SubSet 그룹 이름 (구분자/판별자 이름으로도 사용)
-  subtypes?: Subtype[];       // 중첩 서브타입 목록
-  subtypeExclusive?: boolean; // true=배타(겹침 없음, 기본) / false=포함(중첩 허용)
-  subtypeComplete?: boolean;  // true=완전(반드시 한 서브타입) / false=불완전(슈퍼타입만 가능, 기본)
 }
 
 export type RelationshipType =
@@ -101,9 +87,6 @@ export interface Relationship {
   // ── 중간 우회(꺾기) — 선을 상/하(좌/우)로 드래그해 다른 엔티티를 피해가게 한다.
   //    없으면 기존 자동 경로(smoothstep). 선 더블클릭으로 제거(자동 복귀) ──
   midOffset?: MidOffset;
-  // ── 서브타입 스코프 — 이 관계가 특정 서브타입 전용임을 표시. optional이라 기존 저장 파일과 호환 ──
-  sourceSubtypeId?: string;  // 부모가 특정 서브타입일 때(라벨 표시용 — 서브타입은 PK가 없어 FK 생성엔 영향 없음)
-  targetSubtypeId?: string;  // 자식이 특정 서브타입 전용일 때 — 자동 FK 컬럼이 그 서브타입의 columns에 위치
 }
 
 export interface Memo {

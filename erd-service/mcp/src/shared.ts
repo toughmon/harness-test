@@ -9,6 +9,5 @@ export type {
   Relationship,
   RelationshipType,
   ColumnType,
-  Subtype,
   ERDData,
 } from '../../src/types/erd';

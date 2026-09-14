@@ -67,7 +67,7 @@ export const useCollabStore = create<CollabState>((set, get) => {
     teardownEditorHooks();
     // 로컬 변형 → op 즉시 발신
     setOpEmitter((op, args) => get().emitOp(op, args));
-    // 스냅샷 백스톱 — op 어휘 밖 변경(서브타입·자동정렬)과 드리프트를 보정. 원격 적용 중엔 skip.
+    // 스냅샷 백스톱 — op 어휘 밖 변경(자동정렬 등)과 드리프트를 보정. 원격 적용 중엔 skip.
     snapshotUnsub = useERDStore.subscribe((state, prev) => {
       if (applyingRemote) return;
       if (

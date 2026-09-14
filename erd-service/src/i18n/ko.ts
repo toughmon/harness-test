@@ -116,16 +116,6 @@ export const ko = {
   'entity.logicalNamePlaceholder': '한글 명칭 (예: 사용자)',
   'entity.descriptionPlaceholder': '테이블 설명을 입력하세요...',
 
-  // ── 서브타입(SubSet) ──
-  'subset.label': 'SubSet (서브타입)',
-  'subset.hint': '서브타입을 추가하면 슈퍼타입 안에 배타적 하위 엔티티 그룹이 생성됩니다.',
-  'subset.namePlaceholder': 'SubSet 이름 (구분자)',
-  'subset.exclusive': '배타 (Exclusive)',
-  'subset.complete': '완전 (Complete)',
-  'subset.deleteSubtype': '서브타입 삭제',
-  'subset.addAttribute': '속성 추가',
-  'subset.deleteAttribute': '속성 삭제',
-
   // ── 컬럼 ──
   'column.namePlaceholder': '물리명',
   'column.logicalPlaceholder': '논리명 (한글)',
@@ -173,15 +163,12 @@ export const ko = {
   'relEdit.cardOne': '1 (단일)',
   'relEdit.cardMany': '다 (까마귀발)',
   'relEdit.identifying': '식별 관계 (FK를 자식 PK에 포함)',
-  'relEdit.identHintSubtype': '자식이 서브타입 전용이면 식별 관계가 될 수 없습니다 — 서브타입 컬럼은 조건부라 PK가 될 수 없습니다.',
   'relEdit.identHintOptional': '자식이 선택 참여(점선)면 식별 관계가 될 수 없습니다 — FK는 NULL 허용 일반 컬럼.',
   'relEdit.identHintOn': '자식 FK가 PK에 포함됩니다 (식별 막대 표시).',
   'relEdit.identHintOff': '자식 FK는 일반 컬럼(NOT NULL)입니다.',
   'relEdit.linePath': '선 경로',
   'relEdit.clearBend': '우회 해제 (자동 경로로 복귀)',
   'relEdit.bendHint': '캔버스에서 선을 위/아래로 드래그하면 사이에 놓인 엔티티를 피해 우회합니다. 선을 더블클릭해도 자동 경로로 돌아갑니다.',
-  'relEdit.scopeLabel': '구체적 대상',
-  'relEdit.scopeAll': '(엔티티 전체)',
   'relEdit.previewAlt': '관계선 미리보기',
 
   // ── 관계선(캔버스) 툴팁 ──
@@ -258,18 +245,11 @@ export const ko = {
   'node.dblLogicalName': '더블클릭하여 한글명 수정',
   'node.dblPhysicalName': '더블클릭하여 물리명 수정',
   'node.dblType': '더블클릭하여 데이터타입 수정',
-  'node.dblSubtypeName': '더블클릭하여 서브타입명 수정',
   'node.addLogical': '+한글명',
   'node.infoEdit': '상세 정보 / 편집',
   'node.noColumns': '컬럼 없음',
-  'node.noAttributes': '속성 없음',
   'node.fkMissingEntity': '⚠ 참조 엔티티 없음',
   'node.fkBrokenRef': '⚠ {name}.(끊어진 참조)',
-  'subset.badge': '{ex}·{comp}',
-  'subset.exclusiveShort': '배타',
-  'subset.inclusiveShort': '포함',
-  'subset.completeShort': '완전',
-  'subset.incompleteShort': '불완전',
 
   // ── 엔티티 호버 미리보기 ──
   'preview.noDescription': '설명 없음',
@@ -326,7 +306,6 @@ export const ko = {
 
   // ── SQL 내보내기 (도구가 만드는 주석만 — 논리명 COMMENT는 사용자 데이터라 제외) ──
   'sql.header': '-- YourERD로 생성됨 ({date})',
-  'sql.discriminatorComment': '{name} 구분자',
 
   // ── MCP 토큰 자리표시자 (복사용 명령에 들어감) ──
   'mcp.tokenPlaceholderText': '<발급한_토큰>',
