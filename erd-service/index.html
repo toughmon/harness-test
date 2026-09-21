@@ -36,6 +36,7 @@
       <a href="#how">사용법</a>
       <a href="#ai">Claude 연동</a>
       <a href="#faq">자주 묻는 질문</a>
+      <a href="/examples.html">ERD 예제</a>
       <a href="/articles/">아티클</a>
       <a href="/manual.html">사용 설명서</a>
       <a href="/en/">EN</a>
@@ -120,6 +121,33 @@
         <p>오른쪽 아래 도구막대의 SQL 버튼을 누르면 MySQL DDL 파일이 내려받아집니다. 그림이 필요하면 PNG로도 저장할 수 있습니다.</p>
       </li>
     </ol>
+  </section>
+
+  <section class="block wrap" id="examples">
+    <h2>그려진 예제로 설계 판단 익히기</h2>
+    <p class="lead">쇼핑몰·블로그·인사관리 샘플을 직접 열고, 각 관계가 무엇을 보장하는지 확인하세요.</p>
+
+    <div class="grid">
+      <a href="/examples.html#ecommerce" class="card" style="text-decoration:none;color:inherit;">
+        <div class="ico">🛒</div>
+        <h3>쇼핑몰 주문</h3>
+        <p>주문상품으로 다대다 관계를 풀고, 현재 상품 정보와 과거 주문 정보를 분리하는 이유를 살펴봅니다.</p>
+      </a>
+      <a href="/examples.html#blog" class="card" style="text-decoration:none;color:inherit;">
+        <div class="ico">✍️</div>
+        <h3>블로그</h3>
+        <p>작성자·게시글·댓글·태그를 나누고, 태그 연결 테이블에 어떤 제약이 필요한지 확인합니다.</p>
+      </a>
+      <a href="/examples.html#hr" class="card" style="text-decoration:none;color:inherit;">
+        <div class="ico">🏢</div>
+        <h3>인사관리</h3>
+        <p>부서 배정과 직원의 선택적 자기 참조를 통해 조직도 모델링의 주의점을 짚어 봅니다.</p>
+      </a>
+    </div>
+
+    <p style="text-align:center; margin-top:24px;">
+      <a class="btn ghost" href="/examples.html">ERD 예제 갤러리 열기 →</a>
+    </p>
   </section>
 
   <section class="block wrap" id="ai">

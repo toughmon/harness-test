@@ -19,12 +19,20 @@ import { useSharedSessionStore } from './store/sharedSessionStore';
 import { useThemeStore } from './store/themeStore';
 import { useLocaleStore } from './i18n';
 import { confirmDeleteEntity, confirmDeleteRelationship, confirmDeleteMemo, confirmDeleteMany } from './store/deleteActions';
+import { SAMPLE_KEYS, type SampleKey } from './data/sampleDiagrams';
 
 // 공유 링크 진입 파싱 — /d/:token 또는 ?share=<token> (라우터 미도입, SPA fallback이 index.html 서빙)
 function parseShareToken(): string | null {
   const m = window.location.pathname.match(/^\/d\/([^/?#]+)/);
   if (m) return decodeURIComponent(m[1]);
   return new URLSearchParams(window.location.search).get('share');
+}
+
+// 공개 예제 페이지에서 `/app?sample=ecommerce`처럼 특정 샘플을 바로 열 수 있게 한다.
+// 허용 목록으로 한정해, 임의의 쿼리가 편집기 상태를 바꾸지 않도록 한다.
+function parseSampleKey(): SampleKey | null {
+  const value = new URLSearchParams(window.location.search).get('sample');
+  return value !== null && SAMPLE_KEYS.includes(value as SampleKey) ? value as SampleKey : null;
 }
 
 // 최초 방문 예제 자동 로드를 "한 번만" 하기 위한 플래그. 값 자체는 의미 없고 존재 여부만 본다.
@@ -50,8 +58,19 @@ function App() {
   // 앱 시작 시 세션 복원 (쿠키의 JWT로 GET /me). 공유 링크 진입 시 내 마지막 다이어그램 복원은 건너뛰고 공유본을 연다.
   useEffect(() => {
     const token = parseShareToken();
-    init(!!token).then(() => {
+    const sample = parseSampleKey();
+    // 샘플을 명시적으로 열었을 때는 마지막 작업물을 먼저 복원하지 않는다. 그래야
+    // 예제 링크가 기존 다이어그램을 잠깐 덮어쓰거나, 복원 직후 버려지는 일이 없다.
+    init(!!token || !!sample).then(async () => {
       if (token) useSharedSessionStore.getState().enter(token);
+      if (sample) {
+        await useDiagramStore.getState().loadSample(sample);
+        // 적용 뒤 URL을 정리한다. 새로고침·링크 복사 시에도 이미 의도대로 열렸던
+        // 샘플이 다시 작업 중인 캔버스를 바꾸지 않게 한다.
+        const url = new URL(window.location.href);
+        url.searchParams.delete('sample');
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      }
     });
   }, [init]);
 
@@ -94,6 +113,7 @@ function App() {
     if (status !== 'anon') return;
     if (navigator.webdriver) return;
     if (parseShareToken()) return;
+    if (parseSampleKey()) return;
     if (localStorage.getItem(SAMPLE_SEEN_KEY)) return;
     if (useERDStore.getState().entities.length > 0) return;
     localStorage.setItem(SAMPLE_SEEN_KEY, '1');

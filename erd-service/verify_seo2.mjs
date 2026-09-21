@@ -37,6 +37,8 @@ const ARTICLES = [
   '/articles/data-model-levels.html',
 ];
 
+const EXAMPLES = ['/examples.html', '/en/examples.html'];
+
 const KOREAN_FOOTER = [
   ['/articles/', '아티클'],
   ['/manual.html', '사용 설명서'],
@@ -97,6 +99,8 @@ try {
   check('sitemap.xml에 /contact.html 있음', sitemap.includes('<loc>https://yourerd.com/contact.html</loc>'));
   check('sitemap.xml에 아티클 목록 있음', sitemap.includes('<loc>https://yourerd.com/articles/</loc>'));
   check('sitemap.xml에 영문 아티클 목록 있음', sitemap.includes('<loc>https://yourerd.com/en/articles/</loc>'));
+  check('sitemap.xml에 한국어 ERD 예제 있음', sitemap.includes('<loc>https://yourerd.com/examples.html</loc>'));
+  check('sitemap.xml에 영문 ERD 예제 있음', sitemap.includes('<loc>https://yourerd.com/en/examples.html</loc>'));
   for (const a of ARTICLES) {
     check(`sitemap.xml에 ${a} 있음`, sitemap.includes(`<loc>https://yourerd.com${a}</loc>`));
   }
@@ -145,14 +149,31 @@ try {
   const enArticlesLen = await textLen('/en/articles/');
   check(`영문 아티클 본문 5,000자 이상 (실제 ${enArticlesLen}자)`, enArticlesLen >= 5000, enArticlesLen);
 
+  // ── 4-1. 실제 샘플을 여는 예제 갤러리 (ko + en) ─────────────────────────
+  for (const p of EXAMPLES) {
+    const body = await (await get(p)).text();
+    check(`${p} meta description`, body.includes('name="description"'));
+    check(`${p} canonical`, body.includes('rel="canonical"'));
+    check(`${p} 항목 목록 구조화 데이터`, body.includes('"@type": "ItemList"') || body.includes('"@type":"ItemList"'));
+    check(`${p} 쇼핑몰·블로그·인사관리 샘플 링크`,
+      ['sample=ecommerce', 'sample=blog', 'sample=hr'].every(sample => body.includes(sample)));
+    const len = await textLen(p);
+    const minimum = p === '/examples.html' ? 3000 : 4000;
+    check(`${p} 본문 ${minimum.toLocaleString()}자 이상 (실제 ${len}자)`, len >= minimum, len);
+  }
+
   // ── 5. 랜딩 페이지 연결 ───────────────────────────────────────────────────
   await page.goto(BASE, { waitUntil: 'networkidle' });
   check('랜딩 nav에 아티클 링크', await page.locator('header a[href="/articles/"]').count() > 0);
+  check('랜딩 nav에 ERD 예제 링크', await page.locator('header a[href="/examples.html"]').count() > 0);
+  check('랜딩에 ERD 예제 섹션', await page.locator('#examples').count() === 1);
   check('랜딩에 아티클 섹션', await page.locator('#articles').count() === 1);
   check('랜딩 footer에 소개 링크', await page.locator('footer a[href="/about.html"]').count() > 0);
   check('랜딩 footer에 문의 링크', await page.locator('footer a[href="/contact.html"]').count() > 0);
 
   await page.goto(`${BASE}/en/`, { waitUntil: 'networkidle' });
+  check('영문 랜딩 nav에 ERD examples 링크', await page.locator('header a[href="/en/examples.html"]').count() > 0);
+  check('영문 랜딩에 ERD examples 섹션', await page.locator('#examples').count() === 1);
   check('영문 랜딩 footer에 Articles 링크', await page.locator('footer a[href="/en/articles/"]').count() > 0);
   check('영문 랜딩 footer에 About 링크', await page.locator('footer a[href="/en/about.html"]').count() > 0);
   check('영문 랜딩 footer에 Contact 링크', await page.locator('footer a[href="/en/contact.html"]').count() > 0);
@@ -180,7 +201,7 @@ try {
   // 정적 HTML을 페이지마다 별도로 관리하므로, 메뉴 하나를 빼먹어도 빌드에서는 잡히지 않는다.
   // 한국어와 영문 각각의 기준 메뉴·순서·링크가 모든 공개 페이지에서 동일한지 검증한다.
   const koreanFooterPages = [
-    '/', '/404.html', '/articles/', ...ARTICLES,
+    '/', '/404.html', '/articles/', '/examples.html', ...ARTICLES,
     '/manual.html', '/mcp-guide.html', '/prompt-guide.html',
     '/about.html', '/contact.html', '/privacy.html', '/terms.html',
   ];
@@ -189,7 +210,7 @@ try {
     check(`${p} 한국어 푸터 메뉴 통일`, JSON.stringify(actual) === JSON.stringify(KOREAN_FOOTER), JSON.stringify(actual));
   }
   const englishFooterPages = [
-    '/en/', '/en/articles/', '/en/manual.html', '/en/mcp-guide.html', '/en/prompt-guide.html',
+    '/en/', '/en/articles/', '/en/examples.html', '/en/manual.html', '/en/mcp-guide.html', '/en/prompt-guide.html',
     '/en/about.html', '/en/contact.html', '/en/privacy.html', '/en/terms.html',
   ];
   for (const p of englishFooterPages) {
@@ -203,6 +224,14 @@ try {
   check('앱 사이드바에 소개 링크', await page.locator('aside a[href="/about.html"]').count() === 1);
   check('앱 사이드바에 문의 링크', await page.locator('aside a[href="/contact.html"]').count() === 1);
   check('앱 사이드바에 기존 개인정보처리방침 링크 유지', await page.locator('aside a[href="/privacy.html"]').count() === 1);
+
+  // 공개 갤러리의 CTA는 해당 샘플을 정말 열어야 한다. 자동화 브라우저에서는
+  // 첫 방문 샘플을 의도적으로 끄므로, 쿼리 파라미터를 통한 명시적 로드만 검증한다.
+  await page.goto(`${BASE}/app?lang=en&sample=blog`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('[data-testid="sample-banner"]', { timeout: 3000 });
+  check('ERD 예제 CTA의 sample=blog가 샘플을 연다', await page.locator('[data-testid="sample-banner"]').count() === 1);
+  check('열린 블로그 샘플에 Post 엔티티가 있음', await page.locator('aside').getByText('Post', { exact: true }).count() === 1);
+  check('샘플을 연 뒤 URL에서 sample 파라미터 정리', !page.url().includes('sample='), page.url());
 
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.screenshot({ path: join(SCREENSHOT_DIR, 'yourerd-landing.png'), fullPage: true });

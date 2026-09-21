@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERD 예제 갤러리 · 쇼핑몰·블로그·인사관리 · YourERD</title>
+  <meta name="description" content="쇼핑몰 주문, 블로그, 인사관리 ERD 예제를 실제 테이블 관계와 설계 판단, 다음 확장 단계까지 함께 살펴보세요. 각 예제는 YourERD 편집기에서 바로 열어 수정할 수 있습니다." />
+  <link rel="canonical" href="https://yourerd.com/examples.html" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/examples.html" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/examples.html" />
+  <link rel="alternate" hreflang="x-default" href="https://yourerd.com/examples.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="ERD 예제 갤러리 · YourERD" />
+  <meta property="og:description" content="쇼핑몰 주문, 블로그, 인사관리 ERD를 관계와 설계 판단까지 함께 살펴보세요." />
+  <meta property="og:url" content="https://yourerd.com/examples.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/landing.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "YourERD ERD 예제 갤러리",
+    "itemListElement": [
+      {"@type":"ListItem","position":1,"name":"쇼핑몰 주문 ERD"},
+      {"@type":"ListItem","position":2,"name":"블로그 ERD"},
+      {"@type":"ListItem","position":3,"name":"인사관리 ERD"}
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="/">YourERD</a>
+    <nav>
+      <a href="/">홈</a>
+      <a href="/articles/">아티클</a>
+      <a href="/manual.html">사용 설명서</a>
+      <a href="/en/examples.html">EN</a>
+      <a class="cta" href="/app?lang=ko">편집기 열기</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <section class="hero wrap" style="padding-bottom:30px;">
+    <h1 style="font-size:36px;">ERD 예제 갤러리</h1>
+    <p class="sub" style="max-width:760px;">세 가지 익숙한 도메인을 통해, 테이블을 단순히 나열하는 것과 관계가 보호해야 할 규칙을 모델링하는 것의 차이를 살펴봅니다. 예제는 출발점입니다. 아래의 판단 기준을 읽고 자신의 요구사항에 맞게 바꿔 보세요.</p>
+  </section>
+
+  <section class="wrap" aria-label="ERD worked examples">
+    <article class="example-card" id="ecommerce">
+      <div class="example-meta"><span>5개 엔티티</span><span>주문 이력</span><span>다대다 해소</span></div>
+      <h2>1. 쇼핑몰 주문 ERD</h2>
+      <p>사용자는 주문을 만들고, 주문에는 여러 상품이 담기며, 결제는 주문의 상태 변화와 분리해 기록합니다. 이 예제의 핵심은 <strong>현재 상품 정보</strong>와 <strong>과거 주문 사실</strong>을 같은 것으로 취급하지 않는 데 있습니다.</p>
+      <div class="model-map" aria-label="사용자에서 주문, 결제로 이어지고 주문과 상품이 주문상품을 통해 연결되는 관계">
+        <span class="node">user</span><span class="arrow">1 ── N</span><span class="node">order</span><span class="arrow">1 ── N</span><span class="node">payment</span>
+        <span class="label">·</span>
+        <span class="node">order</span><span class="arrow">1 ── N</span><span class="node">order_product</span><span class="arrow">N ── 1</span><span class="node">product</span>
+      </div>
+      <div class="example-grid">
+        <section>
+          <h3>이 관계가 말하는 것</h3>
+          <ul>
+            <li><code>order.user_id</code>는 주문자가 누구인지 가리키는 비식별 외래키입니다. 주문 번호 자체는 사용자 번호와 별개로 식별됩니다.</li>
+            <li><code>order_product</code>는 주문과 상품의 다대다 관계를 한 행씩 풀어낸 연결 테이블입니다. 수량은 이 관계에 속하는 사실입니다.</li>
+            <li>샘플의 <code>payment.order_id</code>는 기본키이면서 외래키입니다. 주문을 구성하는 결제 기록이라는 의도를 드러냅니다.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>구현 전에 정할 질문</h3>
+          <ul>
+            <li>결제 실패·재시도·부분 환불을 각각 한 결제 행의 상태로 둘지, 결제 시도와 환불을 별도 이력으로 둘지 정합니다.</li>
+            <li>상품명과 판매 단가가 바뀌어도 영수증이 변하면 안 됩니다. 실제 주문상품에는 당시 이름과 단가를 스냅샷으로 추가할지 검토합니다.</li>
+            <li>배송이 여러 번으로 나뉠 수 있으면 <code>shipment</code>와 <code>shipment_item</code>을 주문상품에 연결합니다.</li>
+          </ul>
+        </section>
+      </div>
+      <p class="note">관계선은 “어떤 화면에서 함께 보이는가”가 아니라 “한 사실을 삭제하거나 수정했을 때 다른 사실이 무엇을 보장해야 하는가”를 기준으로 판단합니다. 예를 들어 주문 이력이 있는 상품은 삭제 대신 판매중지 상태로 두는 규칙이 필요할 수 있습니다.</p>
+      <p class="open-sample"><a class="btn primary" href="/app?lang=ko&amp;sample=ecommerce">쇼핑몰 샘플을 편집기에서 열기</a></p>
+    </article>
+
+    <article class="example-card" id="blog">
+      <div class="example-meta"><span>5개 엔티티</span><span>작성자와 댓글</span><span>태그 연결</span></div>
+      <h2>2. 블로그 ERD</h2>
+      <p>블로그는 작성자, 게시글, 댓글처럼 생명주기가 다른 정보를 나누는 연습에 좋습니다. 게시글에 태그를 직접 쉼표로 적지 않고 연결 테이블을 두는 이유도 한 번에 확인할 수 있습니다.</p>
+      <div class="model-map" aria-label="사용자가 게시글과 댓글을 작성하고 게시글과 태그가 게시글 태그를 통해 연결되는 관계">
+        <span class="node">User</span><span class="arrow">1 ── N</span><span class="node">Post</span><span class="arrow">1 ── N</span><span class="node">Comment</span>
+        <span class="label">·</span>
+        <span class="node">Post</span><span class="arrow">1 ── N</span><span class="node">PostTag</span><span class="arrow">N ── 1</span><span class="node">Tag</span>
+      </div>
+      <div class="example-grid">
+        <section>
+          <h3>이 관계가 말하는 것</h3>
+          <ul>
+            <li><code>Post.user_id</code>로 한 사용자가 여러 글을 쓸 수 있음을 표현합니다. 게시글의 제목·본문·게시일은 작성자 정보와 분리됩니다.</li>
+            <li>댓글은 어느 글에 달렸는지와 누가 작성했는지를 모두 참조합니다. 그래서 글을 지우거나 사용자를 탈퇴시킬 때의 보존 규칙을 먼저 정해야 합니다.</li>
+            <li><code>PostTag</code>는 한 글의 여러 태그와 한 태그의 여러 글을 연결합니다. 같은 태그가 한 글에 중복되지 않도록 실제 DB에서는 <code>(post_id, tag_id)</code> 유니크 제약을 고려합니다.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>다음 요구사항이 오면</h3>
+          <ul>
+            <li>답글이 필요하면 <code>Comment.parent_comment_id</code>를 선택적 자기 참조로 둡니다. 깊이 제한과 삭제된 부모 댓글의 표시 방식도 함께 정합니다.</li>
+            <li>공개 전 검수가 필요하면 <code>published_at</code>만으로 충분한지, <code>status</code>와 상태 전이 기록이 필요한지 결정합니다.</li>
+            <li>사용자 탈퇴 뒤에도 게시글·댓글을 남겨야 한다면 물리 삭제 대신 익명화 또는 비활성화 방식을 검토합니다.</li>
+          </ul>
+        </section>
+      </div>
+      <p class="note">연결 테이블은 관계가 자체 속성을 가질 때 특히 유용합니다. 나중에 태그를 붙인 시각·담당자·정렬 순서가 필요해져도 <code>PostTag</code>에 자연스럽게 추가할 수 있습니다.</p>
+      <p class="open-sample"><a class="btn primary" href="/app?lang=ko&amp;sample=blog">블로그 샘플을 편집기에서 열기</a></p>
+    </article>
+
+    <article class="example-card" id="hr">
+      <div class="example-meta"><span>2개 엔티티</span><span>부서 배정</span><span>자기 참조</span></div>
+      <h2>3. 인사관리 ERD</h2>
+      <p>인사관리 예제는 같은 테이블이 자기 자신을 참조할 수 있다는 점을 보여 줍니다. 직원은 한 부서에 배정되고, 선택적으로 다른 직원을 관리자(상위 직원)로 가리킬 수 있습니다.</p>
+      <div class="model-map" aria-label="부서와 직원의 일대다 관계 및 직원의 선택적 자기 참조 관계">
+        <span class="node">department</span><span class="arrow">1 ── N</span><span class="node">employee</span>
+        <span class="label">·</span>
+        <span class="node">employee</span><span class="arrow">0..1 ── N</span><span class="node">employee</span><span class="label">(manager)</span>
+      </div>
+      <div class="example-grid">
+        <section>
+          <h3>이 관계가 말하는 것</h3>
+          <ul>
+            <li><code>employee.dept_id</code>는 부서 하나에 여러 직원이 속할 수 있음을 표현합니다. 부서가 먼저 만들어져도 직원이 아직 없을 수 있습니다.</li>
+            <li><code>employee.parent_emp_id</code>는 같은 <code>employee</code>의 <code>emp_id</code>를 가리키는 선택적 외래키입니다. 최고 책임자는 관리자가 없으므로 NULL일 수 있습니다.</li>
+            <li>직급은 조직도상의 위치와 다릅니다. <code>position</code>은 직급·직책 정책에 따라 별도 코드 테이블로 분리할지를 판단합니다.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>운영 규칙으로 보완할 점</h3>
+          <ul>
+            <li>한 직원이 자기 자신을 관리자로 지정하거나, A와 B가 서로를 관리자로 만드는 순환을 애플리케이션 또는 DB 제약으로 막습니다.</li>
+            <li>부서 이동 이력이 중요하면 현재 <code>dept_id</code>만 갱신하지 말고 <code>employee_department_history</code>를 추가합니다.</li>
+            <li>겸직, 매트릭스 조직처럼 관리자가 여럿일 수 있다면 단일 자기 참조 대신 별도 직원-관리자 관계 테이블을 사용합니다.</li>
+          </ul>
+        </section>
+      </div>
+      <p class="note">자기 참조는 구조를 간결하게 만들지만, 순환·삭제·재귀 조회의 규칙을 함께 설계해야 합니다. “관리자가 없는 직원이 가능한가?” 같은 업무 문장을 먼저 적고 NULL 허용 여부를 정하는 편이 안전합니다.</p>
+      <p class="open-sample"><a class="btn primary" href="/app?lang=ko&amp;sample=hr">인사관리 샘플을 편집기에서 열기</a></p>
+    </article>
+  </section>
+
+  <section class="block wrap narrow" style="padding-top:20px;">
+    <h2>샘플을 내 서비스에 맞게 바꾸는 순서</h2>
+    <p class="lead" style="text-align:left; max-width:none; margin-bottom:20px;">샘플의 테이블 이름을 먼저 복사하기보다, 아래 질문에 답하면서 관계를 수정해 보세요. 이 과정이 있으면 화면 요구사항이 바뀌어도 왜 컬럼과 제약이 필요한지 설명할 수 있습니다.</p>
+    <ol class="steps">
+      <li>
+        <h3>한 행이 기록하는 사실을 한 문장으로 씁니다</h3>
+        <p>예를 들어 주문상품 행은 “특정 주문에 특정 상품을 몇 개, 얼마에 판매했다”는 사실입니다. 이 문장에 없는 값이 섞여 있으면 다른 엔티티나 이력으로 분리해야 할 가능성이 큽니다.</p>
+      </li>
+      <li>
+        <h3>삭제·변경 뒤에도 남아야 하는 값을 표시합니다</h3>
+        <p>사용자 이름, 상품명, 소속 부서는 바뀔 수 있습니다. 과거 화면이나 보고서가 당시 값을 보여야 한다면 참조만 둘지, 스냅샷·상태 이력을 함께 둘지 결정합니다.</p>
+      </li>
+      <li>
+        <h3>데이터베이스가 막아야 할 중복과 누락을 고릅니다</h3>
+        <p>한 게시글에 같은 태그를 두 번 붙일 수 없는지, 결제 기록 없이 주문이 가능한지처럼 업무 규칙을 유니크·외래키·NOT NULL 제약과 애플리케이션 검증으로 나눠 표현합니다.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block wrap narrow" style="text-align:center; padding-top:28px;">
+    <h2>예제는 복사본이 아니라 질문 목록입니다</h2>
+    <p class="lead">실제 서비스의 이름, 상태 변화, 삭제 규칙, 이력 보존 방식에 맞춰 엔티티와 관계를 바꾸세요. 더 깊은 판단 기준은 <a href="/articles/">데이터 모델링 아티클</a>에서 이어서 볼 수 있습니다.</p>
+    <div class="btn-row"><a class="btn ghost" href="/manual.html">편집기 사용 설명서</a><a class="btn primary" href="/app?lang=ko">빈 캔버스에서 시작하기</a></div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <span class="copy">© 2026 YourERD · 온라인 ERD 작성 서비스</span>
+    <nav>
+      <a href="/articles/">아티클</a>
+      <a href="/manual.html">사용 설명서</a>
+      <a href="/mcp-guide.html">MCP 연결 가이드</a>
+      <a href="/prompt-guide.html">프롬프트 가이드</a>
+      <a href="/about.html">소개</a>
+      <a href="/contact.html">문의</a>
+      <a href="/privacy.html">개인정보처리방침</a>
+      <a href="/terms.html">이용약관</a>
+      <a href="/en/">English</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

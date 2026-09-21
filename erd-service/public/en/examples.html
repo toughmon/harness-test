@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERD Example Gallery: E-commerce, Blog, and HR · YourERD</title>
+  <meta name="description" content="Explore e-commerce, blog, and HR ERD examples with the relationships, design decisions, and next modelling questions behind each one. Open every example directly in YourERD." />
+  <link rel="canonical" href="https://yourerd.com/en/examples.html" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/examples.html" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/examples.html" />
+  <link rel="alternate" hreflang="x-default" href="https://yourerd.com/examples.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="ERD Example Gallery · YourERD" />
+  <meta property="og:description" content="Work through e-commerce, blog, and HR ERDs with their relationship rules and design choices." />
+  <meta property="og:url" content="https://yourerd.com/en/examples.html" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/landing.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"ItemList","name":"YourERD ERD example gallery","itemListElement":[
+    {"@type":"ListItem","position":1,"name":"E-commerce order ERD"},
+    {"@type":"ListItem","position":2,"name":"Blog ERD"},
+    {"@type":"ListItem","position":3,"name":"HR ERD"}
+  ]}
+  </script>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="/en/">YourERD</a>
+    <nav>
+      <a href="/en/">Home</a>
+      <a href="/en/articles/">Articles</a>
+      <a href="/en/manual.html">Manual</a>
+      <a href="/examples.html">한국어</a>
+      <a class="cta" href="/app?lang=en">Open editor</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <section class="hero wrap" style="padding-bottom:30px;">
+    <h1 style="font-size:36px;">ERD example gallery</h1>
+    <p class="sub" style="max-width:760px;">These familiar domains are not schemas to copy blindly. Each one is a small set of decisions about identity, history, and what must stay true when the data changes. Read the reasoning, then reshape the example for your own rules.</p>
+  </section>
+
+  <section class="wrap" aria-label="ERD worked examples">
+    <article class="example-card" id="ecommerce">
+      <div class="example-meta"><span>5 entities</span><span>order history</span><span>many-to-many</span></div>
+      <h2>1. E-commerce orders</h2>
+      <p>A customer creates orders, an order contains products, and payments are recorded separately from the order itself. The important distinction is between a product's <strong>current catalogue facts</strong> and the <strong>historical facts</strong> that made up a purchase.</p>
+      <div class="model-map" aria-label="A user has orders and payments, while orders and products meet through order products">
+        <span class="node">user</span><span class="arrow">1 ── N</span><span class="node">order</span><span class="arrow">1 ── N</span><span class="node">payment</span>
+        <span class="label">·</span>
+        <span class="node">order</span><span class="arrow">1 ── N</span><span class="node">order_product</span><span class="arrow">N ── 1</span><span class="node">product</span>
+      </div>
+      <div class="example-grid">
+        <section>
+          <h3>What the relationships express</h3>
+          <ul>
+            <li><code>order.user_id</code> is a non-identifying foreign key: it says who placed an order without making the user id part of the order's identity.</li>
+            <li><code>order_product</code> resolves the many-to-many relationship. Quantity belongs on that row because it is a fact about this product in this order.</li>
+            <li>In the sample, <code>payment.order_id</code> is both a key and a foreign key. It makes the order reference part of the payment record's identity.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Questions before implementation</h3>
+          <ul>
+            <li>Decide whether failed attempts, retries, and partial refunds are states of one payment or their own history records.</li>
+            <li>A receipt must not change when a product is renamed or repriced. Consider snapshots of the sold name and unit price on an order item.</li>
+            <li>If fulfillment can split, add <code>shipment</code> and <code>shipment_item</code> rather than treating an order as one shipment forever.</li>
+          </ul>
+        </section>
+      </div>
+      <p class="note">Choose a relationship for the rule it protects, not because two objects appear together on one screen. For example, a product with order history may need to be deactivated rather than deleted.</p>
+      <p class="open-sample"><a class="btn primary" href="/app?lang=en&amp;sample=ecommerce">Open the e-commerce sample</a></p>
+    </article>
+
+    <article class="example-card" id="blog">
+      <div class="example-meta"><span>5 entities</span><span>authors and comments</span><span>tag bridge</span></div>
+      <h2>2. Blog publishing</h2>
+      <p>A blog is a compact way to separate facts with different lifecycles: an author, a post, a comment, and a tag. It also shows why tags should not be stored as a comma-separated field on a post.</p>
+      <div class="model-map" aria-label="A user authors posts and comments, while posts and tags meet through post tags">
+        <span class="node">User</span><span class="arrow">1 ── N</span><span class="node">Post</span><span class="arrow">1 ── N</span><span class="node">Comment</span>
+        <span class="label">·</span>
+        <span class="node">Post</span><span class="arrow">1 ── N</span><span class="node">PostTag</span><span class="arrow">N ── 1</span><span class="node">Tag</span>
+      </div>
+      <div class="example-grid">
+        <section>
+          <h3>What the relationships express</h3>
+          <ul>
+            <li><code>Post.user_id</code> gives one author many posts while keeping title, content, and publication time independent of the profile.</li>
+            <li>A comment refers to both its post and its author. Decide what should remain if either the post is removed or the user leaves.</li>
+            <li><code>PostTag</code> connects many posts to many tags. In a production schema, a UNIQUE constraint on <code>(post_id, tag_id)</code> prevents duplicate tagging.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>When requirements grow</h3>
+          <ul>
+            <li>For replies, add an optional <code>Comment.parent_comment_id</code>; define nesting depth and the treatment of a removed parent comment too.</li>
+            <li>If moderation happens before publication, decide whether <code>published_at</code> is enough or a status and transition history are needed.</li>
+            <li>If posts survive account deletion, use anonymisation or deactivation rather than assuming every user row can disappear.</li>
+          </ul>
+        </section>
+      </div>
+      <p class="note">A bridge table is especially useful when the relationship gains facts of its own. A tagged-at time, an editor, or a display order all have an obvious home on <code>PostTag</code>.</p>
+      <p class="open-sample"><a class="btn primary" href="/app?lang=en&amp;sample=blog">Open the blog sample</a></p>
+    </article>
+
+    <article class="example-card" id="hr">
+      <div class="example-meta"><span>2 entities</span><span>department assignment</span><span>self-reference</span></div>
+      <h2>3. HR and reporting lines</h2>
+      <p>This model demonstrates a table that refers to itself. An employee belongs to a department and may, but does not have to, point to another employee as a manager.</p>
+      <div class="model-map" aria-label="A department has employees and an employee can optionally be managed by another employee">
+        <span class="node">department</span><span class="arrow">1 ── N</span><span class="node">employee</span>
+        <span class="label">·</span>
+        <span class="node">employee</span><span class="arrow">0..1 ── N</span><span class="node">employee</span><span class="label">(manager)</span>
+      </div>
+      <div class="example-grid">
+        <section>
+          <h3>What the relationships express</h3>
+          <ul>
+            <li><code>employee.dept_id</code> allows a department to have many employees while a newly created department may have none yet.</li>
+            <li><code>employee.parent_emp_id</code> optionally points back to <code>employee.emp_id</code>. A top-level leader has no manager, so NULL is meaningful.</li>
+            <li>A reporting line and a job title are separate ideas. Whether <code>position</code> becomes a reference table depends on the organisation's HR rules.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Operational rules to add</h3>
+          <ul>
+            <li>Prevent an employee from managing themselves or two employees from forming a management cycle, in application logic or database checks.</li>
+            <li>If transfers matter historically, keep <code>employee_department_history</code> instead of overwriting only the current <code>dept_id</code>.</li>
+            <li>For matrix management, replace the single self-reference with an employee-manager relationship table.</li>
+          </ul>
+        </section>
+      </div>
+      <p class="note">Self-references keep a hierarchy compact, but they require rules for cycles, deletion, and recursive queries. Write the business statement — for example, “can an employee have no manager?” — before deciding whether the foreign key is nullable.</p>
+      <p class="open-sample"><a class="btn primary" href="/app?lang=en&amp;sample=hr">Open the HR sample</a></p>
+    </article>
+  </section>
+
+  <section class="block wrap narrow" style="text-align:center; padding-top:28px;">
+    <h2>An example is a question list, not a template</h2>
+    <p class="lead">Change entities and relationships to fit your names, state changes, deletion rules, and history requirements. The <a href="/en/articles/">database design articles</a> explain the underlying choices in more depth.</p>
+    <div class="btn-row"><a class="btn ghost" href="/en/manual.html">Read the manual</a><a class="btn primary" href="/app?lang=en">Start from a blank canvas</a></div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <span class="copy">© 2026 YourERD · Online ERD editor</span>
+    <nav>
+      <a href="/en/articles/">Articles</a>
+      <a href="/en/manual.html">Manual</a>
+      <a href="/en/mcp-guide.html">MCP guide</a>
+      <a href="/en/prompt-guide.html">Prompt guide</a>
+      <a href="/en/about.html">About</a>
+      <a href="/en/contact.html">Contact</a>
+      <a href="/en/privacy.html">Privacy</a>
+      <a href="/en/terms.html">Terms</a>
+      <a href="/">한국어</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
