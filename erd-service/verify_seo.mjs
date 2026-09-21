@@ -160,7 +160,11 @@ try {
   // ── 9. 앱 셸(/app) 메타 + 사이드바 정책 링크 ──────────────────────────────────
   const appBody = await (await get('/app')).text();
   check('/app meta description', appBody.includes('name="description"'));
-  check('/app 애드센스 스크립트 유지', appBody.includes('adsbygoogle.js'));
+  // 도구 화면은 noindex이며, 빈 캔버스 상태에서도 자동 광고가 붙을 수 있다.
+  // 광고 코드는 랜딩·가이드·아티클처럼 충분한 공개 콘텐츠가 있는 페이지에만 둔다.
+  check('/app 에 애드센스 스크립트 없음', !appBody.includes('adsbygoogle.js'));
+  const landingBody = await (await get('/')).text();
+  check('랜딩에 애드센스 스크립트 유지', landingBody.includes('adsbygoogle.js'));
 
   await page.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);

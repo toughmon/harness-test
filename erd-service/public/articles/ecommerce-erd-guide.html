@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>쇼핑몰 ERD 설계 가이드 — 주문·결제·재고를 어디까지 나눌까 · YourERD</title>
+  <meta name="description" content="쇼핑몰 주문 도메인을 예로 고객·상품·주문·주문항목·결제·배송·재고를 어떤 기준으로 나누고 연결하는지, 키와 관계를 단계별로 설명합니다." />
+  <link rel="canonical" href="https://yourerd.com/articles/ecommerce-erd-guide.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="YourERD" />
+  <meta property="og:title" content="쇼핑몰 ERD 설계 가이드 — 주문·결제·재고를 어디까지 나눌까" />
+  <meta property="og:description" content="쇼핑몰 주문 도메인을 예로 고객·상품·주문·주문항목·결제·배송·재고를 어떤 기준으로 나누고 연결하는지 단계별로 설명합니다." />
+  <meta property="og:url" content="https://yourerd.com/articles/ecommerce-erd-guide.html" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="article:published_time" content="2026-09-21" />
+  <meta property="article:modified_time" content="2026-09-21" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guide.css" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "쇼핑몰 ERD 설계 가이드 — 주문·결제·재고를 어디까지 나눌까",
+    "description": "쇼핑몰 주문 도메인을 예로 고객·상품·주문·주문항목·결제·배송·재고를 어떤 기준으로 나누고 연결하는지 단계별로 설명합니다.",
+    "inLanguage": "ko-KR",
+    "datePublished": "2026-09-21",
+    "dateModified": "2026-09-21",
+    "author": { "@type": "Organization", "name": "YourERD" },
+    "publisher": { "@type": "Organization", "name": "YourERD", "url": "https://yourerd.com/" },
+    "mainEntityOfPage": "https://yourerd.com/articles/ecommerce-erd-guide.html"
+  }
+  </script>
+  <style>
+    nav.toc {
+      position: sticky; top: 0; align-self: flex-start;
+      width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      padding: 28px 16px 40px 24px;
+      border-right: 1px solid var(--outline-variant);
+    }
+    nav.toc .brand { font-size: 22px; font-weight: 900; letter-spacing: -.02em; color: var(--primary); margin-bottom: 4px; }
+    nav.toc .back { font-size: 12px; color: var(--outline); margin-top: 18px; }
+    main h1 { font-size: 30px; font-weight: 900; letter-spacing: -.02em; margin: 0 0 6px; }
+    .meta { font-size: 12.5px; color: var(--outline); font-family: var(--font-mono); margin: 0 0 20px; }
+    .callout { border-left: 3px solid var(--primary-container); background: rgba(128,131,255,.06); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 18px 0; color: var(--on-surface-variant); font-size: 14px; }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li { position: relative; padding-left: 27px; margin: 9px 0; }
+    .checklist li::before { content: "✓"; position: absolute; left: 0; color: var(--ok); font-weight: 800; }
+    .related { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--outline-variant); }
+    .related h2 { border: none; margin-bottom: 12px; }
+    .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .related a { color: var(--primary); text-decoration: none; }
+    .related a:hover { text-decoration: underline; }
+    @media (max-width: 860px) { nav.toc { display: none; } main { padding: 28px 22px 80px; } }
+    footer a { color: var(--on-surface-variant); text-decoration: none; }
+    footer a:hover { color: var(--primary); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc" aria-label="이 글의 목차">
+      <div class="brand">YourERD</div>
+      <div class="sub">아티클</div>
+      <a href="#intro">개요</a>
+      <a href="#scope">1. 먼저 범위를 정한다</a>
+      <a href="#entities">2. 핵심 엔티티를 고른다</a>
+      <a href="#relations">3. 관계와 카디널리티</a>
+      <a href="#snapshot">4. 주문 시점 값을 보존한다</a>
+      <a href="#payment">5. 결제·배송·재고 분리</a>
+      <a href="#schema">6. 스키마 초안</a>
+      <a href="#review">7. 배포 전 점검</a>
+      <a href="#draw">직접 그려 보기</a>
+      <a href="/articles/" class="back">← 아티클 목록</a>
+    </nav>
+
+    <main>
+      <article>
+        <h1 id="intro">쇼핑몰 ERD 설계 가이드 — 주문·결제·재고를 어디까지 나눌까</h1>
+        <p class="meta">작성: YourERD · 2026-09-21</p>
+        <p class="lead">
+          쇼핑몰 ERD는 테이블 수를 많이 만드는 문제가 아닙니다. "고객이 무엇을 샀는가"라는
+          한 문장을 주문 시점의 사실, 현재 상품 정보, 돈의 흐름, 물류의 흐름으로 분리해
+          나중에도 모순 없이 보관하는 문제입니다. 이 글에서는 단일 판매자가 운영하는 일반적인
+          쇼핑몰을 기준으로, 처음 모델을 잡을 때의 판단 순서를 따라가 봅니다.
+        </p>
+
+        <section id="scope">
+          <h2>1. 테이블보다 먼저, 이번에 풀 문제의 범위를 정한다</h2>
+          <p>
+            "쇼핑몰"이라고 해도 쿠폰, 장바구니, 판매자 정산, 반품, 다중 창고까지 모두 한 번에
+            넣을 필요는 없습니다. 처음 모델에서는 <strong>회원이 상품을 주문하고, 결제하고,
+            배송받는 흐름</strong>을 정확히 보관하는 데 집중하는 편이 좋습니다. 이 범위만으로도
+            고객, 상품, 주문, 주문항목, 결제, 배송, 재고의 역할이 자연스럽게 드러납니다.
+          </p>
+          <div class="callout">
+            모델은 기능 목록을 그대로 옮긴 것이 아닙니다. 예를 들어 "주문 취소"는 별도 테이블이
+            아닐 수 있습니다. 취소 이력과 환불 금액을 여러 번 남겨야 할 때에는 이벤트/환불 테이블이
+            필요하지만, 단순 상태 변경만 필요하면 주문 상태와 취소 시각으로도 충분합니다.
+          </div>
+          <p>
+            시작 전에 다음 두 질문에 답해 두면 경계가 선명해집니다. 첫째, 고객의 이름과 배송지는
+            주문 뒤에 변경되어도 과거 주문서에 남아야 하는가? 둘째, 한 주문은 결제와 배송을 각각
+            몇 번까지 가질 수 있는가? 이 글에서는 과거 주문 정보를 보존하고, 결제와 배송은 각각
+            여러 기록이 생길 수 있다고 가정합니다.
+          </p>
+        </section>
+
+        <section id="entities">
+          <h2>2. 핵심 엔티티를 사실 단위로 고른다</h2>
+          <p>
+            화면 메뉴를 기준으로 엔티티를 고르면 빠뜨리기 쉽습니다. "누가", "무엇을",
+            "언제", "어떤 조건으로" 발생한 사실인지 문장으로 적어 보고, 그 사실이 독립적으로
+            식별·조회·변경되어야 할 때 엔티티로 만듭니다.
+          </p>
+          <table>
+            <thead><tr><th>엔티티</th><th>보관하는 사실</th><th>대표 키</th></tr></thead>
+            <tbody>
+              <tr><td>customers</td><td>회원의 현재 계정·연락처 정보</td><td>customer_id</td></tr>
+              <tr><td>products</td><td>현재 판매 중인 상품의 기본 정보</td><td>product_id</td></tr>
+              <tr><td>orders</td><td>한 번의 주문 전체와 주문 당시 배송 수령인</td><td>order_id</td></tr>
+              <tr><td>order_items</td><td>주문 안에서 구매한 상품 한 종류와 수량·판매가</td><td>order_item_id</td></tr>
+              <tr><td>payments</td><td>승인, 부분 취소, 환불을 포함한 결제 거래</td><td>payment_id</td></tr>
+              <tr><td>shipments</td><td>출고·송장·배송 완료의 물류 단위</td><td>shipment_id</td></tr>
+              <tr><td>inventory</td><td>상품별 판매 가능 수량</td><td>product_id</td></tr>
+            </tbody>
+          </table>
+          <p>
+            여기서 특히 중요한 것은 <code>orders</code>와 <code>order_items</code>를 나누는 일입니다.
+            한 주문에는 여러 상품이 들어갈 수 있고, 같은 상품도 주문마다 수량과 실제 결제 금액이
+            다를 수 있습니다. 상품을 주문 테이블에 반복 컬럼으로 넣으면 상품 수에 제한이 생기고,
+            행을 늘려 주문 정보를 반복하면 주문 단위의 금액과 상태가 중복됩니다.
+          </p>
+        </section>
+
+        <section id="relations">
+          <h2>3. 관계는 "누가 누구를 소유하는가"로 읽는다</h2>
+          <p>
+            관계선을 그을 때는 외래키를 먼저 쓰기보다 자연어로 읽어 보는 편이 안전합니다.
+            아래 문장이 어색하지 않으면 관계 방향과 다중성이 대체로 맞습니다.
+          </p>
+          <ul>
+            <li>고객 한 명은 주문을 <strong>0개 이상</strong> 만들 수 있고, 주문 하나는 고객 <strong>한 명</strong>에게 속합니다.</li>
+            <li>주문 하나는 주문항목을 <strong>1개 이상</strong> 가지며, 주문항목 하나는 주문 <strong>한 개</strong>에 속합니다.</li>
+            <li>상품 하나는 여러 주문항목에서 참조될 수 있고, 주문항목 하나는 주문 당시 상품 <strong>한 개</strong>를 가리킵니다.</li>
+            <li>주문 하나는 결제 기록과 배송 묶음을 <strong>0개 이상</strong> 가질 수 있습니다. 주문 직후에는 아직 결제·출고가 없을 수 있기 때문입니다.</li>
+          </ul>
+          <p>
+            따라서 외래키는 대체로 <code>orders.customer_id</code>,
+            <code>order_items.order_id</code>, <code>order_items.product_id</code>,
+            <code>payments.order_id</code>, <code>shipments.order_id</code>처럼 자식 쪽에 놓입니다.
+            주문항목은 주문이 없으면 존재할 수 없으므로 <code>order_id</code>를 NOT NULL로 두는
+            식별 관계가 자연스럽습니다. 반면 배송 담당자처럼 나중에 배정될 수 있는 참조는
+            선택 관계로 시작할 수 있습니다.
+          </p>
+        </section>
+
+        <section id="snapshot">
+          <h2>4. 주문 시점의 값은 상품 테이블에만 두지 않는다</h2>
+          <p>
+            가장 흔한 실수는 주문항목에 <code>product_id</code>만 저장하는 것입니다. 상품 이름이
+            "기계식 키보드"에서 "무선 기계식 키보드"로 바뀌거나 정가가 인상되면, 과거 영수증까지
+            현재 이름과 가격으로 보이게 됩니다. 주문은 당시의 거래 사실이므로 주문항목에 스냅샷을
+            함께 둡니다.
+          </p>
+          <pre><code>order_items
+  order_item_id      PK
+  order_id           FK → orders.order_id
+  product_id         FK → products.product_id
+  product_name       주문 당시 표시명
+  unit_price         주문 당시 단가
+  quantity           구매 수량
+  line_amount        unit_price × quantity</code></pre>
+          <p>
+            <code>product_id</code>는 "어떤 상품을 원본으로 삼았는가"를 추적하기 위해 남깁니다.
+            반면 <code>product_name</code>과 <code>unit_price</code>는 과거 거래를 재현하기 위한
+            값입니다. 중복처럼 보이지만, 현재 상품 정보와 과거 거래 정보는 서로 다른 사실이라
+            의도적인 분리입니다. 이 차이는 <a href="/articles/normalization-guide.html">정규화</a>와
+            반정규화의 경계를 이해할 때도 유용합니다.
+          </p>
+        </section>
+
+        <section id="payment">
+          <h2>5. 결제·배송·재고는 주문과 같은 상태로 뭉치지 않는다</h2>
+          <h3>결제는 결과가 아니라 거래 이력이다</h3>
+          <p>
+            카드 승인 뒤 부분 취소가 일어나거나, 실패 후 다른 수단으로 재시도할 수 있습니다.
+            그래서 <code>orders.payment_status</code>만으로 모든 결제 정보를 표현하기보다,
+            결제 시도·승인·취소/환불을 <code>payments</code>에 기록합니다. 주문 테이블의 상태는
+            화면 조회를 빠르게 하기 위한 요약값으로 둘 수 있지만, 금액과 외부 결제사 거래번호는
+            결제 테이블이 원본이 되어야 합니다.
+          </p>
+          <h3>배송지는 주문에 스냅샷으로 남긴다</h3>
+          <p>
+            고객 주소록을 별도 엔티티로 두더라도 주문의 수령인 이름, 전화번호, 우편번호, 주소는
+            <code>orders</code>에 복사해 둡니다. 고객이 다음 주문을 위해 주소록을 수정해도 이미
+            발송한 주문의 배송 정보가 바뀌어서는 안 됩니다. 부분 출고가 가능한 서비스라면
+            <code>shipments</code>와 <code>shipment_items</code>를 추가해 주문항목별 출고 수량을
+            추적합니다.
+          </p>
+          <h3>재고는 수량 하나로 끝나지 않을 수 있다</h3>
+          <p>
+            초기에는 <code>inventory.available_quantity</code> 하나로 충분할 수 있습니다. 다만
+            결제 대기 동안 재고를 예약하거나 여러 창고를 운영하면, 실제 보유 수량·예약 수량·판매
+            가능 수량을 구분해야 합니다. 그 시점에는 재고 변경 원인을 남기는
+            <code>inventory_transactions</code>를 추가합니다. 처음부터 복잡하게 만들기보다,
+            "재고가 왜 바뀌었는지 설명해야 하는가"가 필요 조건입니다.
+          </p>
+        </section>
+
+        <section id="schema">
+          <h2>6. 관계를 검증할 수 있는 스키마 초안</h2>
+          <p>
+            아래는 모든 운영 요구사항을 담은 완성본이 아니라, 핵심 관계가 실제 제약조건으로
+            연결되는지 확인하기 위한 MySQL 스타일 초안입니다. 금액은 부동소수점 대신
+            <code>DECIMAL</code>로 저장하고, 외부 결제사 식별자는 중복을 막기 위해 UNIQUE 제약을
+            둡니다.
+          </p>
+          <pre><code>CREATE TABLE customers (
+  customer_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  email       VARCHAR(255) NOT NULL UNIQUE,
+  name        VARCHAR(80)  NOT NULL,
+  created_at  DATETIME     NOT NULL
+);
+
+CREATE TABLE products (
+  product_id  BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name        VARCHAR(200) NOT NULL,
+  list_price  DECIMAL(12,2) NOT NULL,
+  is_active   BOOLEAN       NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE orders (
+  order_id          BIGINT PRIMARY KEY AUTO_INCREMENT,
+  customer_id       BIGINT NOT NULL,
+  order_status      VARCHAR(30) NOT NULL,
+  recipient_name    VARCHAR(80) NOT NULL,
+  recipient_phone   VARCHAR(30) NOT NULL,
+  shipping_address  VARCHAR(500) NOT NULL,
+  ordered_at        DATETIME NOT NULL,
+  FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+CREATE TABLE order_items (
+  order_item_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  order_id      BIGINT NOT NULL,
+  product_id    BIGINT NOT NULL,
+  product_name  VARCHAR(200) NOT NULL,
+  unit_price    DECIMAL(12,2) NOT NULL,
+  quantity      INT NOT NULL,
+  FOREIGN KEY (order_id) REFERENCES orders(order_id),
+  FOREIGN KEY (product_id) REFERENCES products(product_id)
+);</code></pre>
+          <p>
+            이 상태에서 반드시 테스트할 질문은 "상품을 삭제하면 과거 주문은 어떻게 되는가"입니다.
+            일반적으로 주문 이력이 있는 상품은 물리 삭제하지 않고 <code>is_active</code>를 꺼
+            판매만 중단합니다. 그래야 주문항목의 외래키가 끊기지 않고, 환불이나 고객 문의에도
+            원래 상품을 확인할 수 있습니다.
+          </p>
+        </section>
+
+        <section id="review">
+          <h2>7. 배포 전에는 조회 시나리오로 다시 읽는다</h2>
+          <p>
+            ERD가 그럴듯해 보여도 실제 질문에 답하지 못하면 모델은 아직 덜 만들어진 것입니다.
+            아래 체크리스트를 한 번씩 SQL 또는 화면 요구사항으로 풀어 보세요.
+          </p>
+          <ul class="checklist">
+            <li>고객 한 명의 최근 주문을 주문일시 내림차순으로 가져올 수 있는가?</li>
+            <li>주문 상세에서 당시 구매한 상품명·단가·수량과 현재 상품 정보를 구분해 보여줄 수 있는가?</li>
+            <li>한 주문의 결제 승인과 부분 취소 금액을 모두 합산해 최종 결제액을 설명할 수 있는가?</li>
+            <li>상품 판매 중단 후에도 기존 주문·환불·배송 이력은 손상되지 않는가?</li>
+            <li>한 주문을 여러 번 나누어 출고해야 할 때, 어느 주문항목이 몇 개 발송됐는지 표현할 수 있는가?</li>
+            <li>재고 차감이 실패하거나 중복 실행됐을 때, 어떤 제약과 트랜잭션으로 수량을 보호할지 정했는가?</li>
+          </ul>
+          <p>
+            마지막 질문까지 답하려면 ERD만으로는 부족하고 트랜잭션 설계가 필요합니다. 그렇다고
+            ERD의 역할이 줄어드는 것은 아닙니다. 어떤 테이블이 동시에 갱신되는지, 어디에 유니크
+            제약이나 상태 전이가 필요한지 먼저 보이게 해 주는 것이 ERD의 가장 큰 역할입니다.
+          </p>
+        </section>
+
+        <section id="draw">
+          <h2>직접 그려 보면서 관계를 확인하기</h2>
+          <p>
+            <a href="/app?lang=ko">YourERD 편집기</a>에서 customers → orders → order_items와
+            products → order_items 관계를 먼저 그려 보세요. 이후 payments와 shipments를 orders에
+            붙이면 "주문"과 "주문항목"을 왜 분리했는지, 결제·배송이 주문과 어떤 생명주기를
+            공유하는지가 선명해집니다. 엔티티 이름과 키를 바꿔 가며 실제 서비스 요구사항에 맞게
+            조정하는 과정 자체가 모델링입니다.
+          </p>
+        </section>
+
+        <div class="related">
+          <h2>관련 아티클</h2>
+          <ul>
+            <li><a href="/articles/normalization-guide.html">데이터베이스 정규화 완벽 가이드</a></li>
+            <li><a href="/articles/identifying-vs-non-identifying.html">식별 관계 vs 비식별 관계, 언제 무엇을 써야 할까</a></li>
+            <li><a href="/articles/erd-antipatterns.html">ERD 설계 안티패턴 8가지</a></li>
+          </ul>
+        </div>
+      </article>
+
+      <footer>
+        YourERD 아티클 · 쇼핑몰 ERD 설계 가이드
+        <br />
+        <a href="/">홈</a> · <a href="/articles/">아티클 목록</a> · <a href="/manual.html">사용 설명서</a> ·
+        <a href="/about.html">소개</a> · <a href="/contact.html">문의</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

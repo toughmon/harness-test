@@ -1,5 +1,5 @@
 // 애드센스 재승인 대응 2차 검증 — robots.txt /mcp$ 수정, /app noindex+noscript,
-// About/Contact 페이지, 아티클 7편 + 목록, 전 페이지 내비게이션 연결.
+// About/Contact 페이지, 아티클 8편 + 목록, 전 페이지 내비게이션 연결.
 // 사전 조건: npm run build 후 npm start (기본 포트 8080) 실행 상태
 //   BASE_URL=http://localhost:8080 node verify_seo2.mjs
 import { chromium } from 'playwright';
@@ -24,6 +24,7 @@ const textLen = async p => {
 };
 
 const ARTICLES = [
+  '/articles/ecommerce-erd-guide.html',
   '/articles/normalization-guide.html',
   '/articles/identifying-vs-non-identifying.html',
   '/articles/barker-vs-ie-notation.html',
@@ -78,6 +79,7 @@ try {
     check(`${p} 200 + meta description`, body.includes('name="description"'));
     check(`${p} canonical`, body.includes('rel="canonical"'));
     check(`${p} 실제 파일(앱 셸 아님)`, !body.includes('id="root"'));
+    check(`${p} 에 애드센스 스크립트 없음`, !body.includes('adsbygoogle.js'));
   }
   // 문의 이메일 — 실제 수신 가능한 주소로 교체됐는지, 플레이스홀더가 남아있지 않은지 확인
   const REAL_EMAIL = 'toughmon777@gmail.com';
@@ -87,7 +89,7 @@ try {
     check(`${p} 에 플레이스홀더 이메일 잔존 없음`, !body.includes('contact@yourerd.com'), p);
   }
 
-  // ── 4. 아티클 7편 + 목록 ──────────────────────────────────────────────────
+  // ── 4. 아티클 8편 + 목록 ──────────────────────────────────────────────────
   const idxBody = await (await get('/articles/')).text();
   check('아티클 목록 200 + meta description', idxBody.includes('name="description"'));
   for (const a of ARTICLES) {
@@ -119,11 +121,17 @@ try {
     check(`${p} footer에 아티클 링크`, body.includes('href="/articles/"'));
     check(`${p} footer에 소개 링크`, body.includes('href="/about.html"'));
     check(`${p} footer에 문의 링크`, body.includes('href="/contact.html"'));
+    if (p === '/privacy.html' || p === '/terms.html') {
+      check(`${p} 에 애드센스 스크립트 없음`, !body.includes('adsbygoogle.js'));
+    }
   }
   for (const p of ['/en/manual.html', '/en/mcp-guide.html', '/en/prompt-guide.html', '/en/privacy.html', '/en/terms.html']) {
     const body = await (await get(p)).text();
     check(`${p} footer에 About 링크`, body.includes('href="/en/about.html"'));
     check(`${p} footer에 Contact 링크`, body.includes('href="/en/contact.html"'));
+    if (p === '/en/privacy.html' || p === '/en/terms.html') {
+      check(`${p} 에 애드센스 스크립트 없음`, !body.includes('adsbygoogle.js'));
+    }
   }
 
   // ── 7. 앱 사이드바 About/Contact 링크 ─────────────────────────────────────
