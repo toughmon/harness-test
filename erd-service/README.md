@@ -40,7 +40,8 @@ Vite 멀티페이지 빌드(`index.html` + `app.html`)라 루트는 정적 HTML,
 | `/en/` | 영문 랜딩 페이지 |
 | `/app`, `/app/*` | 편집기 SPA (`app.html`, `noindex` — sitemap 대상 아님) |
 | `/d/:token` | 공유 링크 진입 — 앱 셸로 서빙 |
-| `/articles/`, `/articles/*.html` | 데이터 모델링 아티클 8편 + 목록 (한국어 전용, 영문은 후속) |
+| `/articles/`, `/articles/*.html` | 데이터 모델링 아티클 8편 + 목록 (한국어) |
+| `/en/articles/` | 핵심 데이터 모델링 주제를 한 페이지로 엮은 영문 아티클 컬렉션 |
 | `/manual.html`, `/mcp-guide.html`, `/prompt-guide.html` | 가이드 (각 `/en/` 사본 존재) |
 | `/about.html`, `/contact.html` | 소개·문의 (각 `/en/` 사본 존재) |
 | `/privacy.html`, `/terms.html` | 개인정보처리방침·이용약관 (각 `/en/` 사본 존재) |

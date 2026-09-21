@@ -3,6 +3,8 @@
 // 사전 조건: npm run build 후 npm start (기본 포트 8080) 실행 상태
 //   BASE_URL=http://localhost:8080 node verify_seo2.mjs
 import { chromium } from 'playwright';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:8080';
 const browser = await chromium.launch({ headless: true });
@@ -17,6 +19,7 @@ function check(name, ok, extra) {
 }
 
 const get = p => page.request.get(`${BASE}${p}`);
+const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR ?? tmpdir();
 const textLen = async p => {
   await page.goto(`${BASE}${p}`, { waitUntil: 'domcontentloaded' });
   const t = await page.locator('main').innerText().catch(() => page.locator('body').innerText());
@@ -33,6 +36,38 @@ const ARTICLES = [
   '/articles/surrogate-vs-natural-key.html',
   '/articles/data-model-levels.html',
 ];
+
+const KOREAN_FOOTER = [
+  ['/articles/', '아티클'],
+  ['/manual.html', '사용 설명서'],
+  ['/mcp-guide.html', 'MCP 연결 가이드'],
+  ['/prompt-guide.html', '프롬프트 가이드'],
+  ['/about.html', '소개'],
+  ['/contact.html', '문의'],
+  ['/privacy.html', '개인정보처리방침'],
+  ['/terms.html', '이용약관'],
+  ['/en/', 'English'],
+];
+
+const ENGLISH_FOOTER = [
+  ['/en/articles/', 'Articles'],
+  ['/en/manual.html', 'Manual'],
+  ['/en/mcp-guide.html', 'MCP guide'],
+  ['/en/prompt-guide.html', 'Prompt guide'],
+  ['/en/about.html', 'About'],
+  ['/en/contact.html', 'Contact'],
+  ['/en/privacy.html', 'Privacy'],
+  ['/en/terms.html', 'Terms'],
+  ['/', '한국어'],
+];
+
+const footerLinks = async p => {
+  await page.goto(`${BASE}${p}`, { waitUntil: 'domcontentloaded' });
+  return page.locator('footer a').evaluateAll(links => links.map(link => [
+    link.getAttribute('href'),
+    link.textContent?.trim(),
+  ]));
+};
 
 try {
   // ── 1. robots.txt — /mcp$ 로 정확히 전송 엔드포인트만 차단 ────────────────
@@ -61,6 +96,7 @@ try {
   check('sitemap.xml에 /about.html 있음', sitemap.includes('<loc>https://yourerd.com/about.html</loc>'));
   check('sitemap.xml에 /contact.html 있음', sitemap.includes('<loc>https://yourerd.com/contact.html</loc>'));
   check('sitemap.xml에 아티클 목록 있음', sitemap.includes('<loc>https://yourerd.com/articles/</loc>'));
+  check('sitemap.xml에 영문 아티클 목록 있음', sitemap.includes('<loc>https://yourerd.com/en/articles/</loc>'));
   for (const a of ARTICLES) {
     check(`sitemap.xml에 ${a} 있음`, sitemap.includes(`<loc>https://yourerd.com${a}</loc>`));
   }
@@ -103,6 +139,11 @@ try {
     const len = await textLen(a);
     check(`${a} 본문 3,000자 이상 (실제 ${len}자)`, len >= 3000, len);
   }
+  const enArticlesBody = await (await get('/en/articles/')).text();
+  check('영문 아티클 목록 200 + meta description', enArticlesBody.includes('name="description"'));
+  check('영문 아티클 목록 canonical', enArticlesBody.includes('rel="canonical"'));
+  const enArticlesLen = await textLen('/en/articles/');
+  check(`영문 아티클 본문 5,000자 이상 (실제 ${enArticlesLen}자)`, enArticlesLen >= 5000, enArticlesLen);
 
   // ── 5. 랜딩 페이지 연결 ───────────────────────────────────────────────────
   await page.goto(BASE, { waitUntil: 'networkidle' });
@@ -112,6 +153,7 @@ try {
   check('랜딩 footer에 문의 링크', await page.locator('footer a[href="/contact.html"]').count() > 0);
 
   await page.goto(`${BASE}/en/`, { waitUntil: 'networkidle' });
+  check('영문 랜딩 footer에 Articles 링크', await page.locator('footer a[href="/en/articles/"]').count() > 0);
   check('영문 랜딩 footer에 About 링크', await page.locator('footer a[href="/en/about.html"]').count() > 0);
   check('영문 랜딩 footer에 Contact 링크', await page.locator('footer a[href="/en/contact.html"]').count() > 0);
 
@@ -134,7 +176,28 @@ try {
     }
   }
 
-  // ── 7. 앱 사이드바 About/Contact 링크 ─────────────────────────────────────
+  // ── 7. 푸터 메뉴 통일 ──────────────────────────────────────────────────────
+  // 정적 HTML을 페이지마다 별도로 관리하므로, 메뉴 하나를 빼먹어도 빌드에서는 잡히지 않는다.
+  // 한국어와 영문 각각의 기준 메뉴·순서·링크가 모든 공개 페이지에서 동일한지 검증한다.
+  const koreanFooterPages = [
+    '/', '/404.html', '/articles/', ...ARTICLES,
+    '/manual.html', '/mcp-guide.html', '/prompt-guide.html',
+    '/about.html', '/contact.html', '/privacy.html', '/terms.html',
+  ];
+  for (const p of koreanFooterPages) {
+    const actual = await footerLinks(p);
+    check(`${p} 한국어 푸터 메뉴 통일`, JSON.stringify(actual) === JSON.stringify(KOREAN_FOOTER), JSON.stringify(actual));
+  }
+  const englishFooterPages = [
+    '/en/', '/en/articles/', '/en/manual.html', '/en/mcp-guide.html', '/en/prompt-guide.html',
+    '/en/about.html', '/en/contact.html', '/en/privacy.html', '/en/terms.html',
+  ];
+  for (const p of englishFooterPages) {
+    const actual = await footerLinks(p);
+    check(`${p} 영문 푸터 메뉴 통일`, JSON.stringify(actual) === JSON.stringify(ENGLISH_FOOTER), JSON.stringify(actual));
+  }
+
+  // ── 8. 앱 사이드바 About/Contact 링크 ─────────────────────────────────────
   await page.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
   check('앱 사이드바에 소개 링크', await page.locator('aside a[href="/about.html"]').count() === 1);
@@ -142,13 +205,13 @@ try {
   check('앱 사이드바에 기존 개인정보처리방침 링크 유지', await page.locator('aside a[href="/privacy.html"]').count() === 1);
 
   await page.goto(BASE, { waitUntil: 'networkidle' });
-  await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_landing_v2.png', fullPage: true });
+  await page.screenshot({ path: join(SCREENSHOT_DIR, 'yourerd-landing.png'), fullPage: true });
   await page.goto(`${BASE}/articles/`, { waitUntil: 'networkidle' });
-  await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_articles_index.png', fullPage: true });
+  await page.screenshot({ path: join(SCREENSHOT_DIR, 'yourerd-articles-index.png'), fullPage: true });
   await page.goto(`${BASE}/articles/normalization-guide.html`, { waitUntil: 'networkidle' });
-  await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_article_detail.png', fullPage: true });
+  await page.screenshot({ path: join(SCREENSHOT_DIR, 'yourerd-article-detail.png'), fullPage: true });
   await page.goto(`${BASE}/about.html`, { waitUntil: 'networkidle' });
-  await page.screenshot({ path: 'C:/project/harness-test/erd-service/ss_about.png', fullPage: true });
+  await page.screenshot({ path: join(SCREENSHOT_DIR, 'yourerd-about.png'), fullPage: true });
 
   console.log(fail === 0 ? '\nALL PASS' : `\n${fail} FAILED`);
   process.exitCode = fail === 0 ? 0 : 1;

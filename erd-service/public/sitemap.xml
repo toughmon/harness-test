@@ -20,17 +20,30 @@
     <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/" />
-    <lastmod>2026-09-11</lastmod>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
-  <!-- ── 아티클 (한국어 전용, 이번 범위) ───────────────────────────────── -->
+  <!-- ── 아티클 ────────────────────────────────────────────────────────── -->
 
   <url>
     <loc>https://yourerd.com/articles/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/" />
     <lastmod>2026-09-21</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://yourerd.com/en/articles/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/" />
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
