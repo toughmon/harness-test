@@ -6,6 +6,9 @@
   <title>개념적·논리적·물리적 데이터 모델의 차이 · YourERD</title>
   <meta name="description" content="같은 '고객'이라는 개념이 개념적·논리적·물리적 모델을 거치며 어떻게 구체화되는지 하나의 예제로 끝까지 따라가 봅니다." />
   <link rel="canonical" href="https://yourerd.com/articles/data-model-levels.html" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/data-model-levels.html" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/data-model-levels.html" />
+  <link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/data-model-levels.html" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="YourERD" />
   <meta property="og:title" content="개념적·논리적·물리적 데이터 모델의 차이" />
@@ -13,12 +16,14 @@
   <meta property="og:url" content="https://yourerd.com/articles/data-model-levels.html" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="article:published_time" content="2026-09-11" />
+  <meta property="article:modified_time" content="2026-09-28" />
   <meta name="twitter:card" content="summary" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/article.css" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
   <style>
     nav.toc { position: sticky; top: 0; align-self: flex-start; width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto; padding: 28px 16px 40px 24px; border-right: 1px solid var(--outline-variant); }
@@ -35,6 +40,7 @@
     footer a { color: var(--on-surface-variant); text-decoration: none; }
     footer a:hover { color: var(--primary); text-decoration: underline; }
   </style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "개념적·논리적·물리적 데이터 모델의 차이", "description": "같은 '고객'이라는 개념이 개념적·논리적·물리적 모델을 거치며 어떻게 구체화되는지 하나의 예제로 끝까지 따라가 봅니다.", "inLanguage": "ko-KR", "datePublished": "2026-09-11", "dateModified": "2026-09-28", "author": {"@type": "Organization", "name": "YourERD", "url": "https://yourerd.com/about.html"}, "mainEntityOfPage": "https://yourerd.com/articles/data-model-levels.html"}</script>
 </head>
 <body>
   <div class="layout">
@@ -49,12 +55,14 @@
       <a href="#example">하나의 예제로 끝까지</a>
       <a href="#skip">단계를 건너뛰면 생기는 일</a>
       <a href="#yourerd">YourERD는 어느 단계인가</a>
+      <a href="#practice">사례 실습과 검증</a>
+      <a href="/en/articles/data-model-levels.html">English version</a>
       <a href="/articles/" class="back">← 아티클 목록</a>
     </nav>
 
     <main>
       <h1 id="intro">개념적·논리적·물리적 데이터 모델의 차이</h1>
-      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="meta">작성: YourERD · 2026-09-11 · 수정: 2026-09-28</p>
       <p class="lead">
         "ERD 그려주세요"라는 요청 하나에도 실은 세 가지 서로 다른 결과물이 숨어 있을 수
         있습니다. 데이터 모델링은 흔히 개념적(Conceptual) → 논리적(Logical) → 물리적
@@ -99,11 +107,11 @@
           청중은 데이터 모델러·아키텍트이고, 목표는 정규화된 구조와 관계(식별/비식별,
           카디널리티)를 정확히 정의하는 것입니다.
         </p>
-        <table>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table>
           <tr><th>엔티티</th><th>속성</th><th>기본키</th></tr>
           <tr><td>고객</td><td>고객번호, 이름, 이메일, 가입일</td><td>고객번호</td></tr>
           <tr><td>주문</td><td>주문번호, 고객번호(FK), 주문일시, 상태</td><td>주문번호</td></tr>
-        </table>
+        </table></div>
         <p>
           이 단계에서 이미 <a href="/articles/normalization-guide.html">정규화</a>와
           <a href="/articles/identifying-vs-non-identifying.html">식별·비식별 관계</a>
@@ -129,20 +137,21 @@
 
 CREATE TABLE orders (
   order_id     BIGINT       PRIMARY KEY AUTO_INCREMENT,
-  customer_id  BIGINT       NOT NULL REFERENCES customers(customer_id),
+  customer_id  BIGINT       NOT NULL,
   ordered_at   TIMESTAMP    NOT NULL,
-  status       VARCHAR(20)  NOT NULL DEFAULT 'pending'
+  status       VARCHAR(20)  NOT NULL DEFAULT 'pending',
+  FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
 );</code></pre>
       </section>
 
       <section id="example">
         <h2>하나의 예제로 끝까지 — "고객"의 여정</h2>
-        <table>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table>
           <tr><th>단계</th><th>"고객"은 무엇인가</th></tr>
           <tr><td>개념적</td><td>주문을 내는 주체. 존재한다는 사실과 주문과의 관계만 확정</td></tr>
           <tr><td>논리적</td><td>고객번호(PK), 이름, 이메일, 가입일이라는 속성을 가진 엔티티. 이메일은 유일해야 한다는 규칙까지 정의됨</td></tr>
           <tr><td>물리적</td><td><code>customers</code> 테이블. <code>customer_id BIGINT AUTO_INCREMENT</code>, <code>email VARCHAR(255) UNIQUE</code> 등 정확한 타입·제약까지 확정된 실행 가능한 DDL</td></tr>
-        </table>
+        </table></div>
         <p>
           같은 "고객"이지만 단계마다 다루는 디테일의 수준이 완전히 다릅니다. 개념적 단계의
           논의를 건너뛰고 바로 물리적 모델부터 시작하면, 나중에 "사실 이건 고객이 아니라
@@ -188,7 +197,10 @@ CREATE TABLE orders (
         </p>
       </section>
 
-      <div class="related">
+      <section id="practice" class="practice"><p class="exercise-label">가상 데이터로 직접 검증하기</p><h2>실습: 비회원 주문 요구사항을 세 단계로 추적하기</h2><p>“회원만 주문한다”에서 “비회원도 주문할 수 있다”로 요구사항이 바뀌었다고 가정해 봅시다. customer_id를 무작정 NULL 허용으로 바꾸기 전에, 주문 주체와 로그인 계정이 같은 개념인지 확인해야 합니다. 비회원도 영수증에 필요한 연락처와 주문 시점 이름은 가지고 있을 수 있습니다.</p><div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table><thead><tr><th scope="col">단계</th><th scope="col">결정</th><th scope="col">리뷰할 질문</th></tr></thead><tbody><tr><td>개념적</td><td>구매자와 회원 계정을 구분</td><td>가입 없이도 주문과 연락이 가능한가</td></tr><tr><td>논리적</td><td>주문-회원은 선택 관계, 주문 연락처는 별도 사실</td><td>회원 탈퇴 뒤에도 거래를 설명할 수 있는가</td></tr><tr><td>물리적</td><td>customer_id NULL 허용 FK와 주문 스냅샷 컬럼</td><td>비회원이 INNER JOIN 때문에 목록에서 빠지지 않는가</td></tr></tbody></table></div><pre><code>SELECT o.order_id, o.buyer_name, c.customer_id
+FROM orders o
+LEFT JOIN customers c ON c.customer_id = o.customer_id;</code></pre><p>회원 주문 한 건과 customer_id가 NULL인 비회원 주문 한 건을 넣으면 위 조회는 두 건을 모두 반환해야 합니다. INNER JOIN으로 바꾸었을 때 비회원 주문이 사라지는 것을 확인하면 선택 관계가 쿼리에도 영향을 준다는 점이 드러납니다. 이 예제의 buyer_name은 주문 시점 스냅샷이지 최신 회원 이름의 캐시가 아닙니다.</p><p>회원 탈퇴 시 FK를 SET NULL로 둘지, 계정을 비활성화할지, 거래 보존에 따라 삭제를 제한할지는 별도 정책입니다. 실제 서비스에서는 보존할 정보와 삭제할 정보를 먼저 정하고, 해당 정책이 데이터 모델과 조회 경로에 함께 반영되는지 확인하세요.</p><div class="article-sources"><h3>문법과 제약조건 참고</h3><p>예제의 업무 규칙과 DB가 강제하는 제약은 구분해서 확인하세요.</p><ul><li><a href="https://dev.mysql.com/doc/refman/8.4/en/create-table-foreign-keys.html">MySQL 공식 문서: 외래키 제약</a></li><li><a href="https://dev.mysql.com/doc/refman/8.4/en/create-table-check-constraints.html">MySQL 공식 문서: CHECK 제약</a></li></ul></div></section>
+<div class="related">
         <h2>관련 아티클</h2>
         <ul>
           <li><a href="/articles/normalization-guide.html">데이터베이스 정규화 완벽 가이드</a></li>
@@ -201,7 +213,7 @@ CREATE TABLE orders (
         <br />
         <a href="/articles/">아티클</a> · <a href="/manual.html">사용 설명서</a> · <a href="/mcp-guide.html">MCP 연결 가이드</a> ·
         <a href="/prompt-guide.html">프롬프트 가이드</a> · <a href="/about.html">소개</a> · <a href="/contact.html">문의</a> ·
-        <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a> · <a href="/en/">English</a>
+        <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a> · <a href="/en/articles/data-model-levels.html">English</a>
       </footer>
     </main>
   </div>

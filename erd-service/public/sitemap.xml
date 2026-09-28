@@ -10,7 +10,7 @@
     <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/" />
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -20,7 +20,7 @@
     <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/" />
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -32,7 +32,7 @@
     <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/" />
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -42,7 +42,7 @@
     <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/" />
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-09-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -69,58 +69,122 @@
 
   <url>
     <loc>https://yourerd.com/articles/normalization-guide.html</loc>
-    <lastmod>2026-09-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/normalization-guide.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/normalization-guide.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/normalization-guide.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yourerd.com/en/articles/normalization-guide.html</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/normalization-guide.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/normalization-guide.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/normalization-guide.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://yourerd.com/articles/ecommerce-erd-guide.html</loc>
-    <lastmod>2026-09-21</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/ecommerce-erd-guide.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/ecommerce-erd-guide.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/ecommerce-erd-guide.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yourerd.com/en/articles/ecommerce-erd-guide.html</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/ecommerce-erd-guide.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/ecommerce-erd-guide.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/ecommerce-erd-guide.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://yourerd.com/articles/identifying-vs-non-identifying.html</loc>
-    <lastmod>2026-09-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/identifying-vs-non-identifying.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/identifying-vs-non-identifying.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/identifying-vs-non-identifying.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yourerd.com/en/articles/identifying-vs-non-identifying.html</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/identifying-vs-non-identifying.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/identifying-vs-non-identifying.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/identifying-vs-non-identifying.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://yourerd.com/articles/barker-vs-ie-notation.html</loc>
-    <lastmod>2026-09-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/barker-vs-ie-notation.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/barker-vs-ie-notation.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/barker-vs-ie-notation.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yourerd.com/en/articles/barker-vs-ie-notation.html</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/barker-vs-ie-notation.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/barker-vs-ie-notation.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/barker-vs-ie-notation.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://yourerd.com/articles/column-naming-convention.html</loc>
-    <lastmod>2026-09-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/column-naming-convention.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/column-naming-convention.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/column-naming-convention.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yourerd.com/en/articles/column-naming-convention.html</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/column-naming-convention.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/column-naming-convention.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/column-naming-convention.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://yourerd.com/articles/erd-antipatterns.html</loc>
-    <lastmod>2026-09-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/erd-antipatterns.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/erd-antipatterns.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/erd-antipatterns.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yourerd.com/en/articles/erd-antipatterns.html</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/erd-antipatterns.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/erd-antipatterns.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/erd-antipatterns.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://yourerd.com/articles/surrogate-vs-natural-key.html</loc>
-    <lastmod>2026-09-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/surrogate-vs-natural-key.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/surrogate-vs-natural-key.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/surrogate-vs-natural-key.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yourerd.com/en/articles/surrogate-vs-natural-key.html</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/surrogate-vs-natural-key.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/surrogate-vs-natural-key.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/surrogate-vs-natural-key.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://yourerd.com/articles/data-model-levels.html</loc>
-    <lastmod>2026-09-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/data-model-levels.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/data-model-levels.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/data-model-levels.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yourerd.com/en/articles/data-model-levels.html</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/data-model-levels.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/data-model-levels.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/data-model-levels.html" />
+    <lastmod>2026-09-28</lastmod><changefreq>monthly</changefreq><priority>0.7</priority>
   </url>
 
   <!-- ── 가이드 문서 ───────────────────────────────────────────────── -->
@@ -129,7 +193,7 @@
     <loc>https://yourerd.com/manual.html</loc>
     <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/manual.html" />
     <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/manual.html" />
-    <lastmod>2026-09-11</lastmod>
+    <lastmod>2026-09-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -138,7 +202,7 @@
     <loc>https://yourerd.com/en/manual.html</loc>
     <xhtml:link rel="alternate" hreflang="ko" href="https://yourerd.com/manual.html" />
     <xhtml:link rel="alternate" hreflang="en" href="https://yourerd.com/en/manual.html" />
-    <lastmod>2026-09-11</lastmod>
+    <lastmod>2026-09-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

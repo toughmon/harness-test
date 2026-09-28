@@ -6,6 +6,9 @@
   <title>바커 표기법과 IE 표기법 비교 · YourERD</title>
   <meta name="description" content="바커(Barker) 표기법과 IE(정보공학) 표기법이 필수/선택과 다중성을 표현하는 방식의 차이를 실제 예제로 비교합니다." />
   <link rel="canonical" href="https://yourerd.com/articles/barker-vs-ie-notation.html" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/barker-vs-ie-notation.html" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/barker-vs-ie-notation.html" />
+  <link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/barker-vs-ie-notation.html" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="YourERD" />
   <meta property="og:title" content="바커 표기법과 IE 표기법 비교" />
@@ -13,12 +16,14 @@
   <meta property="og:url" content="https://yourerd.com/articles/barker-vs-ie-notation.html" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="article:published_time" content="2026-09-11" />
+  <meta property="article:modified_time" content="2026-09-28" />
   <meta name="twitter:card" content="summary" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/article.css" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
   <style>
     nav.toc { position: sticky; top: 0; align-self: flex-start; width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto; padding: 28px 16px 40px 24px; border-right: 1px solid var(--outline-variant); }
@@ -35,6 +40,7 @@
     footer a { color: var(--on-surface-variant); text-decoration: none; }
     footer a:hover { color: var(--primary); text-decoration: underline; }
   </style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "바커 표기법과 IE 표기법 비교", "description": "바커(Barker) 표기법과 IE(정보공학) 표기법이 필수/선택과 다중성을 표현하는 방식의 차이를 실제 예제로 비교합니다.", "inLanguage": "ko-KR", "datePublished": "2026-09-11", "dateModified": "2026-09-28", "author": {"@type": "Organization", "name": "YourERD", "url": "https://yourerd.com/about.html"}, "mainEntityOfPage": "https://yourerd.com/articles/barker-vs-ie-notation.html"}</script>
 </head>
 <body>
   <div class="layout">
@@ -50,12 +56,14 @@
       <a href="#others">다른 표기법들</a>
       <a href="#when">언제 무엇을 쓰나</a>
       <a href="#reading">읽는 순서 팁</a>
+      <a href="#practice">사례 실습과 검증</a>
+      <a href="/en/articles/barker-vs-ie-notation.html">English version</a>
       <a href="/articles/" class="back">← 아티클 목록</a>
     </nav>
 
     <main>
       <h1 id="intro">바커 표기법과 IE 표기법 비교</h1>
-      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="meta">작성: YourERD · 2026-09-11 · 수정: 2026-09-28</p>
       <p class="lead">
         ERD 표기법은 하나가 아닙니다. 국내 실무에서 가장 자주 보이는 바커(Barker) 표기법과
         해외 CASE 도구·서적에서 흔한 IE(Information Engineering, 정보공학) 표기법은
@@ -77,8 +85,8 @@
         <p>
           선의 <strong>양쪽 절반을 각각 독립적으로</strong> 점선/실선으로 정할 수 있어서, 예를
           들어 "부모는 선택, 자식은 필수"처럼 비대칭적인 참여 규칙도 하나의 선으로 표현됩니다.
-          여기에 더해 자식 쪽 선이 실선이면 식별 관계, 점선이면 비식별 관계라는 세 번째 정보까지
-          같은 선 하나에 압축되어 있습니다. (식별·비식별에 대한 자세한 설명은
+          여기에 더해 식별 관계는 자식 식별자에 부모 식별자가 포함되는 관계이며,
+          자식 쪽 관계선을 가로지르는 짧은 UID 막대로 구분합니다. 실선·점선만으로 식별 여부를 판단하면 안 됩니다. (식별·비식별에 대한 자세한 설명은
           <a href="/articles/identifying-vs-non-identifying.html">이 글</a>에서 다룹니다.)
         </p>
       </section>
@@ -93,7 +101,7 @@
           <li><strong>동그라미(○)</strong> — 선택(0)</li>
           <li><strong>작대기(│)</strong> — 필수(1)</li>
           <li><strong>까마귀발</strong> — 다(N)</li>
-          <li>작대기 하나만 — 정확히 1</li>
+          <li>최소값과 최대값 기호를 함께 읽어 정확한 개수 범위를 판단</li>
         </ul>
         <p>
           이 넷을 조합하면 "○ + 까마귀발"(0..N), "│ + 까마귀발"(1..N), "○ + │"(0..1),
@@ -105,33 +113,23 @@
 
       <section id="diff">
         <h2>핵심 차이 한눈에 보기</h2>
-        <table>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table>
           <tr><th>항목</th><th>바커(Barker)</th><th>IE(정보공학)</th></tr>
           <tr><td>필수/선택 표현</td><td>선 스타일(점선/실선)</td><td>별도 기호(○/│)</td></tr>
           <tr><td>다중성 표현</td><td>까마귀발</td><td>까마귀발</td></tr>
-          <tr><td>식별/비식별 표현</td><td>같은 선 스타일 규칙에 포함</td><td>대개 관계선 자체를 실선/점선으로 구분(도구마다 조금씩 다름)</td></tr>
+          <tr><td>식별/비식별 표현</td><td>자식 식별자에 기여하는 관계의 UID 막대</td><td>대개 관계선 자체를 실선/점선으로 구분(도구마다 조금씩 다름)</td></tr>
           <tr><td>기호 개수</td><td>적음(선 스타일 2종 + 까마귀발)</td><td>많음(원, 작대기, 까마귀발 조합)</td></tr>
           <tr><td>주로 쓰이는 곳</td><td>국내 실무, 오라클 계열 CASE 도구</td><td>북미 CASE 도구, 다수 교과서</td></tr>
-        </table>
+        </table></div>
       </section>
 
       <section id="example">
-        <h2>같은 관계, 두 표기법으로 그려보기</h2>
-        <p>"고객은 여러 주문을 낼 수 있고, 모든 주문에는 반드시 고객이 있어야 한다"는 규칙을 각각 그려보면 다음과 같습니다.</p>
-        <ul>
-          <li><strong>바커</strong> — 고객 쪽 선은 실선(주문이 있으려면 고객이 필수)
-            + 까마귀발 없음(고객은 "1"쪽), 주문 쪽 선은 실선(주문도 필수 참여) +
-            까마귀발(주문은 "다"쪽). 관계가 비식별이라면 주문 쪽 선은 점선으로 그립니다.</li>
-          <li><strong>IE</strong> — 고객 쪽 끝에 작대기 하나(정확히 1), 주문 쪽 끝에
-            작대기 + 까마귀발(1..N, 즉 최소 1개 이상의 주문). 만약 고객이 주문을 아직 하나도
-            내지 않을 수도 있다면 주문 쪽을 원 + 까마귀발(0..N)로 바꿉니다.</li>
-        </ul>
-        <p>
-          두 표기법 모두 "고객 1명 : 주문 여러 개"라는 같은 사실을 전달하지만, 바커는 그
-          정보를 선 하나에 압축해서 그림이 상대적으로 단순해지고, IE는 필수/선택과 다중성을
-          분리해서 각각을 더 명시적으로 읽을 수 있습니다.
-        </p>
-      </section>
+<h2>같은 관계, 두 표기법으로 그려보기</h2>
+<p>규칙을 먼저 두 문장으로 고정합니다. “고객 한 명은 주문을 0개 이상 할 수 있다.” “주문 한 건은 고객 정확히 한 명에게 속해야 한다.” 아직 주문하지 않은 고객도 고객입니다.</p>
+<ul><li><strong>바커</strong> — 고객에서 출발하는 관계는 선택이므로 고객 쪽 절반이 점선입니다. 주문에서 출발하는 고객 관계는 필수이므로 주문 쪽 절반이 실선입니다. 주문 끝에는 까마귀발이 있고 고객 끝에는 없습니다. 이것만으로 주문의 식별 관계 여부는 결정되지 않습니다.</li>
+<li><strong>IE</strong> — 주문 쪽 끝의 원 + 까마귀발은 0..N을, 고객 쪽 끝의 작대기 + 작대기는 1..1을 나타냅니다. 같은 규칙을 기호의 다른 조합으로 읽습니다.</li></ul>
+<p>주문의 PK가 order_id 하나이고 customer_id는 일반 FK라면 이 관계는 비식별입니다. customer_id는 NOT NULL일 수 있습니다. 즉 “필수이므로 식별”이라는 결론은 성립하지 않습니다.</p>
+</section>
 
       <section id="mistakes">
         <h2>흔한 오해</h2>
@@ -179,35 +177,33 @@
           목적을 무너뜨립니다.
         </p>
         <div class="note">
-          <a href="/app?lang=ko">YourERD</a>는 바커 표기법을 기본으로 지원하며, 관계선의
-          좌우 절반을 각각 독립적으로 설정할 수 있어 필수/선택과 식별/비식별을 조합한
-          다양한 규칙을 정확하게 표현할 수 있습니다.
+          <a href="/app?lang=ko">YourERD</a>는 바커 표기법을 기본으로 지원하며, 관계 종류의 미리보기와 자식 PK·FK·NN 표시를 함께 확인할 수 있습니다.
+          식별 관계의 UID 막대와 필수 참여를 구분하고, 추가적인 업무 제약은 별도로 기록하세요.
         </div>
       </section>
 
       <section id="reading">
-        <h2>읽는 순서 팁</h2>
-        <p>
-          바커 표기법으로 그려진 ERD를 처음 마주쳤을 때는 관계선을 한 번에 통째로
-          읽으려 하지 말고, <strong>선을 절반으로 나눠 양쪽을 따로 읽는 습관</strong>을
-          들이면 훨씬 수월합니다.
-        </p>
-        <ol>
-          <li>먼저 부모 쪽 절반만 봅니다 — 점선이면 "자식은 부모 없이도 존재할 수
-            있다(선택)", 실선이면 "자식은 반드시 부모가 있어야 한다(필수)"는 뜻입니다.</li>
-          <li>다음 자식 쪽 절반을 봅니다 — 실선이면 식별 관계, 점선이면 비식별
-            관계입니다.</li>
-          <li>마지막으로 까마귀발 유무를 봅니다 — 있으면 "다(N)", 없으면 "1"입니다.</li>
-        </ol>
-        <p>
-          이 세 가지를 순서대로 읽으면 "부모 실선·자식 실선·까마귀발 있음"이라는 선
-          하나가 곧 "부모는 필수 참여, 이 관계는 식별 관계, 자식은 여러 개일 수 있다"는
-          완전한 문장으로 풀립니다. IE 표기법도 마찬가지로 원/작대기(필수·선택)를 먼저
-          읽고, 까마귀발(다중성)을 나중에 읽는 순서로 접근하면 헷갈릴 일이 줄어듭니다.
-        </p>
-      </section>
+<h2>읽는 순서 팁</h2>
+<p>바커 관계선은 두 방향의 업무 문장을 담습니다. 한쪽 엔티티를 출발점으로 정하고 관계 이름과 반대쪽 끝을 함께 읽으세요.</p>
+<ol><li>출발 엔티티에 가까운 절반이 점선이면 “연결될 수 있다”, 실선이면 “연결되어야 한다”로 읽습니다.</li>
+<li>반대쪽 끝에 까마귀발이 있으면 최대 여러 개, 없으면 최대 한 개로 읽습니다.</li>
+<li>반대 방향에서도 같은 순서로 읽어 두 개의 업무 문장을 완성합니다.</li>
+<li>식별 여부는 별도로 UID 막대와 자식 식별자 구성을 확인합니다. 부모 키가 자식 PK에 들어가는지 DDL에서도 확인하세요.</li></ol>
+<p>IE에서는 반대쪽 끝의 원·작대기·까마귀발 조합으로 최소값과 최대값을 읽습니다. 사용하는 도구의 범례도 확인해야 합니다. 같은 점선이 다른 표기 체계에서는 비식별을 뜻할 수 있으므로 그림의 선 스타일만 떼어 해석하지 마세요.</p>
+</section>
 
-      <div class="related">
+      <section id="practice" class="practice"><p class="exercise-label">가상 데이터로 직접 검증하기</p><h2>실습: 그림을 그리기 전에 관계를 두 문장으로 읽기</h2><p>“고객은 주문을 할 수 있다”만으로는 최소 주문 수가 정해지지 않습니다. 고객은 주문 0개도 허용하고, 각 주문은 고객이 정확히 1명 있어야 한다고 명시해 봅시다. 다음 두 문장은 같은 관계의 서로 다른 방향을 설명합니다.</p><div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table><thead><tr><th scope="col">출발점</th><th scope="col">업무 문장</th><th scope="col">DB에서 확인할 부분</th></tr></thead><tbody><tr><td>고객 한 명</td><td>주문은 0개 이상 가능</td><td>고객 생성 시 주문을 강제하지 않음</td></tr><tr><td>주문 한 건</td><td>고객은 정확히 1명 필수</td><td>customer_id NOT NULL + FK</td></tr></tbody></table></div><p>IE에서는 주문 쪽 끝에 0..N 기호, 고객 쪽 끝에 1..1 기호를 둡니다. 바커에서는 각 엔티티에서 출발하는 관계의 선택·필수를 해당 쪽 선의 점선·실선으로 읽고, 반대편 끝의 다중성을 함께 읽습니다. <strong>필수 참여를 나타내는 실선이 식별 관계를 뜻하는 것은 아닙니다.</strong> 식별 관계는 부모 식별자가 자식 식별자에 포함되는지로 판단합니다.</p><pre><code>CREATE TABLE customers (customer_id BIGINT PRIMARY KEY);
+CREATE TABLE orders (
+  order_id BIGINT PRIMARY KEY,
+  customer_id BIGINT NOT NULL,
+  FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+-- 고객은 주문 없이 생성할 수 있음
+INSERT INTO customers VALUES (7);
+-- 주문은 존재하는 고객 한 명을 필수로 참조
+INSERT INTO orders VALUES (1001, 7);</code></pre>
+<p>고객 7만 먼저 생성해도 성공해야 합니다. 주문 1001을 고객 7에 연결하면 성공하고, 없는 고객번호나 NULL을 넣으면 실패해야 합니다. 이 세 결과가 그림의 선택·필수 참여와 일치하는지 확인하세요.</p><p>한 고객에 주문이 반드시 하나 이상 있어야 한다는 규칙은 orders의 FK 하나로 보장되지 않습니다. FK는 주문이 없는 고객을 막지 않기 때문입니다. 그런 최소 개수 규칙이 필요한 경우 트랜잭션과 업무 검증을 함께 설계해야 합니다. YourERD의 1:1 관계도 내보낸 DDL에서 FK 유일성이 별도로 보장되는지 확인하세요.</p><div class="article-sources"><h3>표기법과 제약조건 참고</h3><p>예제의 업무 규칙과 DB가 강제하는 제약은 구분해서 확인하세요.</p><ul><li><a href="https://www.essentialstrategies.com/publications/modeling/barker.htm">David C. Hay: Barker 관계와 식별자 설명</a></li><li><a href="https://dev.mysql.com/doc/refman/8.4/en/create-table-foreign-keys.html">MySQL 공식 문서: 외래키 제약</a></li><li><a href="https://dev.mysql.com/doc/refman/8.4/en/create-table-check-constraints.html">MySQL 공식 문서: CHECK 제약</a></li></ul></div></section>
+<div class="related">
         <h2>관련 아티클</h2>
         <ul>
           <li><a href="/articles/identifying-vs-non-identifying.html">식별 관계 vs 비식별 관계, 언제 무엇을 써야 할까</a></li>
@@ -220,7 +216,7 @@
         <br />
         <a href="/articles/">아티클</a> · <a href="/manual.html">사용 설명서</a> · <a href="/mcp-guide.html">MCP 연결 가이드</a> ·
         <a href="/prompt-guide.html">프롬프트 가이드</a> · <a href="/about.html">소개</a> · <a href="/contact.html">문의</a> ·
-        <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a> · <a href="/en/">English</a>
+        <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a> · <a href="/en/articles/barker-vs-ie-notation.html">English</a>
       </footer>
     </main>
   </div>

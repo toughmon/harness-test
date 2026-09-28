@@ -146,8 +146,13 @@ try {
   const enArticlesBody = await (await get('/en/articles/')).text();
   check('영문 아티클 목록 200 + meta description', enArticlesBody.includes('name="description"'));
   check('영문 아티클 목록 canonical', enArticlesBody.includes('rel="canonical"'));
-  const enArticlesLen = await textLen('/en/articles/');
-  check(`영문 아티클 본문 5,000자 이상 (실제 ${enArticlesLen}자)`, enArticlesLen >= 5000, enArticlesLen);
+  // The English index now links to full guides rather than collecting short summaries.
+  for (const article of ARTICLES) {
+    const englishPath = `/en${article}`;
+    check(`영문 목록에서 상세 글 ${englishPath} 연결`, enArticlesBody.includes(`href="${englishPath}"`));
+    const detail = await get(englishPath);
+    check(`${englishPath} 상세 글 200`, detail.status() === 200);
+  }
 
   // ── 4-1. 실제 샘플을 여는 예제 갤러리 (ko + en) ─────────────────────────
   for (const p of EXAMPLES) {
@@ -207,15 +212,21 @@ try {
   ];
   for (const p of koreanFooterPages) {
     const actual = await footerLinks(p);
-    check(`${p} 한국어 푸터 메뉴 통일`, JSON.stringify(actual) === JSON.stringify(KOREAN_FOOTER), JSON.stringify(actual));
+    const expected = KOREAN_FOOTER.map(([href, label]) =>
+      [label === 'English' && ARTICLES.includes(p) ? `/en${p}` : href, label]);
+    check(`${p} 한국어 푸터 메뉴 통일`, JSON.stringify(actual) === JSON.stringify(expected), JSON.stringify(actual));
   }
   const englishFooterPages = [
     '/en/', '/en/articles/', '/en/examples.html', '/en/manual.html', '/en/mcp-guide.html', '/en/prompt-guide.html',
     '/en/about.html', '/en/contact.html', '/en/privacy.html', '/en/terms.html',
+    ...ARTICLES.map(p => `/en${p}`),
   ];
   for (const p of englishFooterPages) {
     const actual = await footerLinks(p);
-    check(`${p} 영문 푸터 메뉴 통일`, JSON.stringify(actual) === JSON.stringify(ENGLISH_FOOTER), JSON.stringify(actual));
+    const koreanArticle = p.replace(/^\/en/, '');
+    const expected = ENGLISH_FOOTER.map(([href, label]) =>
+      [label === '한국어' && ARTICLES.includes(koreanArticle) ? koreanArticle : href, label]);
+    check(`${p} 영문 푸터 메뉴 통일`, JSON.stringify(actual) === JSON.stringify(expected), JSON.stringify(actual));
   }
 
   // ── 8. 앱 사이드바 About/Contact 링크 ─────────────────────────────────────

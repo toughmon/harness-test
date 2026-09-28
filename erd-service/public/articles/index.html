@@ -22,7 +22,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/guide.css" />
   <link rel="stylesheet" href="/landing.css" />
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
   <style>
     .article-card { display: flex; flex-direction: column; height: 100%; }
     .article-card .tag {
@@ -58,10 +57,15 @@
     <p class="sub" style="max-width:680px;">
       YourERD 사용법이 아니라 데이터 모델링 자체를 다루는 글 모음입니다.
       정규화, 관계 설계, 표기법, 네이밍, 흔한 실수까지 — ERD를 그릴 때 실제로 판단이 필요한
-      지점들을 실무 예제와 함께 정리했습니다.
+      지점들을 실무 예제와 함께 정리했습니다. 각 글의 사례 실습에서는 변경할 데이터와 예상 결과를 함께 확인할 수 있습니다.
     </p>
   </section>
 
+  <section class="block wrap" style="padding-top:0;">
+    <h2>먼저 하나의 오류를 직접 재현해 보세요</h2>
+    <p><a href="/articles/ecommerce-erd-guide.html#practice">주문 가격 변경과 결제 분할 실습</a>에서 70,000원 주문이 잘못된 조인 때문에 140,000원으로 집계되는 이유를 확인하세요. SQL 파일과 예상 결과를 함께 제공합니다.</p>
+    <p>이어 정규화·관계·키 설계 글에서 왜 모델을 바꾸는지 검토하세요. 모든 실습은 가상의 업무 규칙을 사용하는 학습 예제입니다.</p>
+  </section>
   <section class="block wrap" style="padding-top:0;">
     <div class="grid">
 
