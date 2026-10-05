@@ -41,7 +41,8 @@ Vite 멀티페이지 빌드(`index.html` + `app.html`)라 루트는 정적 HTML,
 | `/app`, `/app/*` | 편집기 SPA (`app.html`, `noindex` — sitemap 대상 아님) |
 | `/d/:token` | 공유 링크 진입 — 앱 셸로 서빙 |
 | `/articles/`, `/articles/*.html` | 데이터 모델링 아티클 8편 + 목록 (한국어) |
-| `/en/articles/` | 핵심 데이터 모델링 주제를 한 페이지로 엮은 영문 아티클 컬렉션 |
+| `/en/articles/`, `/en/articles/*.html` | 영문 설계 가이드 8편 + 목록, 한국어 상세 글과 언어 전환 연결 |
+| `/downloads/order-history-lab.sql` | 빈 연습 DB에서 실행하는 주문 이력·집계 오류 SQL 실습 |
 | `/manual.html`, `/mcp-guide.html`, `/prompt-guide.html` | 가이드 (각 `/en/` 사본 존재) |
 | `/about.html`, `/contact.html` | 소개·문의 (각 `/en/` 사본 존재) |
 | `/privacy.html`, `/terms.html` | 개인정보처리방침·이용약관 (각 `/en/` 사본 존재) |
@@ -248,7 +249,9 @@ Claude Code ──stdio──> erd-service/mcp ──https(JWT 쿠키)──> /a
 |---|---|
 | verify_server | 프로덕션 서버 — 정적 서빙·랜딩/앱 라우팅·404 처리·/api 404 |
 | verify_seo | 랜딩·정책 페이지, robots/sitemap, 소프트404 제거, 메타태그 |
-| verify_seo2 | robots.txt `/mcp$` 규칙, `/app` noindex+noscript, About/Contact, 아티클 8편 |
+| verify_seo2 | robots.txt `/mcp$` 규칙, `/app` noindex+noscript, About/Contact, 한·영 아티클 상세 링크·공통 메뉴 |
+| verify_articles_content | 상세 글 이동·언어 전환·모바일 가로 넘침·다운로드 SQL 실행, 시각 검토용 스크린샷 |
+| verify_articles_static.py | 빌드 결과의 36개 공개 URL·링크·언어 연결·구조화 데이터와 SQL 실습 검증(브라우저 불필요) |
 | verify_backend | 가입→DB저장→세션복원→열기·모달·401/409 (24항목) |
 | verify_features | Undo/Redo·관계 타입 변경·자동 정렬·PNG (14항목) |
 | verify_fk_cleanup | 엔티티/관계 삭제 시 FK 정리, 비식별 FK (13항목) |
@@ -261,3 +264,9 @@ Claude Code ──stdio──> erd-service/mcp ──https(JWT 쿠키)──> /a
 | mcp/verify_mcp | MCP 서버 — stdio 도구 호출→저장 blob FK 검증→브라우저 렌더 (24항목, `mcp/`에서 실행) |
 
 변경 이력은 루트 `CLAUDE.md`의 변경 이력 테이블에 기록한다.
+
+### 설계 콘텐츠 검증
+
+`npm run build` 후 `python3 verify_articles_static.py`로 빌드된 HTML의 경로·언어 연결과 다운로드 SQL을 검사한다. SQL 실행 검증은 SQLite에서 공통 문법과 결과를 확인하며 MySQL 엔진 통합 검증을 대체하지 않는다.
+
+실제 브라우저 검증은 로컬 서버 실행 후 `BASE_URL=http://localhost:8080 node verify_articles_content.mjs`로 수행한다. 스크린샷은 기본적으로 임시 디렉터리 `yourerd-content-review`에 저장하며 `SCREENSHOT_DIR`로 위치를 바꿀 수 있다.

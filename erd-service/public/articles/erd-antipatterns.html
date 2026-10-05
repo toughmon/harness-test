@@ -6,6 +6,9 @@
   <title>ERD 설계 안티패턴 8가지 · YourERD</title>
   <meta name="description" content="EAV 남용부터 순환 참조, 소프트 삭제 누락까지 — ERD와 데이터베이스 설계에서 반복되는 안티패턴 8가지를 사례와 함께 정리했습니다." />
   <link rel="canonical" href="https://yourerd.com/articles/erd-antipatterns.html" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/erd-antipatterns.html" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/erd-antipatterns.html" />
+  <link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/erd-antipatterns.html" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="YourERD" />
   <meta property="og:title" content="ERD 설계 안티패턴 8가지" />
@@ -13,12 +16,14 @@
   <meta property="og:url" content="https://yourerd.com/articles/erd-antipatterns.html" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="article:published_time" content="2026-09-11" />
+  <meta property="article:modified_time" content="2026-09-28" />
   <meta name="twitter:card" content="summary" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/article.css" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
   <style>
     nav.toc { position: sticky; top: 0; align-self: flex-start; width: 240px; flex-shrink: 0; height: 100vh; overflow-y: auto; padding: 28px 16px 40px 24px; border-right: 1px solid var(--outline-variant); }
@@ -36,6 +41,7 @@
     footer a { color: var(--on-surface-variant); text-decoration: none; }
     footer a:hover { color: var(--primary); text-decoration: underline; }
   </style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "ERD 설계 안티패턴 8가지", "description": "EAV 남용부터 순환 참조, 소프트 삭제 누락까지 — ERD와 데이터베이스 설계에서 반복되는 안티패턴 8가지를 사례와 함께 정리했습니다.", "inLanguage": "ko-KR", "datePublished": "2026-09-11", "dateModified": "2026-09-28", "author": {"@type": "Organization", "name": "YourERD", "url": "https://yourerd.com/about.html"}, "mainEntityOfPage": "https://yourerd.com/articles/erd-antipatterns.html"}</script>
 </head>
 <body>
   <div class="layout">
@@ -51,12 +57,14 @@
       <a href="#m2m">6. 다대다를 억지로 표현</a>
       <a href="#csv">7. 콤마로 여러 값 저장</a>
       <a href="#genericname">8. 이름만 봐선 알 수 없는 테이블</a>
+      <a href="#practice">사례 실습과 검증</a>
+      <a href="/en/articles/erd-antipatterns.html">English version</a>
       <a href="/articles/" class="back">← 아티클 목록</a>
     </nav>
 
     <main>
       <h1 id="intro">ERD 설계 안티패턴 8가지</h1>
-      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="meta">작성: YourERD · 2026-09-11 · 수정: 2026-09-28</p>
       <p class="lead">
         데이터 모델링 실수는 대부분 "당장은 편해서" 벌어집니다. 급하게 컬럼 하나만 추가하면
         되는 줄 알았던 결정이 몇 달 뒤 마이그레이션 지옥으로 돌아오는 경우가 많습니다.
@@ -149,9 +157,11 @@ CREATE TABLE product_attributes (
           교차 테이블(연결 테이블)로 풀어야 합니다.
         </p>
         <pre><code>CREATE TABLE enrollments (
-  student_id  BIGINT NOT NULL REFERENCES students(student_id),
-  course_id   BIGINT NOT NULL REFERENCES courses(course_id),
-  PRIMARY KEY (student_id, course_id)
+  student_id  BIGINT NOT NULL,
+  course_id   BIGINT NOT NULL,
+  PRIMARY KEY (student_id, course_id),
+  FOREIGN KEY (student_id) REFERENCES students(student_id),
+  FOREIGN KEY (course_id) REFERENCES courses(course_id)
 );</code></pre>
         <p>
           교차 테이블을 만들면 부수적으로 좋은 점이 있습니다 — "언제 수강신청했는지",
@@ -192,7 +202,19 @@ CREATE TABLE product_attributes (
         먼저 구조를 그려보고 관계와 키를 눈으로 확인해 보세요.
       </div>
 
-      <div class="related">
+      <section id="practice" class="practice"><p class="exercise-label">가상 데이터로 직접 검증하기</p><h2>실습: 콤마 태그를 연결 테이블로 바꾸면 무엇이 달라지나</h2><p>게시글의 <code>tags</code>가 <code>sql,mysql</code> 문자열이면 “sql 태그가 붙은 글”을 찾기 위해 부분 문자열에 의존하게 됩니다. <code>nosql</code>을 잘못 포함할 수 있고, 태그 이름을 바꿀 때 게시글 전체를 파싱해야 합니다. 태그를 독립적인 대상으로 다룬다면 다음 세 테이블로 나누세요.</p><pre><code>CREATE TABLE post_tags (
+  post_id BIGINT NOT NULL,
+  tag_id BIGINT NOT NULL,
+  PRIMARY KEY (post_id, tag_id),
+  FOREIGN KEY (post_id) REFERENCES posts(post_id),
+  FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
+);
+SELECT p.post_id
+FROM posts p
+JOIN post_tags pt ON pt.post_id = p.post_id
+JOIN tags t ON t.tag_id = pt.tag_id
+WHERE t.name = &#x27;sql&#x27;;</code></pre><p>부모 posts와 tags는 각각 post_id, tag_id PK가 있어야 하고, tags.name에는 필요에 따라 UNIQUE를 둡니다. 같은 게시글·태그 조합을 두 번 넣으면 복합 PK가 막고, 존재하지 않는 태그는 FK가 막아야 합니다. sql과 nosql 태그를 각각 만든 뒤 위 조회가 sql 게시글만 반환하는지 확인하세요.</p><p>JSON이나 EAV를 무조건 잘못이라고 할 수는 없습니다. 외부 원문을 그대로 보관하거나 드물게 쓰이는 사용자 정의 속성을 담는 데는 적합할 수 있습니다. 다만 항상 조회하는 가격·수량·부모 참조까지 그 안으로 숨기면 타입·참조 검증과 조회 계획이 복잡해집니다. 실제 조회 빈도와 무결성 요구를 기준으로 결정하세요.</p><div class="article-sources"><h3>문법과 제약조건 참고</h3><p>예제의 업무 규칙과 DB가 강제하는 제약은 구분해서 확인하세요.</p><ul><li><a href="https://dev.mysql.com/doc/refman/8.4/en/create-table-foreign-keys.html">MySQL 공식 문서: 외래키 제약</a></li><li><a href="https://dev.mysql.com/doc/refman/8.4/en/create-table-check-constraints.html">MySQL 공식 문서: CHECK 제약</a></li></ul></div></section>
+<div class="related">
         <h2>관련 아티클</h2>
         <ul>
           <li><a href="/articles/normalization-guide.html">데이터베이스 정규화 완벽 가이드</a></li>
@@ -206,7 +228,7 @@ CREATE TABLE product_attributes (
         <br />
         <a href="/articles/">아티클</a> · <a href="/manual.html">사용 설명서</a> · <a href="/mcp-guide.html">MCP 연결 가이드</a> ·
         <a href="/prompt-guide.html">프롬프트 가이드</a> · <a href="/about.html">소개</a> · <a href="/contact.html">문의</a> ·
-        <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a> · <a href="/en/">English</a>
+        <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a> · <a href="/en/articles/erd-antipatterns.html">English</a>
       </footer>
     </main>
   </div>

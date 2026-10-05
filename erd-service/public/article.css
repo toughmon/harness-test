@@ -1,0 +1,25 @@
+/* Worked examples shared by Korean and English articles. */
+.practice { margin-top:40px; padding-top:12px; border-top:1px solid var(--outline-variant); }
+.practice .exercise-label { color:var(--primary); font-size:13px; font-weight:700; }
+.model-figure { margin:24px 0; padding:20px; border:1px solid var(--outline-variant); border-radius:12px; background:var(--surface-low); }
+.model-flow { display:flex; gap:12px; align-items:center; }
+.model-node { flex:1; min-width:0; border:1px solid var(--outline-variant); border-radius:8px; padding:14px; background:var(--surface); }
+.model-node strong { display:block; color:var(--primary); overflow-wrap:anywhere; }
+.model-node span { display:block; font-size:13px; margin-top:6px; overflow-wrap:anywhere; }
+.model-arrow { color:var(--primary); font-size:24px; }
+figcaption { margin-top:14px; font-size:13px; color:var(--on-surface-variant); }
+.table-scroll { overflow-x:auto; margin:18px 0; }
+.table-scroll table { margin:0; }
+.article-sources { margin-top:32px; font-size:14px; }
+.article-sources a, .practice a { color:var(--primary); }
+.article-nav { display:flex; flex-wrap:wrap; gap:10px 20px; margin-bottom:24px; font-size:14px; }
+.article-nav a { color:var(--primary); }
+.article-detail { max-width:880px; margin:auto; }
+.article-detail a { color:var(--primary); text-underline-offset:3px; }
+.article-detail a:hover { color:var(--on-surface); }
+.article-detail a:focus-visible, .practice a:focus-visible, .table-scroll:focus-visible { outline:2px solid var(--primary); outline-offset:4px; }
+.article-detail h1 { font-size:clamp(26px,4vw,36px); line-height:1.35; }
+.article-detail .meta { color:var(--on-surface-variant); font-size:13px; }
+.article-detail section { scroll-margin-top:20px; }
+.article-detail pre code, .practice pre code { background:transparent; padding:0; }
+@media(max-width:600px) { .model-flow { flex-direction:column; align-items:stretch; } .model-arrow { text-align:center; transform:rotate(90deg); } .model-node { width:100%; } .article-detail { padding:24px 20px 64px; } }

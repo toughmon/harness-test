@@ -6,6 +6,9 @@
   <title>데이터베이스 정규화 완벽 가이드 — 1NF부터 3NF까지 · YourERD</title>
   <meta name="description" content="정규화가 왜 필요한지부터 1NF·2NF·3NF를 실제 테이블 예제로 나눠보는 과정, 그리고 실무에서 반정규화를 택하는 기준까지 정리했습니다." />
   <link rel="canonical" href="https://yourerd.com/articles/normalization-guide.html" />
+  <link rel="alternate" hreflang="ko" href="https://yourerd.com/articles/normalization-guide.html" />
+  <link rel="alternate" hreflang="en" href="https://yourerd.com/en/articles/normalization-guide.html" />
+  <link rel="alternate" hreflang="x-default" href="https://yourerd.com/articles/normalization-guide.html" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="YourERD" />
   <meta property="og:title" content="데이터베이스 정규화 완벽 가이드 — 1NF부터 3NF까지" />
@@ -13,12 +16,14 @@
   <meta property="og:url" content="https://yourerd.com/articles/normalization-guide.html" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="article:published_time" content="2026-09-11" />
+  <meta property="article:modified_time" content="2026-09-28" />
   <meta name="twitter:card" content="summary" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/guide.css" />
+  <link rel="stylesheet" href="/article.css" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1397420722330666" crossorigin="anonymous"></script>
   <style>
     nav.toc {
@@ -40,6 +45,7 @@
     footer a { color: var(--on-surface-variant); text-decoration: none; }
     footer a:hover { color: var(--primary); text-decoration: underline; }
   </style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "데이터베이스 정규화 완벽 가이드 — 1NF부터 3NF까지", "description": "정규화가 왜 필요한지부터 1NF·2NF·3NF를 실제 테이블 예제로 나눠보는 과정, 그리고 실무에서 반정규화를 택하는 기준까지 정리했습니다.", "inLanguage": "ko-KR", "datePublished": "2026-09-11", "dateModified": "2026-09-28", "author": {"@type": "Organization", "name": "YourERD", "url": "https://yourerd.com/about.html"}, "mainEntityOfPage": "https://yourerd.com/articles/normalization-guide.html"}</script>
 </head>
 <body>
   <div class="layout">
@@ -54,12 +60,14 @@
       <a href="#beyond">그 다음: BCNF와 실무</a>
       <a href="#denorm">반정규화는 언제 하나</a>
       <a href="#draw">그려보면서 이해하기</a>
+      <a href="#practice">사례 실습과 검증</a>
+      <a href="/en/articles/normalization-guide.html">English version</a>
       <a href="/articles/" class="back">← 아티클 목록</a>
     </nav>
 
     <main>
       <h1 id="intro">데이터베이스 정규화 완벽 가이드 — 1NF부터 3NF까지</h1>
-      <p class="meta">아티클 · 2026-09-11</p>
+      <p class="meta">작성: YourERD · 2026-09-11 · 수정: 2026-09-28</p>
       <p class="lead">
         정규화(Normalization)는 테이블을 잘게 쪼개는 규칙처럼 보이지만, 실은 "같은 사실을
         여러 곳에 중복해서 적어두지 않기 위한" 매우 실용적인 절차입니다. 이 글은 이상현상이
@@ -72,12 +80,12 @@
         <p>
           다음과 같이 주문 정보를 하나의 테이블에 전부 몰아넣었다고 해봅시다.
         </p>
-        <table>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table>
           <tr><th>주문번호</th><th>고객명</th><th>고객이메일</th><th>상품명</th><th>단가</th><th>수량</th></tr>
           <tr><td>1001</td><td>김민준</td><td>minjun@ex.com</td><td>키보드</td><td>45000</td><td>1</td></tr>
           <tr><td>1001</td><td>김민준</td><td>minjun@ex.com</td><td>마우스</td><td>25000</td><td>2</td></tr>
           <tr><td>1002</td><td>이서연</td><td>seoyeon@ex.com</td><td>모니터</td><td>210000</td><td>1</td></tr>
-        </table>
+        </table></div>
         <p>
           작동은 합니다. 하지만 이 구조는 세 가지 이상현상(anomaly)을 안고 있습니다.
         </p>
@@ -103,20 +111,20 @@
           하고, 같은 성격의 값을 여러 컬럼에 반복해서 늘어놓지 않아야 합니다.</strong>
         </p>
         <p>다음처럼 한 주문에 상품을 여러 개 담으려고 컬럼을 늘린 테이블을 생각해 봅시다.</p>
-        <table>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table>
           <tr><th>주문번호</th><th>고객명</th><th>상품1</th><th>상품2</th><th>상품3</th></tr>
           <tr><td>1001</td><td>김민준</td><td>키보드</td><td>마우스</td><td>(없음)</td></tr>
-        </table>
+        </table></div>
         <p>
           상품이 네 개인 주문이 들어오는 순간 컬럼이 모자랍니다. 상품3, 상품4를 계속 추가하는
           방식은 확장에 한계가 있고, "상품이 몇 개인지" 조회하는 SQL도 지저분해집니다. 이런
           반복 그룹은 행으로 풀어내야 합니다.
         </p>
-        <table>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table>
           <tr><th>주문번호</th><th>고객명</th><th>상품명</th></tr>
           <tr><td>1001</td><td>김민준</td><td>키보드</td></tr>
           <tr><td>1001</td><td>김민준</td><td>마우스</td></tr>
-        </table>
+        </table></div>
         <p>
           한 셀에 여러 값을 콤마로 이어붙이는 것("키보드,마우스")도 1NF 위반입니다. 원자값이
           아니기 때문에 특정 상품이 포함된 주문을 찾으려면 문자열을 파싱해야 하고, 인덱스도
@@ -127,16 +135,17 @@
       <section id="2nf">
         <h2>2. 제2정규형(2NF) — 부분 함수 종속 제거</h2>
         <p>
-          2NF는 <strong>1NF를 만족하면서, 기본키가 복합키일 때 비주요 속성이 기본키 전체가
-          아니라 일부에만 종속되는 경우(부분 함수 종속)를 없애는 것</strong>입니다. 기본키가
-          단일 컬럼이면 2NF는 자동으로 만족되므로, 이 규칙은 복합키를 쓸 때만 의미가 있습니다.
+          2NF는 <strong>1NF를 만족하면서 모든 비주요 속성이 각 후보키 전체에 완전 함수 종속</strong>되는 조건입니다.
+          즉 후보키 일부에만 종속되는 부분 함수 종속을 없앱니다. 후보키가 모두 단일 속성이면
+          부분 종속이 없지만, 대리키를 하나 추가해 PK를 단일 컬럼으로 바꿨다고 해서
+          다른 복합 후보키의 부분 종속까지 사라지지는 않습니다.
         </p>
         <p>수강신청 테이블을 예로 들어 보겠습니다. 기본키는 (학번, 과목코드)입니다.</p>
-        <table>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table>
           <tr><th>학번</th><th>과목코드</th><th>성적</th><th>학생이름</th><th>담당교수</th></tr>
           <tr><td>2024001</td><td>DB301</td><td>A+</td><td>박지훈</td><td>최교수</td></tr>
           <tr><td>2024001</td><td>OS201</td><td>B0</td><td>박지훈</td><td>정교수</td></tr>
-        </table>
+        </table></div>
         <p>
           여기서 <code>성적</code>은 (학번, 과목코드) 조합 전체에 종속됩니다 — 같은 학생이라도
           과목이 다르면 성적이 다를 수 있으니 정상입니다. 문제는 <code>학생이름</code>과
@@ -157,10 +166,12 @@ CREATE TABLE courses (
 );
 
 CREATE TABLE enrollments (
-  student_id   VARCHAR(9)  NOT NULL REFERENCES students(student_id),
-  course_code  VARCHAR(10) NOT NULL REFERENCES courses(course_code),
+  student_id   VARCHAR(9)  NOT NULL,
+  course_code  VARCHAR(10) NOT NULL,
   grade        VARCHAR(2),
-  PRIMARY KEY (student_id, course_code)
+  PRIMARY KEY (student_id, course_code),
+  FOREIGN KEY (student_id) REFERENCES students(student_id),
+  FOREIGN KEY (course_code) REFERENCES courses(course_code)
 );</code></pre>
         <p>
           이제 <code>학생이름</code>은 students에, <code>담당교수</code>는 courses에 딱 한
@@ -171,15 +182,15 @@ CREATE TABLE enrollments (
       <section id="3nf">
         <h2>3. 제3정규형(3NF) — 이행 함수 종속 제거</h2>
         <p>
-          3NF는 <strong>2NF를 만족하면서, 비주요 속성이 기본키가 아니라 다른 비주요 속성을
-          통해서 간접적으로 종속되는 경우(이행 함수 종속)를 없애는 것</strong>입니다. 이번엔
+          3NF의 엄밀한 조건은 비자명 함수 종속 X → A마다 X가 슈퍼키이거나 A가 주요 속성(어떤 후보키의 구성 속성)이어야 한다는 것입니다.
+          이 예제처럼 후보키가 하나인 단순한 경우에는 <strong>비주요 속성의 이행 종속을 제거</strong>하는 과정으로 이해할 수 있습니다. 이번엔
           기본키가 단일 컬럼인 직원 테이블을 예로 들어 보겠습니다.
         </p>
-        <table>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table>
           <tr><th>사번</th><th>이름</th><th>부서코드</th><th>부서명</th><th>부서위치</th></tr>
           <tr><td>E001</td><td>한소희</td><td>D10</td><td>개발팀</td><td>3층</td></tr>
           <tr><td>E002</td><td>오지환</td><td>D10</td><td>개발팀</td><td>3층</td></tr>
-        </table>
+        </table></div>
         <p>
           <code>부서명</code>과 <code>부서위치</code>는 <code>사번</code>에 직접 종속되는 게
           아니라, <code>사번 → 부서코드 → 부서명·부서위치</code>처럼 <code>부서코드</code>를
@@ -197,7 +208,8 @@ CREATE TABLE enrollments (
 CREATE TABLE employees (
   emp_id     VARCHAR(5)  PRIMARY KEY,
   name       VARCHAR(50) NOT NULL,
-  dept_code  VARCHAR(5)  NOT NULL REFERENCES departments(dept_code)
+  dept_code  VARCHAR(5)  NOT NULL,
+  FOREIGN KEY (dept_code) REFERENCES departments(dept_code)
 );</code></pre>
         <p>
           이제 부서 위치가 바뀌면 departments 테이블의 딱 한 행만 고치면 되고, 그 부서
@@ -210,9 +222,9 @@ CREATE TABLE employees (
         <p>
           이론적으로는 BCNF(보이스-코드 정규형), 4NF, 5NF까지 이어지지만, 이들은 후보키가
           여러 개 겹치거나 다치 종속(multivalued dependency)이 있는 특수한 상황에서만
-          의미가 갈립니다. 실무 데이터 모델링에서는 <strong>3NF까지 정규화하는 것이 사실상의
-          표준</strong>입니다. 3NF를 만족하는 테이블 집합은 이상현상 없이 안전하게 갱신할 수
-          있고, 대부분의 업무 도메인은 그 이상의 정규형이 주는 이득이 거의 없습니다.
+          의미가 갈립니다. 3NF는 많은 업무 모델의 출발점이지만 모든 이상현상이 없어졌다는 보장은 아닙니다.
+          예를 들어 일부 3NF 관계에는 BCNF로 제거할 수 있는 중복이 남을 수 있습니다. 후보키와 실제 함수 종속을 확인하고,
+          업무 규칙을 손실 없이 보존하는 분해인지 검토하세요. 정규형의 이름보다 보호하려는 사실과 제약이 우선입니다.
         </p>
       </section>
 
@@ -252,7 +264,12 @@ CREATE TABLE employees (
         </p>
       </section>
 
-      <div class="related">
+      <section id="practice" class="practice"><p class="exercise-label">가상 데이터로 직접 검증하기</p><h2>실습: 수강 내역에서 학생 이름을 바꿔 보기</h2><p>아래 상황을 가정해 봅시다. 학생 S01이 DB와 OS 두 과목을 듣고 있고, 수강 테이블에는 학생 이름이 매 행마다 들어 있습니다. 이름을 한 행만 수정하면 같은 학생이 서로 다른 이름으로 조회됩니다. 이는 데이터가 많아서가 아니라 <strong>학생에 대한 사실을 수강마다 반복 저장</strong>했기 때문에 생기는 문제입니다.</p><div class="table-scroll" tabindex="0" role="region" aria-label="비교 표"><table><thead><tr><th scope="col">설계</th><th scope="col">이름 수정 대상</th><th scope="col">새 학생 등록</th></tr></thead><tbody><tr><td>수강 테이블에 이름 복사</td><td>수강한 모든 행</td><td>수강할 과목 없이는 등록이 어려움</td></tr><tr><td>학생과 수강 분리</td><td>students의 한 행</td><td>수강 없이 학생 등록 가능</td></tr></tbody></table></div><pre><code>UPDATE students SET name = &#x27;Kim Hana&#x27; WHERE student_id = &#x27;S01&#x27;;
+SELECT e.student_id, s.name, e.course_code
+FROM enrollments e
+JOIN students s ON s.student_id = e.student_id
+WHERE e.student_id = &#x27;S01&#x27;;</code></pre><p>학생 S01에 대해 수강 두 행이 존재하면 조회 결과의 이름 두 개 모두 Kim Hana여야 합니다. <code>students.student_id</code>가 PK이고 수강의 FK가 이를 참조해야, 존재하지 않는 학생의 수강도 막을 수 있습니다. 함수 종속은 현재 데이터의 우연한 일치가 아니라 업무 규칙으로 확인해야 합니다. 이 예제는 과목마다 담당교수가 한 명이라는 가정이며, 학기마다 교수가 달라지면 과목 개설(course_offerings)을 따로 모델링해야 합니다.</p><p>주문 당시 이름·가격을 보존하는 스냅샷은 다른 문제입니다. 과거 거래의 이름은 현재 고객 이름과 다른 사실이므로, 최신 이름을 참조하는 것만으로 요구사항을 만족할 수 없습니다. <a href="/articles/ecommerce-erd-guide.html#practice">주문 이력 실습</a>에서 두 값을 바꿔 비교해 보세요.</p><div class="article-sources"><h3>문법과 제약조건 참고</h3><p>예제의 업무 규칙과 DB가 강제하는 제약은 구분해서 확인하세요.</p><ul><li><a href="https://dev.mysql.com/doc/refman/8.4/en/create-table-foreign-keys.html">MySQL 공식 문서: 외래키 제약</a></li><li><a href="https://dev.mysql.com/doc/refman/8.4/en/create-table-check-constraints.html">MySQL 공식 문서: CHECK 제약</a></li></ul></div></section>
+<div class="related">
         <h2>관련 아티클</h2>
         <ul>
           <li><a href="/articles/identifying-vs-non-identifying.html">식별 관계 vs 비식별 관계, 언제 무엇을 써야 할까</a></li>
@@ -266,7 +283,7 @@ CREATE TABLE employees (
         <br />
         <a href="/articles/">아티클</a> · <a href="/manual.html">사용 설명서</a> · <a href="/mcp-guide.html">MCP 연결 가이드</a> ·
         <a href="/prompt-guide.html">프롬프트 가이드</a> · <a href="/about.html">소개</a> · <a href="/contact.html">문의</a> ·
-        <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a> · <a href="/en/">English</a>
+        <a href="/privacy.html">개인정보처리방침</a> · <a href="/terms.html">이용약관</a> · <a href="/en/articles/normalization-guide.html">English</a>
       </footer>
     </main>
   </div>
