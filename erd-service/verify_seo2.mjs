@@ -86,12 +86,15 @@ try {
   check('규칙 적용 시 /mcp-guide.html은 차단 안 됨', !isBlocked('/mcp-guide.html'));
   check('규칙 적용 시 /en/mcp-guide.html은 차단 안 됨', !isBlocked('/en/mcp-guide.html'));
   check('규칙 적용 시 /mcp(전송 엔드포인트)는 차단됨', isBlocked('/mcp'));
+  check('규칙 적용 시 공유 링크는 noindex를 읽도록 허용', !isBlocked('/d/erdshare_example'));
   check('규칙 적용 시 /mcp-guide.html과 정확히 같은 문자열만 예외 없이 차단 안 됨',
     !isBlocked('/mcp-guide.html'));
 
   // ── 2. /app — noindex + noscript, sitemap에서 제외 ────────────────────────
   const appHtml = await (await get('/app')).text();
   check('/app 에 noindex 메타', /<meta\s+name="robots"\s+content="noindex/.test(appHtml));
+  const shareHtml = await (await get('/d/erdshare_dummy')).text();
+  check('공유 링크에도 noindex 메타', /<meta\s+name="robots"\s+content="noindex/.test(shareHtml));
   check('/app 에 noscript 안내', appHtml.includes('<noscript>'));
   const sitemap = await (await get('/sitemap.xml')).text();
   check('sitemap.xml에 /app 없음', !sitemap.includes('<loc>https://yourerd.com/app</loc>'));

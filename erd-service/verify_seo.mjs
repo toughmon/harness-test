@@ -27,7 +27,7 @@ try {
   const robotsBody = await robots.text();
   check('robots.txt가 HTML이 아님', !robotsBody.includes('<!doctype html'));
   check('robots.txt에 Sitemap 선언', robotsBody.includes('Sitemap: https://yourerd.com/sitemap.xml'));
-  check('robots.txt가 공유 링크(/d/) 색인 차단', /^Disallow:\s*\/d\//m.test(robotsBody));
+  check('공유 링크(/d/)는 noindex를 읽을 수 있도록 크롤링 허용', !/^Disallow:\s*\/d\//m.test(robotsBody));
   check('robots.txt가 /api/ 차단', /^Disallow:\s*\/api\//m.test(robotsBody));
 
   // ── 2. sitemap.xml ────────────────────────────────────────────────────────────

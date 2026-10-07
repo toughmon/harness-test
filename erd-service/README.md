@@ -39,7 +39,7 @@ Vite 멀티페이지 빌드(`index.html` + `app.html`)라 루트는 정적 HTML,
 | `/` | 정적 랜딩 페이지 (`index.html`) — 서비스 소개·기능·FAQ |
 | `/en/` | 영문 랜딩 페이지 |
 | `/app`, `/app/*` | 편집기 SPA (`app.html`, `noindex` — sitemap 대상 아님) |
-| `/d/:token` | 공유 링크 진입 — 앱 셸로 서빙 |
+| `/d/:token` | 공유 링크 진입 — 앱 셸의 `noindex`를 크롤러가 읽도록 `robots.txt`에서 허용 |
 | `/articles/`, `/articles/*.html` | 데이터 모델링 아티클 8편 + 목록 (한국어) |
 | `/en/articles/`, `/en/articles/*.html` | 영문 설계 가이드 8편 + 목록, 한국어 상세 글과 언어 전환 연결 |
 | `/downloads/order-history-lab.sql` | 빈 연습 DB에서 실행하는 주문 이력·집계 오류 SQL 실습 |
